@@ -581,11 +581,24 @@
                                         <p class="text-[11px] text-slate-500 mt-0.5" x-text="item.detail_faskes.alamat || '-'"></p>
                                     </div>
                                     <div class="text-right flex-shrink-0">
-                                        <div class="text-sm font-extrabold text-blue-600 leading-none"
-                                             x-text="`${item.estimasi_waktu.menit.toFixed(1)} mnt`"></div>
+                                        <template x-if="item.rute_tersedia">
+                                            <div class="text-sm font-extrabold text-blue-600 leading-none"
+                                                 x-text="`${item.estimasi_waktu.menit.toFixed(1)} mnt`"></div>
+                                        </template>
+                                        <template x-if="!item.rute_tersedia">
+                                            <div class="text-xs font-bold text-red-500 leading-none">Rute N/A</div>
+                                        </template>
                                         <div class="text-[10px] text-slate-400 mt-0.5 font-medium">Estimasi Waktu</div>
                                     </div>
                                 </div>
+
+                                <!-- Peringatan kalau OSRM gagal menghitung rute jalan untuk faskes ini -->
+                                <template x-if="!item.rute_tersedia">
+                                    <div class="bg-amber-50 border border-amber-200 text-amber-700 rounded-lg px-2.5 py-1.5 text-[10px] flex items-start space-x-1.5">
+                                        <span>⚠️</span>
+                                        <span x-text="item.pesan_rute || 'Rute jalan tidak dapat dihitung untuk faskes ini. Jarak lurus tetap akurat, tapi estimasi jalan/waktu tidak tersedia.'"></span>
+                                    </div>
+                                </template>
 
                                 <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-xs">
                                     <div class="bg-slate-50 rounded-lg p-2">
@@ -594,7 +607,8 @@
                                     </div>
                                     <div class="bg-slate-50 rounded-lg p-2">
                                         <span class="text-[10px] text-slate-400 block font-medium">Jarak Jalan (OSRM)</span>
-                                        <span class="font-bold text-slate-900" x-text="`${item.jarak_jalan.km.toFixed(2)} KM`"></span>
+                                        <span class="font-bold text-slate-900"
+                                              x-text="item.rute_tersedia ? `${item.jarak_jalan.km.toFixed(2)} KM` : '-'"></span>
                                     </div>
                                 </div>
                             </div>
