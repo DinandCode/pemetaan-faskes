@@ -53,9 +53,7 @@
             line-height: 32px;
         }
 
-        /* Pastikan tidak ada leaflet-control / overlay liar yang menumpuk di atas kanvas peta.
-           Semua leaflet-control WAJIB berada di dalam salah satu 4 pojok (top-left/top-right/bottom-left/bottom-right),
-           tidak ada elemen absolute lain yang diletakkan manual di atas #map selain melalui Leaflet control API. */
+        /* Pastikan tidak ada leaflet-control / overlay liar yang menumpuk di atas kanvas peta. */
         #map .leaflet-top,
         #map .leaflet-bottom {
             pointer-events: none;
@@ -92,11 +90,87 @@
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Ikon default: gaya outline, warna ikut currentColor */
+        .icon { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+        .icon-solid { fill: currentColor; stroke: none; }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-800 antialiased overflow-hidden h-screen w-screen flex flex-col font-sans"
       x-data="petaFaskesApp()"
       x-init="initMap()">
+
+    <!-- ============================================================ -->
+    <!-- SPRITE IKON SVG (satu sumber untuk semua ikon di halaman ini) -->
+    <!-- ============================================================ -->
+    <svg class="hidden" aria-hidden="true">
+        <defs>
+            <symbol id="ic-map" viewBox="0 0 24 24">
+                <path d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.159.69.159 1.006 0z"/>
+            </symbol>
+            <symbol id="ic-chart" viewBox="0 0 24 24">
+                <path d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C6.5 20.496 6 21 5.375 21h-2.25A1.125 1.125 0 012 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/>
+            </symbol>
+            <symbol id="ic-clipboard" viewBox="0 0 24 24">
+                <path d="M9.75 3.75h4.5a.75.75 0 01.75.75v.75a.75.75 0 01-.75.75h-4.5A.75.75 0 019 5.25V4.5a.75.75 0 01.75-.75zM8.25 4.5H6.75A1.5 1.5 0 005.25 6v13.5A1.5 1.5 0 006.75 21h10.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5h-1.5M9 12h6M9 15h6M9 18h4"/>
+            </symbol>
+            <symbol id="ic-pin" viewBox="0 0 24 24">
+                <path d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"/>
+                <path d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </symbol>
+            <symbol id="ic-hospital" viewBox="0 0 24 24">
+                <path d="M4.5 21V6.75A2.25 2.25 0 016.75 4.5h10.5a2.25 2.25 0 012.25 2.25V21M4.5 21h15M9 21v-3.75c0-.414.336-.75.75-.75h4.5c.414 0 .75.336.75.75V21"/>
+                <path d="M12 7.5v3m-1.5-1.5h3"/>
+            </symbol>
+            <symbol id="ic-bolt" viewBox="0 0 24 24">
+                <path d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/>
+            </symbol>
+            <symbol id="ic-medical" viewBox="0 0 24 24">
+                <path d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </symbol>
+            <symbol id="ic-card" viewBox="0 0 24 24">
+                <path d="M3.75 6.75h16.5a1.5 1.5 0 011.5 1.5v7.5a1.5 1.5 0 01-1.5 1.5H3.75a1.5 1.5 0 01-1.5-1.5v-7.5a1.5 1.5 0 011.5-1.5z"/>
+                <path d="M2.25 10.5h19.5M6 15h3"/>
+            </symbol>
+            <symbol id="ic-bed" viewBox="0 0 24 24">
+                <path d="M3 18v-6a3 3 0 013-3h12a3 3 0 013 3v6M3 18h18M3 18v1.5M21 18v1.5M6 12V9.75A1.5 1.5 0 017.5 8.25h3A1.5 1.5 0 0112 9.75V12"/>
+            </symbol>
+            <symbol id="ic-heart" viewBox="0 0 24 24">
+                <path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"/>
+            </symbol>
+            <symbol id="ic-shield" viewBox="0 0 24 24">
+                <path d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/>
+            </symbol>
+            <symbol id="ic-search" viewBox="0 0 24 24">
+                <path d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
+            </symbol>
+            <symbol id="ic-warning" viewBox="0 0 24 24">
+                <path d="M12 9v3.75m9.303 3.376c.866 1.5-.217 3.374-1.948 3.374H4.645c-1.73 0-2.813-1.874-1.948-3.374L10.652 3.622c.866-1.5 3.03-1.5 3.896 0l7.755 12.502zM12 15.75h.007v.008H12v-.008z"/>
+            </symbol>
+            <symbol id="ic-target" viewBox="0 0 24 24">
+                <path d="M7.5 3.75H6A2.25 2.25 0 003.75 6v1.5M16.5 3.75H18A2.25 2.25 0 0120.25 6v1.5m0 9V18A2.25 2.25 0 0118 20.25h-1.5m-9 0H6A2.25 2.25 0 013.75 18v-1.5M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </symbol>
+            <symbol id="ic-send" viewBox="0 0 24 24">
+                <path d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/>
+            </symbol>
+            <symbol id="ic-table" viewBox="0 0 24 24">
+                <path d="M3.75 5.25h16.5v13.5H3.75zM3.75 10.5h16.5M3.75 15h16.5M9.75 5.25v13.5M15 5.25v13.5"/>
+            </symbol>
+            <symbol id="ic-doc" viewBox="0 0 24 24">
+                <path d="M6.75 3.75h7.5l4.5 4.5v11.25a1.5 1.5 0 01-1.5 1.5H6.75a1.5 1.5 0 01-1.5-1.5V5.25a1.5 1.5 0 011.5-1.5z"/>
+                <path d="M14.25 3.75v4.5h4.5M9 13.5h6M9 16.5h6"/>
+            </symbol>
+            <symbol id="ic-phone" viewBox="0 0 24 24">
+                <path d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106a1.125 1.125 0 00-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z"/>
+            </symbol>
+            <symbol id="ic-star" viewBox="0 0 24 24">
+                <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 21.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/>
+            </symbol>
+            <symbol id="ic-lock" viewBox="0 0 24 24">
+                <path d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/>
+            </symbol>
+        </defs>
+    </svg>
 
     <!-- Header Navigation -->
     <header class="bg-white border-b border-slate-200 px-3 sm:px-4 pt-[max(0.625rem,env(safe-area-inset-top))] pb-2.5 sm:pb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 shadow-sm z-20 flex-shrink-0">
@@ -135,12 +209,12 @@
         <div class="flex items-center gap-1.5 sm:gap-2 ml-auto">
             <a href="{{ route('dashboard') }}" title="Dashboard"
                class="px-2.5 sm:px-3.5 py-1.5 sm:py-2 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center gap-1.5 transition focus:outline-none focus:ring-2 focus:ring-slate-300">
-                <span>📊</span>
+                <svg class="icon w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0"><use href="#ic-chart"/></svg>
                 <span class="hidden sm:inline">Dashboard</span>
             </a>
             <a href="{{ route('faskes.index') }}" title="Kelola Data Faskes"
                class="px-2.5 sm:px-3.5 py-1.5 sm:py-2 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center gap-1.5 transition focus:outline-none focus:ring-2 focus:ring-slate-300">
-                <span>📋</span>
+                <svg class="icon w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0"><use href="#ic-clipboard"/></svg>
                 <span class="hidden sm:inline">Kelola Data Faskes</span>
             </a>
             <button @click="sidebarOpen = !sidebarOpen"
@@ -167,8 +241,8 @@
             <div class="p-3 border-b border-slate-200 bg-slate-50/90 flex-shrink-0 space-y-2">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-2">
-                        <span class="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs flex-shrink-0">
-                            🗺️
+                        <span class="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center flex-shrink-0">
+                            <svg class="icon w-4 h-4"><use href="#ic-map"/></svg>
                         </span>
                         <h2 class="text-sm font-bold text-slate-800">Panel Kontrol Spasial</h2>
                     </div>
@@ -186,7 +260,7 @@
                             @click="activeTab = 'filter'"
                             :class="activeTab === 'filter' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'"
                             class="py-2 px-2 sm:px-3 rounded-lg transition flex items-center justify-center gap-1 sm:gap-1.5 focus:outline-none">
-                        <span>🎛️</span>
+                        <svg class="icon w-3.5 h-3.5 flex-shrink-0"><use href="#ic-bolt"/></svg>
                         <span class="truncate">Filter Atribut</span>
                         <span class="ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold flex-shrink-0"
                               :class="activeFilterCount() > 0 ? 'bg-blue-600 text-white' : 'bg-slate-300 text-slate-700'"
@@ -196,7 +270,7 @@
                             @click="activeTab = 'event'"
                             :class="activeTab === 'event' ? 'bg-white text-red-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'"
                             class="py-2 px-2 sm:px-3 rounded-lg transition flex items-center justify-center gap-1 sm:gap-1.5 focus:outline-none">
-                        <span>📍</span>
+                        <svg class="icon w-3.5 h-3.5 flex-shrink-0"><use href="#ic-pin"/></svg>
                         <span class="truncate">Analisis Event</span>
                         <template x-if="hasilAnalisis && hasilAnalisis.length > 0">
                             <span class="ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-red-600 text-white flex-shrink-0"
@@ -238,7 +312,7 @@
                 <div class="bg-white rounded-xl p-3.5 border border-slate-200 shadow-sm space-y-2.5">
                     <div class="flex items-center justify-between border-b border-slate-100 pb-2">
                         <label class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                            <span>🏥</span>
+                            <svg class="icon w-4 h-4 text-slate-600"><use href="#ic-hospital"/></svg>
                             <span>Pilihan Jenis Faskes</span>
                         </label>
                         <div class="space-x-1 text-[11px] flex-shrink-0">
@@ -302,7 +376,7 @@
                 <!-- 2. Filter Spesifik (Atribut Child Tables via Eloquent whereHas) -->
                 <div class="bg-white rounded-xl p-3.5 border border-slate-200 shadow-sm space-y-2.5">
                     <label class="text-xs font-bold text-slate-800 flex items-center gap-1.5 border-b border-slate-100 pb-2">
-                        <span>⚡</span>
+                        <svg class="icon w-4 h-4 text-slate-600"><use href="#ic-bolt"/></svg>
                         <span>Filter Spesifik Layanan & Fasilitas</span>
                     </label>
 
@@ -311,7 +385,7 @@
                         <label class="flex items-center justify-between gap-2 p-2 rounded-lg border border-slate-200 hover:bg-amber-50/50 cursor-pointer transition"
                                :class="filterAmbulans ? 'bg-amber-50 border-amber-300' : 'bg-white'">
                             <div class="flex items-center gap-2.5 min-w-0">
-                                <span class="text-base flex-shrink-0">🚑</span>
+                                <svg class="icon w-5 h-5 text-amber-600 flex-shrink-0"><use href="#ic-medical"/></svg>
                                 <div class="min-w-0">
                                     <div class="font-bold text-slate-800">Memiliki Ambulans Gadar / Transport</div>
                                     <div class="text-[10px] text-slate-500">RS, Puskesmas, atau Klinik yang siaga ambulans</div>
@@ -325,7 +399,7 @@
                         <label class="flex items-center justify-between gap-2 p-2 rounded-lg border border-slate-200 hover:bg-emerald-50/50 cursor-pointer transition"
                                :class="filterBpjs ? 'bg-emerald-50 border-emerald-300' : 'bg-white'">
                             <div class="flex items-center gap-2.5 min-w-0">
-                                <span class="text-base flex-shrink-0">💳</span>
+                                <svg class="icon w-5 h-5 text-emerald-600 flex-shrink-0"><use href="#ic-card"/></svg>
                                 <div class="min-w-0">
                                     <div class="font-bold text-slate-800">Melayani Pasien BPJS Kesehatan</div>
                                     <div class="text-[10px] text-slate-500">Puskesmas, RS, dan Klinik Pratama mitra BPJS</div>
@@ -339,7 +413,7 @@
                         <label class="flex items-center justify-between gap-2 p-2 rounded-lg border border-slate-200 hover:bg-blue-50/50 cursor-pointer transition"
                                :class="filterRawatInap ? 'bg-blue-50 border-blue-300' : 'bg-white'">
                             <div class="flex items-center gap-2.5 min-w-0">
-                                <span class="text-base flex-shrink-0">🛏️</span>
+                                <svg class="icon w-5 h-5 text-blue-600 flex-shrink-0"><use href="#ic-bed"/></svg>
                                 <div class="min-w-0">
                                     <div class="font-bold text-slate-800">Memiliki Bed Rawat Inap</div>
                                     <div class="text-[10px] text-slate-500">RS, Puskesmas Rawat Inap, atau Klinik berbed</div>
@@ -353,7 +427,7 @@
                         <label class="flex items-center justify-between gap-2 p-2 rounded-lg border border-slate-200 hover:bg-rose-50/50 cursor-pointer transition"
                                :class="filterPoned ? 'bg-rose-50 border-rose-300' : 'bg-white'">
                             <div class="flex items-center gap-2.5 min-w-0">
-                                <span class="text-base flex-shrink-0">👶</span>
+                                <svg class="icon w-5 h-5 text-rose-600 flex-shrink-0"><use href="#ic-heart"/></svg>
                                 <div class="min-w-0">
                                     <div class="font-bold text-slate-800">Status PONED (Khusus Puskesmas)</div>
                                     <div class="text-[10px] text-slate-500">Pelayanan Obstetri Neonatal Emergensi Dasar</div>
@@ -368,7 +442,7 @@
                 <!-- Layer Batas Wilayah Kabupaten (Garis Pembatas Non-Interaktif) -->
                 <div class="bg-white rounded-xl p-3 border border-slate-200 shadow-sm flex items-center justify-between gap-2 text-xs">
                     <div class="flex items-center gap-2.5 min-w-0">
-                        <span class="text-base flex-shrink-0">🗺️</span>
+                        <svg class="icon w-5 h-5 text-slate-600 flex-shrink-0"><use href="#ic-map"/></svg>
                         <div class="min-w-0">
                             <div class="font-bold text-slate-800">Layer Batas Kabupaten</div>
                             <div class="text-[10px] text-slate-500">Garis batas luar Kab. Banyumas saja (tanpa batas kecamatan)</div>
@@ -390,7 +464,7 @@
                 <div class="bg-white rounded-xl p-3.5 border border-slate-200 shadow-sm space-y-3">
                     <div class="flex items-center justify-between border-b border-slate-100 pb-2">
                         <label class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                            <span>📍</span>
+                            <svg class="icon w-4 h-4 text-slate-600"><use href="#ic-pin"/></svg>
                             <span>Filter Wilayah Kecamatan</span>
                         </label>
                         <template x-if="selectedKecamatan">
@@ -457,14 +531,22 @@
                                 </div>
                                 <div class="flex flex-col items-end gap-1 flex-shrink-0">
                                     <template x-if="faskes.detail && ((parseInt(faskes.detail.ambulans_transport) || 0) + (parseInt(faskes.detail.ambulans_roda_dua) || 0) + (parseInt(faskes.detail.ambulans_gadar) || 0) + (parseInt(faskes.detail.ambulans) || 0)) > 0">
-                                        <span class="px-1.5 py-0.5 bg-amber-50 text-amber-800 border border-amber-200 rounded text-[9px] font-bold whitespace-nowrap"
-                                              x-text="`🚑 ${((parseInt(faskes.detail.ambulans_transport) || 0) + (parseInt(faskes.detail.ambulans_roda_dua) || 0) + (parseInt(faskes.detail.ambulans_gadar) || 0) + (parseInt(faskes.detail.ambulans) || 0))} Amb`"></span>
+                                        <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-amber-50 text-amber-800 border border-amber-200 rounded text-[9px] font-bold whitespace-nowrap">
+                                            <svg class="icon w-2.5 h-2.5 flex-shrink-0"><use href="#ic-medical"/></svg>
+                                            <span x-text="`${((parseInt(faskes.detail.ambulans_transport) || 0) + (parseInt(faskes.detail.ambulans_roda_dua) || 0) + (parseInt(faskes.detail.ambulans_gadar) || 0) + (parseInt(faskes.detail.ambulans) || 0))} Amb`"></span>
+                                        </span>
                                     </template>
                                     <template x-if="faskes.detail && faskes.detail.poned === 'Ya PONED'">
-                                        <span class="px-1.5 py-0.5 bg-rose-50 text-rose-700 border border-rose-200 rounded text-[9px] font-bold whitespace-nowrap">PONED</span>
+                                        <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-rose-50 text-rose-700 border border-rose-200 rounded text-[9px] font-bold whitespace-nowrap">
+                                            <svg class="icon w-2.5 h-2.5 flex-shrink-0"><use href="#ic-heart"/></svg>
+                                            <span>PONED</span>
+                                        </span>
                                     </template>
                                     <template x-if="faskes.detail && faskes.detail.ponek === 'Ya PONEK'">
-                                        <span class="px-1.5 py-0.5 bg-purple-50 text-purple-700 border border-purple-200 rounded text-[9px] font-bold whitespace-nowrap">PONEK</span>
+                                        <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-purple-50 text-purple-700 border border-purple-200 rounded text-[9px] font-bold whitespace-nowrap">
+                                            <svg class="icon w-2.5 h-2.5 flex-shrink-0"><use href="#ic-shield"/></svg>
+                                            <span>PONEK</span>
+                                        </span>
                                     </template>
                                 </div>
                             </div>
@@ -472,7 +554,7 @@
 
                         <template x-if="faskesList.length === 0">
                             <div class="p-6 text-center border border-dashed border-slate-200 rounded-xl bg-white text-slate-400 text-xs">
-                                <span class="text-2xl block mb-1">🔍</span>
+                                <svg class="icon w-8 h-8 mx-auto mb-1 text-slate-300"><use href="#ic-search"/></svg>
                                 <p class="font-bold">Tidak ada faskes cocok</p>
                                 <p class="mt-0.5 text-slate-500">Coba ubah kombinasi filter atau jenis faskes.</p>
                             </div>
@@ -488,12 +570,15 @@
                 <div class="bg-slate-50 rounded-xl p-3.5 border border-slate-200 space-y-3">
                     <div>
                         <label class="block text-xs font-semibold text-slate-700 mb-1">Titik Koordinat Event</label>
+
+                        <!-- Notifikasi sementara: titik terkunci, harus dihapus dulu untuk memindahkan -->
                         <template x-if="mapLockedNotice">
-    <div class="bg-slate-800 text-white text-[11px] px-3 py-2 rounded-lg mb-2 flex items-center gap-1.5">
-        <span>🔒</span>
-        <span>Titik terkunci — hapus dulu untuk memindahkan</span>
-    </div>
-</template>
+                            <div class="bg-slate-800 text-white text-[11px] px-3 py-2 rounded-lg mb-2 flex items-center gap-1.5">
+                                <svg class="icon w-3.5 h-3.5 flex-shrink-0"><use href="#ic-lock"/></svg>
+                                <span>Titik terkunci &mdash; hapus dulu untuk memindahkan</span>
+                            </div>
+                        </template>
+
                         <template x-if="eventLat && eventLng">
                             <div class="flex items-center justify-between gap-2 bg-white px-3 py-2 rounded-lg border border-slate-200 text-xs font-mono">
                                 <span class="text-slate-700 truncate" x-text="`${eventLat.toFixed(6)}, ${eventLng.toFixed(6)}`"></span>
@@ -502,13 +587,13 @@
                         </template>
                         <template x-if="!eventLat || !eventLng">
                             <div class="bg-amber-50 border border-amber-200 text-amber-800 text-xs px-3 py-2 rounded-lg flex items-center gap-2">
-                                <span>⚠️</span>
+                                <svg class="icon w-4 h-4 flex-shrink-0"><use href="#ic-warning"/></svg>
                                 <span>Klik pada peta atau tombol di bawah untuk set titik event.</span>
                             </div>
                         </template>
                         <button @click="getCurrentLocation()"
                                 class="mt-2 w-full py-1.5 px-3 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition focus:outline-none focus:ring-2 focus:ring-blue-300">
-                            <span>🎯</span>
+                            <svg class="icon w-4 h-4"><use href="#ic-target"/></svg>
                             <span>Gunakan Lokasi GPS Saya</span>
                         </button>
                     </div>
@@ -546,7 +631,7 @@
                             </svg>
                         </template>
                         <template x-if="!isLoading">
-                            <span>🚀</span>
+                            <svg class="icon w-4 h-4"><use href="#ic-send"/></svg>
                         </template>
                         <span x-text="isLoading ? 'Menghitung Rute PostGIS & OSRM...' : 'Cari Faskes Terdekat'"></span>
                     </button>
@@ -565,7 +650,7 @@
                     <!-- Kosong / Belum Dicari -->
                     <template x-if="!hasSearched">
                         <div class="text-center py-8 text-slate-400 border border-dashed border-slate-200 rounded-xl bg-white">
-                            <span class="text-3xl block mb-2">🗺️</span>
+                            <svg class="icon w-10 h-10 mx-auto mb-2 text-slate-300"><use href="#ic-map"/></svg>
                             <p class="text-xs px-4">Klik titik event di peta, lalu tekan <b>Cari Faskes Terdekat</b>.</p>
                         </div>
                     </template>
@@ -584,12 +669,12 @@
                         <div class="flex items-center gap-2 pb-1">
                             <a :href="getExportUrl('excel')" target="_blank"
                                class="flex-1 py-1.5 px-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg text-xs transition flex items-center justify-center gap-1.5 shadow-sm">
-                                <span>📊</span>
+                                <svg class="icon w-4 h-4"><use href="#ic-table"/></svg>
                                 <span>Export Excel</span>
                             </a>
                             <a :href="getExportUrl('pdf')" target="_blank"
                                class="flex-1 py-1.5 px-3 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-lg text-xs transition flex items-center justify-center gap-1.5 shadow-sm">
-                                <span>📄</span>
+                                <svg class="icon w-4 h-4"><use href="#ic-doc"/></svg>
                                 <span>Export PDF</span>
                             </a>
                         </div>
@@ -604,8 +689,9 @@
                                     <div class="min-w-0">
                                         <div class="flex items-center flex-wrap gap-1.5 mb-1">
                                             <template x-if="index === 0">
-                                                <span class="text-[10px] uppercase font-black px-1.5 py-0.5 rounded bg-emerald-500 text-white whitespace-nowrap">
-                                                    ★ Rute Terbaik
+                                                <span class="inline-flex items-center gap-0.5 text-[10px] uppercase font-black px-1.5 py-0.5 rounded bg-emerald-500 text-white whitespace-nowrap">
+                                                    <svg class="icon-solid w-2.5 h-2.5"><use href="#ic-star"/></svg>
+                                                    Rute Terbaik
                                                 </span>
                                             </template>
                                             <span class="text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap"
@@ -638,7 +724,7 @@
                                 <!-- Peringatan kalau OSRM gagal menghitung rute jalan untuk faskes ini -->
                                 <template x-if="!item.rute_tersedia">
                                     <div class="bg-amber-50 border border-amber-200 text-amber-700 rounded-lg px-2.5 py-1.5 text-[10px] flex items-start gap-1.5">
-                                        <span class="flex-shrink-0">⚠️</span>
+                                        <svg class="icon w-4 h-4 flex-shrink-0"><use href="#ic-warning"/></svg>
                                         <span x-text="item.pesan_rute || 'Rute jalan tidak dapat dihitung untuk faskes ini. Jarak lurus tetap akurat, tapi estimasi jalan/waktu tidak tersedia.'"></span>
                                     </div>
                                 </template>
@@ -708,6 +794,10 @@
                 radiusKm: 5.0,
                 activeFaskesId: null,
 
+                // Notifikasi "titik terkunci" saat user klik peta padahal titik event sudah ada
+                mapLockedNotice: false,
+                _lockNoticeTimeout: null,
+
                 // Layer Groups Leaflet
                 kabupatenLayerGroup: null,
                 kabupatenGeoJsonLayer: null,
@@ -755,38 +845,54 @@
                     // Muat Batas Luar Kabupaten Banyumas (Non-Interaktif)
                     this.loadKabupatenBoundary();
 
-                    // Listener Klik Peta untuk menentukan Titik Event
-                  this.map.on('click', (e) => {
-    if (this.eventLat !== null && this.eventLng !== null) {
-        this.mapLockedNotice = true;
-        setTimeout(() => { this.mapLockedNotice = false; }, 1800);
-        return;
-    }
-    this.setEventPoint(e.latlng.lat, e.latlng.lng);
-});
+                    // Listener Klik Peta untuk menentukan Titik Event.
+                    // FIX BUG: sebelumnya blok ini terdaftar DUA KALI (duplicate listener) sehingga
+                    // setiap klik memicu kedua handler sekaligus (setEventPoint bisa terpanggil 2x,
+                    // dan notifikasi kunci bisa tidak konsisten muncul). Digabung jadi satu di sini.
+                    // Perilaku "kunci titik sampai dihapus manual" tetap dipertahankan sesuai maksud awal.
+                    // PENTING: klik di peta HANYA dipakai untuk set titik event — tidak pernah
+                    // mengubah sidebarOpen. Penutupan panel tetap murni lewat tombol panel/X.
+                    this.map.on('click', (e) => {
+                        if (this.eventLat !== null && this.eventLng !== null) {
+                            this.mapLockedNotice = true;
+                            clearTimeout(this._lockNoticeTimeout);
+                            this._lockNoticeTimeout = setTimeout(() => {
+                                this.mapLockedNotice = false;
+                            }, 1800);
+                            return;
+                        }
+                        this.setEventPoint(e.latlng.lat, e.latlng.lng);
+                    });
 
                     // Muat Semua Data Faskes ke Peta
                     this.loadInitialFaskes();
 
-                    this.map.on('click', (e) => {
-    // FIX: kalau titik event sudah ada, abaikan klik peta lain —
-    // harus dihapus dulu dari panel (Tab Analisis Event > tombol "Hapus")
-    // supaya titik nggak ketuker/pindah gara-gara kepencet nggak sengaja.
-    if (this.eventLat !== null && this.eventLng !== null) {
-        return;
-    }
-    this.setEventPoint(e.latlng.lat, e.latlng.lng);
-});
                     // Listener Kustom untuk 'Jadikan Titik Event' dari Popup Faskes
                     window.addEventListener('set-event-here', (e) => {
-    if (this.eventLat !== null && this.eventLng !== null) return; // opsional: kunci juga di sini
-    this.setEventPoint(e.detail.lat, e.detail.lng);
-    this.activeTab = 'event';
-});
+                        if (this.eventLat !== null && this.eventLng !== null) return; // konsisten dengan aturan kunci di atas
+                        this.setEventPoint(e.detail.lat, e.detail.lng);
+                        this.activeTab = 'event';
+                    });
 
                     // Bersihkan floating overlay/badge liar yang mungkin tertinggal di atas
                     // kanvas peta dari inisialisasi sebelumnya. Hanya elemen di luar 4 pojok leaflet yang dihapus.
                     this.cleanupStrayMapOverlays();
+
+                    // FIX: Peta "full screen" saat panel ditutup.
+                    // Saat sidebarOpen berubah (HANYA dipicu tombol panel/X di atas — bukan hover/klik peta),
+                    // lebar div#map ikut berubah karena aside lg:relative keluar-masuk flex layout.
+                    // Leaflet menyimpan ukuran kanvas secara internal dan TIDAK otomatis tahu kalau
+                    // kontainernya baru saja berubah ukuran akibat transisi CSS, sehingga peta bisa
+                    // terlihat "gepeng"/tidak penuh atau menyisakan area abu-abu sampai ada resize manual.
+                    // this.$watch di sini menunggu transisi (duration-300 di elemen <aside>) selesai,
+                    // lalu memaksa Leaflet menghitung ulang ukuran kontainernya via invalidateSize().
+                    this.$watch('sidebarOpen', () => {
+                        setTimeout(() => {
+                            if (this.map) {
+                                this.map.invalidateSize({ animate: true });
+                            }
+                        }, 320); // sedikit lebih lama dari durasi transisi (300ms) di kelas Tailwind aside
+                    });
                 },
 
                 // Hapus elemen apapun yang menempel langsung di #map tapi bukan bagian dari
@@ -1028,54 +1134,58 @@
                     }
                 },
 
-                // Menetapkan Titik Event Baru
+                // Menetapkan Titik Event Baru. Marker di-reuse (bukan clearLayers()+recreate) supaya
+                // transisi antar titik tetap mulus dan tidak memicu race condition animasi Leaflet.
                 setEventPoint(lat, lng) {
-    if (!this.map) return;
-    this.map.closePopup();
+                    if (!this.map) return;
+                    this.map.closePopup();
 
-    this.eventLat = lat;
-    this.eventLng = lng;
-    this.sidebarOpen = true;
-    this.activeTab = 'event';
+                    this.eventLat = lat;
+                    this.eventLng = lng;
+                    this.sidebarOpen = true;
+                    this.activeTab = 'event';
 
-    const popupHtml = `
-        <div class="text-xs p-1">
-            <b class="text-red-600">Titik Event / Kejadian</b><br>
-            Lat: ${lat.toFixed(6)}<br>
-            Lng: ${lng.toFixed(6)}<br>
-            <span class="text-[10px] text-slate-400">Hapus titik di panel untuk memindahkan</span>
-        </div>
-    `;
+                    const popupHtml = `
+                        <div class="text-xs p-1">
+                            <b class="text-red-600">Titik Event / Kejadian</b><br>
+                            Lat: ${lat.toFixed(6)}<br>
+                            Lng: ${lng.toFixed(6)}<br>
+                            <span class="text-[10px] text-slate-400">Hapus titik di panel untuk memindahkan</span>
+                        </div>
+                    `;
 
-    if (this.eventMarker) {
-        // Reuse marker yang sudah ada — jangan clearLayers()+recreate (lihat fix sebelumnya)
-        this.eventMarker.setLatLng([lat, lng]);
-        this.eventMarker.setPopupContent(popupHtml);
-    } else {
-        const eventIcon = L.divIcon({
-            className: 'event-pulse',
-            html: `
-                <div style="background-color: #ef4444; width: 32px; height: 32px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(239,68,68,0.5); border: 2px solid #ffffff;">
-                    <span style="transform: rotate(45deg); font-size: 15px; color: white;">📍</span>
-                </div>
-            `,
-            iconSize: [32, 32],
-            iconAnchor: [16, 32],
-            popupAnchor: [0, -32]
-        });
+                    if (this.eventMarker) {
+                        // Reuse marker yang sudah ada — jangan clearLayers()+recreate.
+                        this.eventMarker.setLatLng([lat, lng]);
+                        this.eventMarker.setPopupContent(popupHtml);
+                    } else {
+                        // Ikon marker event pakai SVG (bukan emoji), tetap dari sprite yang sama.
+                        const eventIcon = L.divIcon({
+                            className: 'event-pulse',
+                            html: `
+                                <div style="background-color: #ef4444; width: 32px; height: 32px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(239,68,68,0.5); border: 2px solid #ffffff;">
+                                    <svg style="transform: rotate(45deg); width: 16px; height: 16px;" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                </div>
+                            `,
+                            iconSize: [32, 32],
+                            iconAnchor: [16, 32],
+                            popupAnchor: [0, -32]
+                        });
 
-        // FIX: draggable dihapus. Titik event sekarang cuma bisa dipindah
-        // dengan alur eksplisit: hapus dulu (resetEvent) lalu klik titik baru —
-        // supaya nggak ada risiko kepencet/kegeser nggak sengaja.
-        this.eventMarker = L.marker([lat, lng], {
-            icon: eventIcon
-        }).addTo(this.eventLayerGroup);
+                        // Titik event tidak lagi draggable — perpindahan titik dilakukan secara eksplisit:
+                        // hapus dulu (resetEvent) lalu klik titik baru, supaya tidak ada risiko tergeser
+                        // tanpa sengaja saat peta sedang dipakai untuk kondisi darurat.
+                        this.eventMarker = L.marker([lat, lng], {
+                            icon: eventIcon
+                        }).addTo(this.eventLayerGroup);
 
-        this.eventMarker.bindPopup(popupHtml);
-    }
+                        this.eventMarker.bindPopup(popupHtml);
+                    }
 
-    this.updateRadiusCircle();
-},
+                    this.updateRadiusCircle();
+                },
 
                 // Update Lingkaran Radius Pencarian
                 updateRadiusCircle() {
@@ -1133,7 +1243,7 @@
                     if (this.filterRawatInap) params.append('has_rawat_inap', '1');
                     if (this.filterPoned) params.append('has_poned', '1');
 
-                    // FIX BUG: pakai helper url() Laravel (bukan path hardcode) supaya tetap benar
+                    // Pakai helper url() Laravel (bukan path hardcode) supaya tetap benar
                     // kalau aplikasi di-deploy di subfolder / base path selain root domain.
                     fetch(`{{ url("/api/analisis-event") }}?${params.toString()}`)
                         .then(res => res.json())
@@ -1254,10 +1364,13 @@
                     });
                 },
 
-                // Popup HTML Faskes
+                // Popup HTML Faskes (string HTML mentah yang dirender Leaflet, jadi boleh pakai <svg><use></use></svg>
+                // yang menunjuk ke sprite ikon di awal <body> — tidak lewat x-text sehingga aman disisipi markup)
                 createFaskesPopupHtml(faskes) {
                     const jenisText = this.formatJenis(faskes.jenis_faskes);
                     const detail = faskes.detail || {};
+                    const icon = (name, cls = 'w-3 h-3') =>
+                        `<svg class="icon ${cls} inline-block align-[-2px]"><use href="#${name}"/></svg>`;
 
                     let badgeHtml = '';
                     const totalAmbulans = (parseInt(detail.ambulans_transport) || 0) +
@@ -1266,23 +1379,23 @@
                                           (parseInt(detail.ambulans) || 0);
 
                     if (totalAmbulans > 0) {
-                        badgeHtml += `<span class="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-800 mr-1">🚑 ${totalAmbulans} Ambulans</span>`;
+                        badgeHtml += `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-800 mr-1">${icon('ic-medical')} ${totalAmbulans} Ambulans</span>`;
                     }
                     if (detail.poned === 'Ya PONED') {
-                        badgeHtml += '<span class="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-100 text-rose-800 mr-1">👶 PONED</span>';
+                        badgeHtml += `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-100 text-rose-800 mr-1">${icon('ic-heart')} PONED</span>`;
                     }
                     if (detail.ponek === 'Ya PONEK') {
-                        badgeHtml += '<span class="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-100 text-purple-800 mr-1">🏥 PONEK</span>';
+                        badgeHtml += `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-100 text-purple-800 mr-1">${icon('ic-shield')} PONEK</span>`;
                     }
                     if (detail.mampu_salin === 'Ya') {
                         badgeHtml += '<span class="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold bg-pink-100 text-pink-800 mr-1">Mampu Salin</span>';
                     }
                     if (detail.bpjs === true || detail.bpjs === 1 || detail.bpjs === 'Ya') {
-                        badgeHtml += '<span class="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800 mr-1">💳 BPJS</span>';
+                        badgeHtml += `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800 mr-1">${icon('ic-card')} BPJS</span>`;
                     }
                     if (detail.jumlah_tempat_tidur > 0 || detail.bed_rawat_inap > 0) {
                         const bed = detail.jumlah_tempat_tidur || detail.bed_rawat_inap;
-                        badgeHtml += `<span class="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-100 text-blue-800 mr-1">🛏️ ${bed} Bed</span>`;
+                        badgeHtml += `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-100 text-blue-800 mr-1">${icon('ic-bed')} ${bed} Bed</span>`;
                     }
                     if (detail.is_pustu === 'Ya') {
                         badgeHtml += '<span class="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-800 mr-1">Pustu</span>';
@@ -1298,12 +1411,12 @@
                             </div>
                             <h4 class="font-bold text-slate-900 text-sm leading-tight">${faskes.nama}</h4>
                             <p class="text-slate-500 text-[11px] mt-1">${faskes.alamat || '-'}</p>
-                            ${faskes.nomor_telepon ? `<p class="text-slate-600 text-[11px] mt-1">📞 ${faskes.nomor_telepon}</p>` : ''}
+                            ${faskes.nomor_telepon ? `<p class="text-slate-600 text-[11px] mt-1 flex items-center gap-1">${icon('ic-phone', 'w-3.5 h-3.5')} ${faskes.nomor_telepon}</p>` : ''}
                             ${badgeHtml ? `<div class="mt-2 flex flex-wrap gap-1">${badgeHtml}</div>` : ''}
                             <hr class="my-2 border-slate-100">
                             <button onclick="window.dispatchEvent(new CustomEvent('set-event-here', {detail: {lat: ${faskes.latitude}, lng: ${faskes.longitude}}}))"
-                                    class="w-full text-center py-1 rounded bg-blue-50 text-blue-600 hover:bg-blue-100 font-semibold text-[11px] transition">
-                                📍 Jadikan Titik Event
+                                    class="w-full text-center py-1 rounded bg-blue-50 text-blue-600 hover:bg-blue-100 font-semibold text-[11px] transition flex items-center justify-center gap-1">
+                                ${icon('ic-pin', 'w-3.5 h-3.5')} Jadikan Titik Event
                             </button>
                         </div>
                     `;
