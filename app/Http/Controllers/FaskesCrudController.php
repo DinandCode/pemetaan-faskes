@@ -163,8 +163,10 @@ class FaskesCrudController extends Controller
             'desa'          => 'nullable|string|max:255',
             'latitude'      => 'required|numeric|between:-90,90',
             'longitude'     => 'required|numeric|between:-180,180',
-            'nomor_telepon' => 'nullable|string|max:50',
-            'status'        => 'required|in:aktif,nonaktif',
+            'nomor_telepon'         => 'nullable|string|max:50',
+            'status'                => 'required|in:aktif,nonaktif',
+            'rs_ambulans_transport' => 'nullable|integer|min:0',
+            'rs_ambulans_gadar'     => 'nullable|integer|min:0',
         ]);
     }
 

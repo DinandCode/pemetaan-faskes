@@ -271,60 +271,118 @@
                                 </td>
 
                                 <!-- Spesifikasi Detail -->
+                                {{-- Setiap jenis faskes menyimpan detailnya di tabel child masing-masing (lihat
+                                     FaskesCrudController::saveChildDetail). Blok di bawah sekarang menjumlahkan
+                                     SEMUA kolom ambulans yang relevan per jenis (mis. puskesmas: ambulans_transport
+                                     + ambulans_roda_dua; RS: ambulans_transport + ambulans_gadar) dan menampilkannya
+                                     sebagai angka, bukan cuma badge ya/tidak seperti sebelumnya. Field lain yang
+                                     tadinya tersimpan tapi tidak pernah tampil (jumlah_sdm, wilayah, ponek,
+                                     kepemilikan, is_pustu/is_pkd) juga sekarang ditampilkan. --}}
                                 <td class="py-3 px-4 text-[11px] align-top">
+                                    @php
+                                        $icAmbulans = '<svg class="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.83H14.25M16.5 18.75h-2.25m0-11.25h-8.25a1.125 1.125 0 00-1.125 1.125v8.25c0 .621.504 1.125 1.125 1.125h1.5m5.25-10.5V18.75m0-11.25H12" /></svg>';
+                                    @endphp
+
                                     @if($faskes->jenis_faskes === 'puskesmas' && $faskes->puskesmasDetail)
-                                        <div class="flex flex-wrap gap-1">
-                                            <span class="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 font-medium">{{ ucfirst(str_replace('_', ' ', $faskes->puskesmasDetail->kategori)) }}</span>
-                                            @if($faskes->puskesmasDetail->poned)
+                                        @php
+                                            $pkm = $faskes->puskesmasDetail;
+                                            $ambulansPkm = (int) $pkm->ambulans_transport + (int) $pkm->ambulans_roda_dua;
+                                        @endphp
+                                        <div class="flex flex-wrap gap-1 mb-1">
+                                            <span class="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 font-medium">{{ ucfirst(str_replace('_', ' ', $pkm->kategori)) }}</span>
+                                            @if($pkm->poned === 'Ya PONED')
                                                 <span class="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded font-medium">PONED</span>
                                             @endif
-                                            @if($faskes->puskesmasDetail->jumlah_tempat_tidur > 0)
+                                            @if($pkm->jumlah_tempat_tidur > 0)
                                                 <span class="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded font-medium inline-flex items-center gap-1">
                                                     <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 18v-8.25A2.25 2.25 0 016 7.5h12a2.25 2.25 0 012.25 2.25V18M3.75 18h16.5M3.75 18v1.5M20.25 18v1.5M6.75 7.5V6a1.5 1.5 0 011.5-1.5h7.5A1.5 1.5 0 0117.25 6v1.5" /></svg>
-                                                    {{ $faskes->puskesmasDetail->jumlah_tempat_tidur }} Bed
+                                                    {{ $pkm->jumlah_tempat_tidur }} Bed
                                                 </span>
                                             @endif
-                                            @if($faskes->puskesmasDetail->ambulans_transport)
-                                                <span class="px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded font-medium inline-flex items-center gap-1">
-                                                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.83H14.25M16.5 18.75h-2.25m0-11.25h-8.25a1.125 1.125 0 00-1.125 1.125v8.25c0 .621.504 1.125 1.125 1.125h1.5m5.25-10.5V18.75m0-11.25H12" /></svg>
-                                                    Ambulans
-                                                </span>
+                                            <span class="px-1.5 py-0.5 rounded font-medium inline-flex items-center gap-1 {{ $ambulansPkm > 0 ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-400' }}">
+                                                {!! $icAmbulans !!}
+                                                {{ $ambulansPkm }} Ambulans
+                                            </span>
+                                        </div>
+                                        <div class="text-slate-500 flex flex-wrap gap-x-2 gap-y-0.5 text-[10.5px]">
+                                            <span>SDM: {{ (int) $pkm->jumlah_sdm }}</span>
+                                            @if($pkm->wilayah)
+                                                <span>&bull; {{ ucfirst(str_replace('_', ' ', $pkm->wilayah)) }}</span>
                                             @endif
                                         </div>
+
                                     @elseif($faskes->jenis_faskes === 'rumah_sakit' && $faskes->rumahSakitDetail)
+                                        @php
+                                            $rs = $faskes->rumahSakitDetail;
+                                            $ambulansRs = (int) $rs->ambulans_transport + (int) $rs->ambulans_gadar;
+                                        @endphp
                                         <div class="space-y-1">
-                                            <div class="font-medium text-slate-700">{{ $faskes->rumahSakitDetail->kemampuan_pelayanan ?: 'Umum' }}</div>
-                                            @if($faskes->rumahSakitDetail->ambulans_gadar)
-                                                <span class="px-1.5 py-0.5 bg-red-100 text-red-700 rounded text-[10px] font-medium inline-flex items-center gap-1">
-                                                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.83H14.25M16.5 18.75h-2.25m0-11.25h-8.25a1.125 1.125 0 00-1.125 1.125v8.25c0 .621.504 1.125 1.125 1.125h1.5m5.25-10.5V18.75m0-11.25H12" /></svg>
-                                                    Gadar
+                                            <div class="font-medium text-slate-700">{{ $rs->kemampuan_pelayanan ?: 'Umum' }}</div>
+                                            <div class="flex flex-wrap gap-1">
+                                                @if($rs->ponek === 'Ya PONEK')
+                                                    <span class="px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded text-[10px] font-medium">PONEK</span>
+                                                @endif
+                                                <span class="px-1.5 py-0.5 rounded text-[10px] font-medium inline-flex items-center gap-1 {{ $ambulansRs > 0 ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-400' }}">
+                                                    {!! $icAmbulans !!}
+                                                    {{ $ambulansRs }} Ambulans
                                                 </span>
-                                            @endif
+                                            </div>
                                         </div>
+
                                     @elseif($faskes->jenis_faskes === 'klinik_pratama' && $faskes->klinikPratamaDetail)
+                                        @php $kp = $faskes->klinikPratamaDetail; @endphp
                                         <div class="space-y-1">
                                             <div class="flex flex-wrap gap-1">
-                                                @if($faskes->klinikPratamaDetail->bpjs)
+                                                @if($kp->bpjs)
                                                     <span class="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded font-medium">BPJS</span>
                                                 @endif
-                                                @if($faskes->klinikPratamaDetail->bed_rawat_inap > 0)
-                                                    <span class="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded font-medium">{{ $faskes->klinikPratamaDetail->bed_rawat_inap }} Bed</span>
+                                                @if($kp->bed_rawat_inap > 0)
+                                                    <span class="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded font-medium">{{ $kp->bed_rawat_inap }} Bed</span>
                                                 @endif
+                                                <span class="px-1.5 py-0.5 rounded font-medium inline-flex items-center gap-1 {{ $kp->ambulans_transport > 0 ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-400' }}">
+                                                    {!! $icAmbulans !!}
+                                                    {{ (int) $kp->ambulans_transport }} Ambulans
+                                                </span>
                                             </div>
-                                            <div class="text-slate-500 truncate max-w-[160px]">{{ $faskes->klinikPratamaDetail->jenis_layanan }}</div>
+                                            <div class="text-slate-500 truncate max-w-[160px]">{{ $kp->jenis_layanan ?: '-' }}</div>
+                                            <div class="text-slate-400 text-[10.5px]">SDM: {{ (int) $kp->jumlah_sdm }}</div>
                                         </div>
+
                                     @elseif($faskes->jenis_faskes === 'klinik_utama' && $faskes->klinikUtamaDetail)
+                                        @php $ku = $faskes->klinikUtamaDetail; @endphp
                                         <div class="space-y-1">
-                                            <span class="font-medium text-slate-700">{{ $faskes->klinikUtamaDetail->kepemilikan ?: 'Swasta' }}</span>
-                                            <div class="text-slate-500 truncate max-w-[160px]">{{ $faskes->klinikUtamaDetail->kemampuan_layanan }}</div>
+                                            <div class="flex flex-wrap gap-1 items-center">
+                                                <span class="font-medium text-slate-700">{{ $ku->kepemilikan ?: 'Swasta' }}</span>
+                                                <span class="px-1.5 py-0.5 rounded text-[10px] font-medium inline-flex items-center gap-1 {{ $ku->ambulans > 0 ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-400' }}">
+                                                    {!! $icAmbulans !!}
+                                                    {{ (int) $ku->ambulans }} Ambulans
+                                                </span>
+                                            </div>
+                                            <div class="text-slate-500 truncate max-w-[160px]">{{ $ku->kemampuan_layanan ?: '-' }}</div>
                                         </div>
+
                                     @elseif($faskes->jenis_faskes === 'laboratorium' && $faskes->laboratoriumDetail)
-                                        <div class="text-slate-500 truncate max-w-[160px]">{{ $faskes->laboratoriumDetail->jenis_layanan ?: 'Lab Umum' }}</div>
-                                    @elseif($faskes->jenis_faskes === 'upkdk' && $faskes->upkdkDetail)
-                                        <div class="flex flex-wrap items-center gap-1.5">
-                                            <span class="px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded font-semibold uppercase">{{ $faskes->upkdkDetail->jenis }}</span>
-                                            <span class="text-slate-500">SDM: {{ $faskes->upkdkDetail->jumlah_sdm }}</span>
+                                        @php $lab = $faskes->laboratoriumDetail; @endphp
+                                        <div class="space-y-0.5">
+                                            <div class="text-slate-500 truncate max-w-[160px]">{{ $lab->jenis_layanan ?: 'Lab Umum' }}</div>
+                                            @if($lab->kepemilikan)
+                                                <div class="text-slate-400 text-[10.5px]">{{ $lab->kepemilikan }}</div>
+                                            @endif
                                         </div>
+
+                                    @elseif($faskes->jenis_faskes === 'upkdk' && $faskes->upkdkDetail)
+                                        @php $upk = $faskes->upkdkDetail; @endphp
+                                        <div class="flex flex-wrap items-center gap-1.5">
+                                            <span class="px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded font-semibold uppercase">{{ $upk->jenis ?? 'UPKDK' }}</span>
+                                            @if($upk->is_pustu === 'Ya')
+                                                <span class="px-1.5 py-0.5 bg-orange-100 text-orange-700 rounded font-medium">Pustu</span>
+                                            @endif
+                                            @if($upk->is_pkd === 'Ya')
+                                                <span class="px-1.5 py-0.5 bg-teal-100 text-teal-700 rounded font-medium">PKD</span>
+                                            @endif
+                                            <span class="text-slate-500">SDM: {{ (int) $upk->jumlah_sdm }}</span>
+                                        </div>
+
                                     @else
                                         <span class="text-slate-400 italic">-</span>
                                     @endif

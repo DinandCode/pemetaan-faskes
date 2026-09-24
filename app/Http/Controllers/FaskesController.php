@@ -240,8 +240,10 @@ class FaskesController extends Controller
             'latitude'      => 'nullable|numeric|between:-90,90',
             'longitude'     => 'nullable|numeric|between:-180,180',
             'nomor_telepon' => 'nullable|string|max:255',
-            'status'        => 'nullable|string|in:aktif,nonaktif',
-            'detail'        => 'nullable|array',
+            'status'                    => 'nullable|string|in:aktif,nonaktif',
+            'detail'                    => 'nullable|array',
+            'detail.ambulans_transport' => 'nullable|integer|min:0',
+            'detail.ambulans_gadar'     => 'nullable|integer|min:0',
         ]);
 
         $detailData = $validated['detail'] ?? [];

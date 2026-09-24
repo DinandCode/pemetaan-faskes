@@ -39,8 +39,8 @@ class RumahSakitDetail extends Model
     protected function casts(): array
     {
         return [
-            'ambulans_transport' => 'boolean',
-            'ambulans_gadar' => 'boolean',
+            'ambulans_transport' => 'integer',
+            'ambulans_gadar' => 'integer',
             'masa_izin' => 'date',
         ];
     }
