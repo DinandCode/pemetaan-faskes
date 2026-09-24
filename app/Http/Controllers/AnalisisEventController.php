@@ -200,18 +200,23 @@ class AnalisisEventController extends Controller
         // FIX KRITIS: item dengan rute_tersedia === false SELALU didorong ke akhir daftar,
         // apa pun sort_by yang dipilih, karena datanya tidak valid dan tidak boleh dianggap
         // sebagai kandidat tercepat/terdekat.
-        $hasilSorted = match ($sortBy) {
-            'jarak_jalan'    => $hasilAnalisis->sortBy([
-                fn ($item) => $item['rute_tersedia'] ? 0 : 1,
-                fn ($item) => $item['jarak_jalan']['meter'] ?? PHP_FLOAT_MAX,
-            ])->values(),
-            'estimasi_waktu' => $hasilAnalisis->sortBy([
-                fn ($item) => $item['rute_tersedia'] ? 0 : 1,
-                fn ($item) => $item['estimasi_waktu']['detik'] ?? PHP_FLOAT_MAX,
-            ])->values(),
-            'jarak_lurus'    => $hasilAnalisis->sortBy('jarak_lurus.meter')->values(),
-            default          => $hasilAnalisis->values(),
-        };
+       $hasilSorted = match ($sortBy) {
+    'jarak_jalan' => $hasilAnalisis->sortBy([
+        fn ($a, $b) => ($a['rute_tersedia'] ? 0 : 1) <=> ($b['rute_tersedia'] ? 0 : 1),
+        fn ($a, $b) => ($a['jarak_jalan']['meter'] ?? PHP_FLOAT_MAX)
+                        <=> ($b['jarak_jalan']['meter'] ?? PHP_FLOAT_MAX),
+    ])->values(),
+
+    'estimasi_waktu' => $hasilAnalisis->sortBy([
+        fn ($a, $b) => ($a['rute_tersedia'] ? 0 : 1) <=> ($b['rute_tersedia'] ? 0 : 1),
+        fn ($a, $b) => ($a['estimasi_waktu']['detik'] ?? PHP_FLOAT_MAX)
+                        <=> ($b['estimasi_waktu']['detik'] ?? PHP_FLOAT_MAX),
+    ])->values(),
+
+    'jarak_lurus' => $hasilAnalisis->sortBy('jarak_lurus.meter')->values(),
+
+    default => $hasilAnalisis->values(),
+};
 
         // 4. Potong ke jumlah $limit final SETELAH kandidat lebih besar selesai di-sort & di-routing.
         $hasilFinal = $hasilSorted->take($limit)->values();

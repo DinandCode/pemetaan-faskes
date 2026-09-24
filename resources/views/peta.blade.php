@@ -2,8 +2,10 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#2563eb">
     <title>Sistem Informasi Geografis - Pemetaan Faskes & Rute Darurat</title>
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
 
     <!-- Leaflet CSS (Di-import SEBELUM Tailwind CSS agar tidak bentrok atau terkena reset CSS) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -18,6 +20,11 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
+        html, body {
+            height: 100%;
+            -webkit-tap-highlight-color: transparent;
+        }
+
         /* Perbaikan CSS Leaflet - Hilangkan kotak hitam & border default */
         .leaflet-container {
             font-family: inherit !important;
@@ -39,7 +46,14 @@
         .leaflet-tooltip-right:before { border-right-color: rgba(255, 255, 255, 0.95) !important; }
         .leaflet-div-icon { background: transparent !important; border: none !important; }
 
-        /* FIX (poin 5): pastikan tidak ada leaflet-control / overlay liar yang menumpuk di atas kanvas peta.
+        /* Rapikan tombol zoom Leaflet supaya konsisten dengan gaya UI Tailwind di sekitarnya */
+        .leaflet-touch .leaflet-bar a {
+            width: 32px;
+            height: 32px;
+            line-height: 32px;
+        }
+
+        /* Pastikan tidak ada leaflet-control / overlay liar yang menumpuk di atas kanvas peta.
            Semua leaflet-control WAJIB berada di dalam salah satu 4 pojok (top-left/top-right/bottom-left/bottom-right),
            tidak ada elemen absolute lain yang diletakkan manual di atas #map selain melalui Leaflet control API. */
         #map .leaflet-top,
@@ -69,7 +83,11 @@
             100% { transform: scale(1.6); opacity: 0; }
         }
 
-        /* Custom Scrollbar Sidebar */
+        /* Custom Scrollbar Sidebar (WebKit + Firefox) */
+        .custom-scrollbar {
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 #f1f5f9;
+        }
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
@@ -81,53 +99,53 @@
       x-init="initMap()">
 
     <!-- Header Navigation -->
-    <header class="bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between shadow-sm z-20 flex-shrink-0">
-        <div class="flex items-center space-x-3">
-            <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-500/30">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <header class="bg-white border-b border-slate-200 px-3 sm:px-4 pt-[max(0.625rem,env(safe-area-inset-top))] pb-2.5 sm:pb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 shadow-sm z-20 flex-shrink-0">
+        <div class="flex items-center space-x-2.5 sm:space-x-3 min-w-0">
+            <div class="w-9 h-9 sm:w-10 sm:h-10 flex-shrink-0 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-500/30">
+                <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path>
                 </svg>
             </div>
-            <div>
-                <h1 class="text-base md:text-lg font-bold text-slate-800 leading-tight">SIG Pemetaan Faskes & Rute Darurat &bull; Kab. Banyumas</h1>
-                <p class="text-xs text-slate-500">Dinas Kesehatan Kabupaten Banyumas &bull; Analisis Spasial PostGIS & Routing OSRM</p>
+            <div class="min-w-0">
+                <h1 class="text-sm sm:text-base md:text-lg font-bold text-slate-800 leading-tight truncate">SIG Pemetaan Faskes & Rute Darurat &bull; Kab. Banyumas</h1>
+                <p class="hidden sm:block text-xs text-slate-500 truncate">Dinas Kesehatan Kabupaten Banyumas &bull; Analisis Spasial PostGIS & Routing OSRM</p>
             </div>
         </div>
 
-        <!-- Legend Pills (Desktop) -->
-        <div class="hidden xl:flex items-center space-x-2 text-xs">
-            <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-red-50 text-red-700 font-medium border border-red-200">
+        <!-- Legend Pills (Tablet & Desktop) -->
+        <div class="hidden md:flex flex-wrap items-center gap-1.5 text-[11px] xl:text-xs">
+            <span class="inline-flex items-center px-2 xl:px-2.5 py-1 rounded-full bg-red-50 text-red-700 font-medium border border-red-200">
                 <span class="w-2.5 h-2.5 rounded-full bg-red-500 mr-1.5"></span> Rumah Sakit
             </span>
-            <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 font-medium border border-blue-200">
+            <span class="inline-flex items-center px-2 xl:px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 font-medium border border-blue-200">
                 <span class="w-2.5 h-2.5 rounded-full bg-blue-500 mr-1.5"></span> Puskesmas
             </span>
-            <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 font-medium border border-emerald-200">
+            <span class="inline-flex items-center px-2 xl:px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 font-medium border border-emerald-200">
                 <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 mr-1.5"></span> Klinik
             </span>
-            <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 font-medium border border-purple-200">
+            <span class="inline-flex items-center px-2 xl:px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 font-medium border border-purple-200">
                 <span class="w-2.5 h-2.5 rounded-full bg-purple-500 mr-1.5"></span> Lab
             </span>
-            <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 font-medium border border-amber-200">
+            <span class="inline-flex items-center px-2 xl:px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 font-medium border border-amber-200">
                 <span class="w-2.5 h-2.5 rounded-full bg-amber-500 mr-1.5"></span> UPKDK
             </span>
         </div>
 
         <!-- Action Buttons -->
-        <div class="flex items-center space-x-2">
-            <a href="{{ route('dashboard') }}"
-               class="px-3.5 py-2 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center space-x-1.5 transition">
+        <div class="flex items-center gap-1.5 sm:gap-2 ml-auto">
+            <a href="{{ route('dashboard') }}" title="Dashboard"
+               class="px-2.5 sm:px-3.5 py-1.5 sm:py-2 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center gap-1.5 transition focus:outline-none focus:ring-2 focus:ring-slate-300">
                 <span>📊</span>
-                <span>Dashboard</span>
+                <span class="hidden sm:inline">Dashboard</span>
             </a>
-            <a href="{{ route('faskes.index') }}"
-               class="px-3.5 py-2 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center space-x-1.5 transition">
+            <a href="{{ route('faskes.index') }}" title="Kelola Data Faskes"
+               class="px-2.5 sm:px-3.5 py-1.5 sm:py-2 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center gap-1.5 transition focus:outline-none focus:ring-2 focus:ring-slate-300">
                 <span>📋</span>
-                <span>Kelola Data Faskes</span>
+                <span class="hidden sm:inline">Kelola Data Faskes</span>
             </a>
             <button @click="sidebarOpen = !sidebarOpen"
-                    class="px-3.5 py-2 text-xs font-semibold rounded-lg bg-blue-600 text-white hover:bg-blue-700 flex items-center space-x-1.5 shadow-sm transition">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    class="px-2.5 sm:px-3.5 py-1.5 sm:py-2 text-xs font-semibold rounded-lg bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-1.5 shadow-sm transition focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-1">
+                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
                 </svg>
                 <span x-text="sidebarOpen ? 'Tutup Panel' : 'Panel Kontrol'"></span>
@@ -142,19 +160,20 @@
         <div id="map" class="flex-1 h-full w-full z-0 cursor-crosshair"></div>
 
         <!-- Sidebar Kontrol: Filter Atribut & Analisis Lokasi Event -->
-        <aside class="absolute lg:relative top-0 right-0 h-full w-full sm:w-[440px] bg-white border-l border-slate-200 shadow-2xl z-20 flex flex-col transition-transform duration-300 ease-in-out"
+        <aside class="absolute lg:relative top-0 right-0 h-full w-full sm:w-[400px] lg:w-[440px] bg-white border-l border-slate-200 shadow-2xl z-20 flex flex-col transition-transform duration-300 ease-in-out"
                :class="sidebarOpen ? 'translate-x-0' : 'translate-x-full lg:hidden'">
 
             <!-- Sidebar Header & Tab Navigation -->
             <div class="p-3 border-b border-slate-200 bg-slate-50/90 flex-shrink-0 space-y-2">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-2">
-                        <span class="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">
+                        <span class="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs flex-shrink-0">
                             🗺️
                         </span>
                         <h2 class="text-sm font-bold text-slate-800">Panel Kontrol Spasial</h2>
                     </div>
-                    <button @click="sidebarOpen = false" class="text-slate-400 hover:text-slate-600 p-1 rounded-md lg:hidden">
+                    <button @click="sidebarOpen = false"
+                            class="text-slate-400 hover:text-slate-600 p-1.5 rounded-md lg:hidden focus:outline-none focus:ring-2 focus:ring-slate-300">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                         </svg>
@@ -166,21 +185,21 @@
                     <button type="button"
                             @click="activeTab = 'filter'"
                             :class="activeTab === 'filter' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'"
-                            class="py-2 px-3 rounded-lg transition flex items-center justify-center space-x-1.5">
+                            class="py-2 px-2 sm:px-3 rounded-lg transition flex items-center justify-center gap-1 sm:gap-1.5 focus:outline-none">
                         <span>🎛️</span>
-                        <span>Filter Atribut</span>
-                        <span class="ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold"
+                        <span class="truncate">Filter Atribut</span>
+                        <span class="ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold flex-shrink-0"
                               :class="activeFilterCount() > 0 ? 'bg-blue-600 text-white' : 'bg-slate-300 text-slate-700'"
                               x-text="faskesList.length"></span>
                     </button>
                     <button type="button"
                             @click="activeTab = 'event'"
                             :class="activeTab === 'event' ? 'bg-white text-red-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'"
-                            class="py-2 px-3 rounded-lg transition flex items-center justify-center space-x-1.5">
+                            class="py-2 px-2 sm:px-3 rounded-lg transition flex items-center justify-center gap-1 sm:gap-1.5 focus:outline-none">
                         <span>📍</span>
-                        <span>Analisis Event</span>
+                        <span class="truncate">Analisis Event</span>
                         <template x-if="hasilAnalisis && hasilAnalisis.length > 0">
-                            <span class="ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-red-600 text-white"
+                            <span class="ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-red-600 text-white flex-shrink-0"
                                   x-text="hasilAnalisis.length"></span>
                         </template>
                     </button>
@@ -188,19 +207,19 @@
             </div>
 
             <!-- TAB 1: FILTER ATRIBUT DINAMIS (LIVE UPDATE MARKER) -->
-            <div x-show="activeTab === 'filter'" class="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+            <div x-show="activeTab === 'filter'" class="flex-1 overflow-y-auto p-3 sm:p-4 space-y-4 custom-scrollbar">
 
                 <!-- Header Status Filter -->
-                <div class="bg-blue-50/70 border border-blue-200 rounded-xl p-3 flex items-center justify-between text-xs">
+                <div class="bg-blue-50/70 border border-blue-200 rounded-xl p-3 flex flex-wrap items-center justify-between gap-2 text-xs">
                     <div>
                         <span class="font-bold text-blue-900">Marker Faskes Aktif</span>
                         <p class="text-blue-700 text-[11px]">
                             Menampilkan <b x-text="faskesList.length"></b> dari <span x-text="totalFaskes"></span> faskes
                         </p>
                     </div>
-                    <div class="flex items-center space-x-2">
+                    <div class="flex items-center gap-2">
                         <template x-if="isFiltering">
-                            <div class="flex items-center space-x-1 text-blue-600 font-semibold text-[11px]">
+                            <div class="flex items-center gap-1 text-blue-600 font-semibold text-[11px]">
                                 <svg class="animate-spin h-3.5 w-3.5" fill="none" viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
@@ -209,7 +228,7 @@
                             </div>
                         </template>
                         <button type="button" @click="resetDynamicFilters()"
-                                class="text-[11px] px-2 py-1 rounded bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 font-medium transition">
+                                class="text-[11px] px-2 py-1 rounded bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 font-medium transition focus:outline-none focus:ring-2 focus:ring-blue-300">
                             Reset Filter
                         </button>
                     </div>
@@ -218,129 +237,139 @@
                 <!-- 1. Pilihan Jenis Faskes (Checkbox) -->
                 <div class="bg-white rounded-xl p-3.5 border border-slate-200 shadow-sm space-y-2.5">
                     <div class="flex items-center justify-between border-b border-slate-100 pb-2">
-                        <label class="text-xs font-bold text-slate-800 flex items-center space-x-1.5">
+                        <label class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                             <span>🏥</span>
                             <span>Pilihan Jenis Faskes</span>
                         </label>
-                        <div class="space-x-1 text-[11px]">
+                        <div class="space-x-1 text-[11px] flex-shrink-0">
                             <button type="button" @click="selectAllJenis()" class="text-blue-600 hover:text-blue-800 font-medium">Pilih Semua</button>
                             <span class="text-slate-300">&bull;</span>
                             <button type="button" @click="clearAllJenis()" class="text-slate-500 hover:text-slate-700 font-medium">Kosongkan</button>
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-2 text-xs">
+                    <div class="grid grid-cols-1 min-[380px]:grid-cols-2 gap-2 text-xs">
+                        <!-- Rumah Sakit -->
                         <label class="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-slate-50 border border-slate-100 cursor-pointer transition">
                             <input type="checkbox" value="rumah_sakit" x-model="selectedJenis" @change="applyDynamicFilters()"
                                    class="rounded text-red-600 focus:ring-red-500">
                             <span class="w-2.5 h-2.5 rounded-full bg-red-500 flex-shrink-0"></span>
-                            <span class="text-slate-700 font-medium">Rumah Sakit</span>
+                            <span class="text-slate-700 font-medium truncate">Rumah Sakit</span>
                         </label>
 
+                        <!-- Puskesmas -->
                         <label class="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-slate-50 border border-slate-100 cursor-pointer transition">
                             <input type="checkbox" value="puskesmas" x-model="selectedJenis" @change="applyDynamicFilters()"
                                    class="rounded text-blue-600 focus:ring-blue-500">
                             <span class="w-2.5 h-2.5 rounded-full bg-blue-500 flex-shrink-0"></span>
-                            <span class="text-slate-700 font-medium">Puskesmas</span>
+                            <span class="text-slate-700 font-medium truncate">Puskesmas</span>
                         </label>
 
+                        <!-- Klinik Pratama -->
                         <label class="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-slate-50 border border-slate-100 cursor-pointer transition">
                             <input type="checkbox" value="klinik_pratama" x-model="selectedJenis" @change="applyDynamicFilters()"
                                    class="rounded text-emerald-600 focus:ring-emerald-500">
                             <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 flex-shrink-0"></span>
-                            <span class="text-slate-700 font-medium">Klinik Pratama</span>
+                            <span class="text-slate-700 font-medium truncate">Klinik Pratama</span>
                         </label>
 
+                        <!-- Klinik Utama -->
                         <label class="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-slate-50 border border-slate-100 cursor-pointer transition">
                             <input type="checkbox" value="klinik_utama" x-model="selectedJenis" @change="applyDynamicFilters()"
                                    class="rounded text-teal-600 focus:ring-teal-500">
                             <span class="w-2.5 h-2.5 rounded-full bg-teal-500 flex-shrink-0"></span>
-                            <span class="text-slate-700 font-medium">Klinik Utama</span>
+                            <span class="text-slate-700 font-medium truncate">Klinik Utama</span>
                         </label>
 
+                        <!-- Laboratorium -->
                         <label class="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-slate-50 border border-slate-100 cursor-pointer transition">
                             <input type="checkbox" value="laboratorium" x-model="selectedJenis" @change="applyDynamicFilters()"
                                    class="rounded text-purple-600 focus:ring-purple-500">
                             <span class="w-2.5 h-2.5 rounded-full bg-purple-500 flex-shrink-0"></span>
-                            <span class="text-slate-700 font-medium">Laboratorium</span>
+                            <span class="text-slate-700 font-medium truncate">Laboratorium</span>
                         </label>
 
+                        <!-- UPKDK -->
                         <label class="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-slate-50 border border-slate-100 cursor-pointer transition">
                             <input type="checkbox" value="upkdk" x-model="selectedJenis" @change="applyDynamicFilters()"
                                    class="rounded text-amber-600 focus:ring-amber-500">
                             <span class="w-2.5 h-2.5 rounded-full bg-amber-500 flex-shrink-0"></span>
-                            <span class="text-slate-700 font-medium">UPKDK (Pustu/PKD)</span>
+                            <span class="text-slate-700 font-medium truncate">UPKDK (Pustu/PKD)</span>
                         </label>
                     </div>
                 </div>
 
                 <!-- 2. Filter Spesifik (Atribut Child Tables via Eloquent whereHas) -->
                 <div class="bg-white rounded-xl p-3.5 border border-slate-200 shadow-sm space-y-2.5">
-                    <label class="text-xs font-bold text-slate-800 flex items-center space-x-1.5 border-b border-slate-100 pb-2">
+                    <label class="text-xs font-bold text-slate-800 flex items-center gap-1.5 border-b border-slate-100 pb-2">
                         <span>⚡</span>
                         <span>Filter Spesifik Layanan & Fasilitas</span>
                     </label>
 
                     <div class="space-y-2 text-xs">
-                        <label class="flex items-center justify-between p-2 rounded-lg border border-slate-200 hover:bg-amber-50/50 cursor-pointer transition"
+                        <!-- Ambulans Gadar / Transport -->
+                        <label class="flex items-center justify-between gap-2 p-2 rounded-lg border border-slate-200 hover:bg-amber-50/50 cursor-pointer transition"
                                :class="filterAmbulans ? 'bg-amber-50 border-amber-300' : 'bg-white'">
-                            <div class="flex items-center space-x-2.5">
-                                <span class="text-base">🚑</span>
-                                <div>
+                            <div class="flex items-center gap-2.5 min-w-0">
+                                <span class="text-base flex-shrink-0">🚑</span>
+                                <div class="min-w-0">
                                     <div class="font-bold text-slate-800">Memiliki Ambulans Gadar / Transport</div>
                                     <div class="text-[10px] text-slate-500">RS, Puskesmas, atau Klinik yang siaga ambulans</div>
                                 </div>
                             </div>
                             <input type="checkbox" x-model="filterAmbulans" @change="applyDynamicFilters()"
-                                   class="h-4 w-4 rounded text-amber-600 focus:ring-amber-500">
+                                   class="h-4 w-4 rounded text-amber-600 focus:ring-amber-500 flex-shrink-0">
                         </label>
 
-                        <label class="flex items-center justify-between p-2 rounded-lg border border-slate-200 hover:bg-emerald-50/50 cursor-pointer transition"
+                        <!-- Melayani BPJS -->
+                        <label class="flex items-center justify-between gap-2 p-2 rounded-lg border border-slate-200 hover:bg-emerald-50/50 cursor-pointer transition"
                                :class="filterBpjs ? 'bg-emerald-50 border-emerald-300' : 'bg-white'">
-                            <div class="flex items-center space-x-2.5">
-                                <span class="text-base">💳</span>
-                                <div>
+                            <div class="flex items-center gap-2.5 min-w-0">
+                                <span class="text-base flex-shrink-0">💳</span>
+                                <div class="min-w-0">
                                     <div class="font-bold text-slate-800">Melayani Pasien BPJS Kesehatan</div>
                                     <div class="text-[10px] text-slate-500">Puskesmas, RS, dan Klinik Pratama mitra BPJS</div>
                                 </div>
                             </div>
                             <input type="checkbox" x-model="filterBpjs" @change="applyDynamicFilters()"
-                                   class="h-4 w-4 rounded text-emerald-600 focus:ring-emerald-500">
+                                   class="h-4 w-4 rounded text-emerald-600 focus:ring-emerald-500 flex-shrink-0">
                         </label>
 
-                        <label class="flex items-center justify-between p-2 rounded-lg border border-slate-200 hover:bg-blue-50/50 cursor-pointer transition"
+                        <!-- Memiliki Bed Rawat Inap -->
+                        <label class="flex items-center justify-between gap-2 p-2 rounded-lg border border-slate-200 hover:bg-blue-50/50 cursor-pointer transition"
                                :class="filterRawatInap ? 'bg-blue-50 border-blue-300' : 'bg-white'">
-                            <div class="flex items-center space-x-2.5">
-                                <span class="text-base">🛏️</span>
-                                <div>
+                            <div class="flex items-center gap-2.5 min-w-0">
+                                <span class="text-base flex-shrink-0">🛏️</span>
+                                <div class="min-w-0">
                                     <div class="font-bold text-slate-800">Memiliki Bed Rawat Inap</div>
                                     <div class="text-[10px] text-slate-500">RS, Puskesmas Rawat Inap, atau Klinik berbed</div>
                                 </div>
                             </div>
                             <input type="checkbox" x-model="filterRawatInap" @change="applyDynamicFilters()"
-                                   class="h-4 w-4 rounded text-blue-600 focus:ring-blue-500">
+                                   class="h-4 w-4 rounded text-blue-600 focus:ring-blue-500 flex-shrink-0">
                         </label>
 
-                        <label class="flex items-center justify-between p-2 rounded-lg border border-slate-200 hover:bg-rose-50/50 cursor-pointer transition"
+                        <!-- Status PONED (Khusus Puskesmas) -->
+                        <label class="flex items-center justify-between gap-2 p-2 rounded-lg border border-slate-200 hover:bg-rose-50/50 cursor-pointer transition"
                                :class="filterPoned ? 'bg-rose-50 border-rose-300' : 'bg-white'">
-                            <div class="flex items-center space-x-2.5">
-                                <span class="text-base">👶</span>
-                                <div>
+                            <div class="flex items-center gap-2.5 min-w-0">
+                                <span class="text-base flex-shrink-0">👶</span>
+                                <div class="min-w-0">
                                     <div class="font-bold text-slate-800">Status PONED (Khusus Puskesmas)</div>
                                     <div class="text-[10px] text-slate-500">Pelayanan Obstetri Neonatal Emergensi Dasar</div>
                                 </div>
                             </div>
                             <input type="checkbox" x-model="filterPoned" @change="applyDynamicFilters()"
-                                   class="h-4 w-4 rounded text-rose-600 focus:ring-rose-500">
+                                   class="h-4 w-4 rounded text-rose-600 focus:ring-rose-500 flex-shrink-0">
                         </label>
                     </div>
                 </div>
 
                 <!-- Layer Batas Wilayah Kabupaten (Garis Pembatas Non-Interaktif) -->
-                <div class="bg-white rounded-xl p-3 border border-slate-200 shadow-sm flex items-center justify-between text-xs">
-                    <div class="flex items-center space-x-2.5">
-                        <span class="text-base">🗺️</span>
-                        <div>
+                <div class="bg-white rounded-xl p-3 border border-slate-200 shadow-sm flex items-center justify-between gap-2 text-xs">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <span class="text-base flex-shrink-0">🗺️</span>
+                        <div class="min-w-0">
                             <div class="font-bold text-slate-800">Layer Batas Kabupaten</div>
                             <div class="text-[10px] text-slate-500">Garis batas luar Kab. Banyumas saja (tanpa batas kecamatan)</div>
                         </div>
@@ -360,19 +389,19 @@
                 <!-- 3. Filter Wilayah Kecamatan (Dropdown) & Pencarian Teks -->
                 <div class="bg-white rounded-xl p-3.5 border border-slate-200 shadow-sm space-y-3">
                     <div class="flex items-center justify-between border-b border-slate-100 pb-2">
-                        <label class="text-xs font-bold text-slate-800 flex items-center space-x-1.5">
+                        <label class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                             <span>📍</span>
                             <span>Filter Wilayah Kecamatan</span>
                         </label>
                         <template x-if="selectedKecamatan">
                             <button type="button" @click="selectedKecamatan = ''; applyDynamicFilters(true)"
-                                    class="text-[11px] text-blue-600 hover:text-blue-800 font-semibold">
+                                    class="text-[11px] text-blue-600 hover:text-blue-800 font-semibold flex-shrink-0">
                                 Reset Wilayah
                             </button>
                         </template>
                     </div>
 
-                    <!-- Dropdown Pilihan Kecamatan: MURNI filter atribut, TIDAK menggambar polygon apapun di peta -->
+                    <!-- Dropdown Pilihan Kecamatan -->
                     <div>
                         <label class="block text-[11px] text-slate-500 mb-1">Pilih Kecamatan:</label>
                         <select x-model="selectedKecamatan" @change="applyDynamicFilters(true)"
@@ -393,7 +422,7 @@
                                    class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-700 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <template x-if="filterSearch">
                                 <button @click="filterSearch = ''; applyDynamicFilters(false)"
-                                        class="absolute right-2.5 top-2 text-slate-400 hover:text-slate-600 font-bold text-xs">&times;</button>
+                                        class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 font-bold text-xs">&times;</button>
                             </template>
                         </div>
                     </div>
@@ -403,15 +432,15 @@
                 <div>
                     <div class="flex items-center justify-between mb-2">
                         <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Daftar Faskes Terpilih</h3>
-                        <span class="text-[11px] text-slate-500" x-text="`${faskesList.length} Item`"></span>
+                        <span class="text-[11px] text-slate-500 flex-shrink-0" x-text="`${faskesList.length} Item`"></span>
                     </div>
 
                     <div class="space-y-2">
                         <template x-for="faskes in faskesList" :key="faskes.id">
                             <div @click="zoomToFaskes(faskes)"
-                                 class="p-2.5 rounded-lg border border-slate-200 bg-white hover:border-blue-300 hover:shadow-sm cursor-pointer transition flex items-start justify-between space-x-2">
-                                <div class="flex-1">
-                                    <div class="flex items-center space-x-1.5 mb-0.5">
+                                 class="p-2.5 rounded-lg border border-slate-200 bg-white hover:border-blue-300 hover:shadow-sm cursor-pointer transition flex items-start justify-between gap-2">
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-1.5 mb-0.5">
                                         <span class="w-2 h-2 rounded-full flex-shrink-0"
                                               :class="{
                                                   'bg-red-500': faskes.jenis_faskes === 'rumah_sakit',
@@ -421,21 +450,21 @@
                                                   'bg-purple-500': faskes.jenis_faskes === 'laboratorium',
                                                   'bg-amber-500': faskes.jenis_faskes === 'upkdk'
                                               }"></span>
-                                        <span class="text-[10px] font-bold uppercase text-slate-400" x-text="formatJenis(faskes.jenis_faskes)"></span>
+                                        <span class="text-[10px] font-bold uppercase text-slate-500 truncate" x-text="formatJenis(faskes.jenis_faskes)"></span>
                                     </div>
-                                    <div class="font-bold text-xs text-slate-900 leading-tight" x-text="faskes.nama"></div>
+                                    <div class="font-bold text-xs text-slate-900 leading-tight truncate" x-text="faskes.nama"></div>
                                     <div class="text-[11px] text-slate-500 truncate" x-text="faskes.alamat || `Kec. ${faskes.kecamatan || '-'}`"></div>
                                 </div>
-                                <div class="flex flex-col items-end space-y-1">
+                                <div class="flex flex-col items-end gap-1 flex-shrink-0">
                                     <template x-if="faskes.detail && ((parseInt(faskes.detail.ambulans_transport) || 0) + (parseInt(faskes.detail.ambulans_roda_dua) || 0) + (parseInt(faskes.detail.ambulans_gadar) || 0) + (parseInt(faskes.detail.ambulans) || 0)) > 0">
-                                        <span class="px-1.5 py-0.5 bg-amber-50 text-amber-800 border border-amber-200 rounded text-[9px] font-bold"
+                                        <span class="px-1.5 py-0.5 bg-amber-50 text-amber-800 border border-amber-200 rounded text-[9px] font-bold whitespace-nowrap"
                                               x-text="`🚑 ${((parseInt(faskes.detail.ambulans_transport) || 0) + (parseInt(faskes.detail.ambulans_roda_dua) || 0) + (parseInt(faskes.detail.ambulans_gadar) || 0) + (parseInt(faskes.detail.ambulans) || 0))} Amb`"></span>
                                     </template>
                                     <template x-if="faskes.detail && faskes.detail.poned === 'Ya PONED'">
-                                        <span class="px-1.5 py-0.5 bg-rose-50 text-rose-700 border border-rose-200 rounded text-[9px] font-bold">PONED</span>
+                                        <span class="px-1.5 py-0.5 bg-rose-50 text-rose-700 border border-rose-200 rounded text-[9px] font-bold whitespace-nowrap">PONED</span>
                                     </template>
                                     <template x-if="faskes.detail && faskes.detail.ponek === 'Ya PONEK'">
-                                        <span class="px-1.5 py-0.5 bg-purple-50 text-purple-700 border border-purple-200 rounded text-[9px] font-bold">PONEK</span>
+                                        <span class="px-1.5 py-0.5 bg-purple-50 text-purple-700 border border-purple-200 rounded text-[9px] font-bold whitespace-nowrap">PONEK</span>
                                     </template>
                                 </div>
                             </div>
@@ -454,25 +483,31 @@
             </div>
 
             <!-- TAB 2: ANALISIS LOKASI EVENT (POSTGIS & OSRM) -->
-            <div x-show="activeTab === 'event'" class="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+            <div x-show="activeTab === 'event'" class="flex-1 overflow-y-auto p-3 sm:p-4 space-y-4 custom-scrollbar">
 
                 <div class="bg-slate-50 rounded-xl p-3.5 border border-slate-200 space-y-3">
                     <div>
                         <label class="block text-xs font-semibold text-slate-700 mb-1">Titik Koordinat Event</label>
+                        <template x-if="mapLockedNotice">
+    <div class="bg-slate-800 text-white text-[11px] px-3 py-2 rounded-lg mb-2 flex items-center gap-1.5">
+        <span>🔒</span>
+        <span>Titik terkunci — hapus dulu untuk memindahkan</span>
+    </div>
+</template>
                         <template x-if="eventLat && eventLng">
-                            <div class="flex items-center justify-between bg-white px-3 py-2 rounded-lg border border-slate-200 text-xs font-mono">
-                                <span class="text-slate-700" x-text="`${eventLat.toFixed(6)}, ${eventLng.toFixed(6)}`"></span>
-                                <button @click="resetEvent()" class="text-red-600 hover:text-red-700 text-xs font-sans font-semibold">Hapus</button>
+                            <div class="flex items-center justify-between gap-2 bg-white px-3 py-2 rounded-lg border border-slate-200 text-xs font-mono">
+                                <span class="text-slate-700 truncate" x-text="`${eventLat.toFixed(6)}, ${eventLng.toFixed(6)}`"></span>
+                                <button @click="resetEvent()" class="text-red-600 hover:text-red-700 text-xs font-sans font-semibold flex-shrink-0">Hapus</button>
                             </div>
                         </template>
                         <template x-if="!eventLat || !eventLng">
-                            <div class="bg-amber-50 border border-amber-200 text-amber-800 text-xs px-3 py-2 rounded-lg flex items-center space-x-2">
+                            <div class="bg-amber-50 border border-amber-200 text-amber-800 text-xs px-3 py-2 rounded-lg flex items-center gap-2">
                                 <span>⚠️</span>
                                 <span>Klik pada peta atau tombol di bawah untuk set titik event.</span>
                             </div>
                         </template>
                         <button @click="getCurrentLocation()"
-                                class="mt-2 w-full py-1.5 px-3 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-lg text-xs font-medium flex items-center justify-center space-x-1.5 transition">
+                                class="mt-2 w-full py-1.5 px-3 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition focus:outline-none focus:ring-2 focus:ring-blue-300">
                             <span>🎯</span>
                             <span>Gunakan Lokasi GPS Saya</span>
                         </button>
@@ -486,22 +521,24 @@
                         <input type="range" min="1" max="25" step="0.5" x-model.number="radiusKm" @input="updateRadiusCircle()"
                                class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
 
+                        <!-- Quick Presets -->
                         <div class="flex items-center justify-between mt-2 gap-1 text-[11px]">
                             <template x-for="r in [2, 5, 10, 15, 20]" :key="r">
                                 <button type="button"
                                         @click="radiusKm = r; updateRadiusCircle()"
                                         :class="radiusKm === r ? 'bg-blue-600 text-white font-semibold' : 'bg-white text-slate-600 hover:bg-slate-200'"
-                                        class="flex-1 py-1 rounded border border-slate-200 transition text-center"
-                                        x-text="`${r}k`">
+                                        class="flex-1 py-1 rounded border border-slate-200 transition text-center focus:outline-none"
+                                        x-text="`${r}km`">
                                 </button>
                             </template>
                         </div>
                     </div>
 
+                    <!-- Tombol Cari Faskes Terdekat -->
                     <button @click="cariFaskesTerdekat()"
                             :disabled="!eventLat || !eventLng || isLoading"
                             :class="(!eventLat || !eventLng || isLoading) ? 'bg-slate-300 cursor-not-allowed text-slate-500' : 'bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/20'"
-                            class="w-full py-2.5 rounded-xl font-semibold text-xs flex items-center justify-center space-x-2 transition">
+                            class="w-full py-2.5 rounded-xl font-semibold text-xs flex items-center justify-center gap-2 transition focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-1">
                         <template x-if="isLoading">
                             <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -515,22 +552,25 @@
                     </button>
                 </div>
 
+                <!-- Hasil Analisis Event -->
                 <div>
                     <div class="flex items-center justify-between mb-2">
                         <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Hasil Faskes & Rute OSRM</h3>
                         <template x-if="hasilAnalisis && hasilAnalisis.length > 0">
-                            <span class="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200"
+                            <span class="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 flex-shrink-0"
                                   x-text="`${hasilAnalisis.length} Ditemukan`"></span>
                         </template>
                     </div>
 
+                    <!-- Kosong / Belum Dicari -->
                     <template x-if="!hasSearched">
                         <div class="text-center py-8 text-slate-400 border border-dashed border-slate-200 rounded-xl bg-white">
                             <span class="text-3xl block mb-2">🗺️</span>
-                            <p class="text-xs">Klik titik event di peta, lalu tekan <b>Cari Faskes Terdekat</b>.</p>
+                            <p class="text-xs px-4">Klik titik event di peta, lalu tekan <b>Cari Faskes Terdekat</b>.</p>
                         </div>
                     </template>
 
+                    <!-- Ditemukan 0 -->
                     <template x-if="hasSearched && (!hasilAnalisis || hasilAnalisis.length === 0)">
                         <div class="bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 text-center text-xs">
                             <p class="font-bold">Tidak ada faskes ditemukan!</p>
@@ -538,15 +578,17 @@
                         </div>
                     </template>
 
+                    <!-- Daftar Kartu Faskes Terdekat & Tombol Export -->
                     <div class="space-y-3" x-show="hasilAnalisis && hasilAnalisis.length > 0">
-                        <div class="flex items-center space-x-2 pb-1">
+                        <!-- Export Hasil Analisis Buttons -->
+                        <div class="flex items-center gap-2 pb-1">
                             <a :href="getExportUrl('excel')" target="_blank"
-                               class="flex-1 py-1.5 px-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg text-xs transition flex items-center justify-center space-x-1.5 shadow-sm">
+                               class="flex-1 py-1.5 px-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg text-xs transition flex items-center justify-center gap-1.5 shadow-sm">
                                 <span>📊</span>
                                 <span>Export Excel</span>
                             </a>
                             <a :href="getExportUrl('pdf')" target="_blank"
-                               class="flex-1 py-1.5 px-3 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-lg text-xs transition flex items-center justify-center space-x-1.5 shadow-sm">
+                               class="flex-1 py-1.5 px-3 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-lg text-xs transition flex items-center justify-center gap-1.5 shadow-sm">
                                 <span>📄</span>
                                 <span>Export PDF</span>
                             </a>
@@ -555,17 +597,18 @@
                         <template x-for="(item, index) in hasilAnalisis" :key="item.detail_faskes.id">
                             <div @click="fokusKeRute(item, index)"
                                  :class="activeFaskesId === item.detail_faskes.id ? 'ring-2 ring-blue-500 bg-blue-50/40' : 'bg-white hover:border-slate-300'"
-                                 class="p-3.5 rounded-xl border border-slate-200 shadow-sm cursor-pointer transition flex flex-col space-y-2.5">
+                                 class="p-3.5 rounded-xl border border-slate-200 shadow-sm cursor-pointer transition flex flex-col gap-2.5">
 
-                                <div class="flex items-start justify-between">
-                                    <div>
-                                        <div class="flex items-center space-x-1.5 mb-1">
+                                <!-- Card Header -->
+                                <div class="flex items-start justify-between gap-2">
+                                    <div class="min-w-0">
+                                        <div class="flex items-center flex-wrap gap-1.5 mb-1">
                                             <template x-if="index === 0">
-                                                <span class="text-[10px] uppercase font-black px-1.5 py-0.5 rounded bg-emerald-500 text-white">
+                                                <span class="text-[10px] uppercase font-black px-1.5 py-0.5 rounded bg-emerald-500 text-white whitespace-nowrap">
                                                     ★ Rute Terbaik
                                                 </span>
                                             </template>
-                                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap"
                                                   :class="{
                                                       'bg-red-100 text-red-700': item.detail_faskes.jenis_faskes === 'rumah_sakit',
                                                       'bg-blue-100 text-blue-700': item.detail_faskes.jenis_faskes === 'puskesmas',
@@ -577,36 +620,37 @@
                                                   x-text="formatJenis(item.detail_faskes.jenis_faskes)">
                                             </span>
                                         </div>
-                                        <h4 class="font-bold text-slate-800 text-xs leading-tight" x-text="item.detail_faskes.nama"></h4>
-                                        <p class="text-[11px] text-slate-500 mt-0.5" x-text="item.detail_faskes.alamat || '-'"></p>
+                                        <h4 class="font-bold text-slate-800 text-xs leading-tight truncate" x-text="item.detail_faskes.nama"></h4>
+                                        <p class="text-[11px] text-slate-500 mt-0.5 truncate" x-text="item.detail_faskes.alamat || '-'"></p>
                                     </div>
                                     <div class="text-right flex-shrink-0">
                                         <template x-if="item.rute_tersedia">
-                                            <div class="text-sm font-extrabold text-blue-600 leading-none"
+                                            <div class="text-sm font-extrabold text-blue-600 leading-none whitespace-nowrap"
                                                  x-text="`${item.estimasi_waktu.menit.toFixed(1)} mnt`"></div>
                                         </template>
                                         <template x-if="!item.rute_tersedia">
-                                            <div class="text-xs font-bold text-red-500 leading-none">Rute N/A</div>
+                                            <div class="text-xs font-bold text-red-500 leading-none whitespace-nowrap">Rute N/A</div>
                                         </template>
-                                        <div class="text-[10px] text-slate-400 mt-0.5 font-medium">Estimasi Waktu</div>
+                                        <div class="text-[10px] text-slate-500 mt-0.5 font-medium whitespace-nowrap">Estimasi Waktu</div>
                                     </div>
                                 </div>
 
                                 <!-- Peringatan kalau OSRM gagal menghitung rute jalan untuk faskes ini -->
                                 <template x-if="!item.rute_tersedia">
-                                    <div class="bg-amber-50 border border-amber-200 text-amber-700 rounded-lg px-2.5 py-1.5 text-[10px] flex items-start space-x-1.5">
-                                        <span>⚠️</span>
+                                    <div class="bg-amber-50 border border-amber-200 text-amber-700 rounded-lg px-2.5 py-1.5 text-[10px] flex items-start gap-1.5">
+                                        <span class="flex-shrink-0">⚠️</span>
                                         <span x-text="item.pesan_rute || 'Rute jalan tidak dapat dihitung untuk faskes ini. Jarak lurus tetap akurat, tapi estimasi jalan/waktu tidak tersedia.'"></span>
                                     </div>
                                 </template>
 
+                                <!-- Card Metrics: Jarak Lurus vs Jarak Jalan -->
                                 <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-xs">
-                                    <div class="bg-slate-50 rounded-lg p-2">
-                                        <span class="text-[10px] text-slate-400 block font-medium">Jarak Lurus (PostGIS)</span>
+                                    <div class="bg-slate-50 rounded-lg p-2 min-w-0">
+                                        <span class="text-[10px] text-slate-500 block font-medium">Jarak Lurus (PostGIS)</span>
                                         <span class="font-bold text-slate-700" x-text="`${item.jarak_lurus.km.toFixed(2)} KM`"></span>
                                     </div>
-                                    <div class="bg-slate-50 rounded-lg p-2">
-                                        <span class="text-[10px] text-slate-400 block font-medium">Jarak Jalan (OSRM)</span>
+                                    <div class="bg-slate-50 rounded-lg p-2 min-w-0">
+                                        <span class="text-[10px] text-slate-500 block font-medium">Jarak Jalan (OSRM)</span>
                                         <span class="font-bold text-slate-900"
                                               x-text="item.rute_tersedia ? `${item.jarak_jalan.km.toFixed(2)} KM` : '-'"></span>
                                     </div>
@@ -619,7 +663,7 @@
             </div>
 
             <!-- Footer Stats -->
-            <div class="p-3 bg-slate-50 border-t border-slate-200 text-center text-[11px] text-slate-500 flex-shrink-0">
+            <div class="p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] bg-slate-50 border-t border-slate-200 text-center text-[11px] text-slate-500 flex-shrink-0">
                 Total Master Data: <span class="font-bold text-slate-700" x-text="totalFaskes"></span> Faskes &bull; Kab. Banyumas
             </div>
         </aside>
@@ -632,12 +676,13 @@
             return {
                 map: null,
                 sidebarOpen: true,
-                activeTab: 'filter',
+                activeTab: 'filter', // 'filter' atau 'event'
                 isLoading: false,
                 isFiltering: false,
                 hasSearched: false,
                 totalFaskes: 0,
 
+                // Filter Atribut Dinamis
                 selectedJenis: ['rumah_sakit', 'puskesmas', 'klinik_pratama', 'klinik_utama', 'laboratorium', 'upkdk'],
                 filterAmbulans: false,
                 filterBpjs: false,
@@ -645,6 +690,7 @@
                 filterPoned: false,
                 filterSearch: '',
 
+                // State Layer Batas Wilayah Kabupaten & Pilihan Wilayah
                 showKabupatenLayer: true,
                 selectedKecamatan: '',
                 daftarKecamatan: [
@@ -656,11 +702,13 @@
                     'Tambak', 'Wangon'
                 ],
 
+                // Parameter Event
                 eventLat: null,
                 eventLng: null,
                 radiusKm: 5.0,
                 activeFaskesId: null,
 
+                // Layer Groups Leaflet
                 kabupatenLayerGroup: null,
                 kabupatenGeoJsonLayer: null,
                 faskesLayerGroup: null,
@@ -670,53 +718,78 @@
                 eventMarker: null,
                 markerMap: {},
 
-                // FIX (poin 1): flag internal untuk mencegah render marker bertumpuk saat animasi peta masih berjalan
+                // Flag internal untuk mencegah render marker bertumpuk saat animasi peta masih berjalan
                 _pendingRender: null,
 
+                // Data Hasil
                 faskesList: [],
                 hasilAnalisis: [],
 
                 initMap() {
+                    // Default center: Purwokerto, Kabupaten Banyumas (-7.424364, 109.230345)
                     this.map = L.map('map', {
                         zoomControl: false,
-                        // FIX: matikan fade animation pada popup/marker bawaan yang sering memicu race condition
-                        // dengan clearLayers() ketika layer dihapus di tengah animasi.
                         markerZoomAnimation: true,
                         fadeAnimation: true
                     }).setView([-7.424364, 109.230345], 12);
 
+                    // Posisi Zoom Control di pojok kiri bawah
                     L.control.zoom({ position: 'bottomleft' }).addTo(this.map);
 
+                    // Base Layer OpenStreetMap
                     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                         maxZoom: 19,
                         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                     }).addTo(this.map);
 
+                    // Layer Groups Leaflet:
+                    // 1. Batas Kabupaten (Garis pembatas non-interaktif)
+                    // 2. Faskes Markers
+                    // 3. Rute OSRM
+                    // 4. Titik Event & Radius Circle
                     this.kabupatenLayerGroup = L.layerGroup().addTo(this.map);
                     this.faskesLayerGroup = L.layerGroup().addTo(this.map);
                     this.routeLayerGroup = L.layerGroup().addTo(this.map);
                     this.eventLayerGroup = L.layerGroup().addTo(this.map);
 
+                    // Muat Batas Luar Kabupaten Banyumas (Non-Interaktif)
                     this.loadKabupatenBoundary();
 
-                    this.map.on('click', (e) => {
-                        this.setEventPoint(e.latlng.lat, e.latlng.lng);
-                    });
+                    // Listener Klik Peta untuk menentukan Titik Event
+                  this.map.on('click', (e) => {
+    if (this.eventLat !== null && this.eventLng !== null) {
+        this.mapLockedNotice = true;
+        setTimeout(() => { this.mapLockedNotice = false; }, 1800);
+        return;
+    }
+    this.setEventPoint(e.latlng.lat, e.latlng.lng);
+});
 
+                    // Muat Semua Data Faskes ke Peta
                     this.loadInitialFaskes();
 
+                    this.map.on('click', (e) => {
+    // FIX: kalau titik event sudah ada, abaikan klik peta lain —
+    // harus dihapus dulu dari panel (Tab Analisis Event > tombol "Hapus")
+    // supaya titik nggak ketuker/pindah gara-gara kepencet nggak sengaja.
+    if (this.eventLat !== null && this.eventLng !== null) {
+        return;
+    }
+    this.setEventPoint(e.latlng.lat, e.latlng.lng);
+});
+                    // Listener Kustom untuk 'Jadikan Titik Event' dari Popup Faskes
                     window.addEventListener('set-event-here', (e) => {
-                        this.setEventPoint(e.detail.lat, e.detail.lng);
-                        this.activeTab = 'event';
-                    });
+    if (this.eventLat !== null && this.eventLng !== null) return; // opsional: kunci juga di sini
+    this.setEventPoint(e.detail.lat, e.detail.lng);
+    this.activeTab = 'event';
+});
 
-                    // FIX (poin 5): bersihkan floating overlay/badge liar yang mungkin tertinggal di atas
-                    // kanvas peta dari inisialisasi sebelumnya (mis. akibat hot-reload atau leaflet-control
-                    // yang tidak sengaja ditambahkan berulang). Hanya elemen di luar 4 pojok leaflet yang dihapus.
+                    // Bersihkan floating overlay/badge liar yang mungkin tertinggal di atas
+                    // kanvas peta dari inisialisasi sebelumnya. Hanya elemen di luar 4 pojok leaflet yang dihapus.
                     this.cleanupStrayMapOverlays();
                 },
 
-                // FIX (poin 5): hapus elemen apapun yang menempel langsung di #map tapi bukan bagian dari
+                // Hapus elemen apapun yang menempel langsung di #map tapi bukan bagian dari
                 // struktur resmi Leaflet (leaflet-pane, leaflet-control-container, dsb).
                 cleanupStrayMapOverlays() {
                     const mapEl = document.getElementById('map');
@@ -730,6 +803,7 @@
                     });
                 },
 
+                // Menghitung jumlah filter aktif
                 activeFilterCount() {
                     let count = 0;
                     if (this.selectedJenis.length < 6) count++;
@@ -742,6 +816,7 @@
                     return count;
                 },
 
+                // Muat Data Pertama Kali
                 loadInitialFaskes() {
                     this.isFiltering = true;
                     fetch('{{ url("/api/faskes") }}?all=true')
@@ -760,11 +835,11 @@
                         });
                 },
 
-                // Filter kecamatan di sini HANYA mengirim query string ke backend (whereHas / where kecamatan)
-                // dan tidak pernah menggambar polygon kecamatan apapun di peta.
+                // AJAX: Ambil data faskes tersaring dari endpoint API /api/faskes/filter
                 applyDynamicFilters(fitBounds = false) {
                     this.isFiltering = true;
 
+                    // Jika semua checkbox jenis tidak dicentang, kosongkan marker langsung
                     if (this.selectedJenis.length === 0) {
                         this.safeClearFaskesLayer();
                         this.faskesList = [];
@@ -773,8 +848,11 @@
                     }
 
                     const params = new URLSearchParams();
+
+                    // Array jenis faskes
                     this.selectedJenis.forEach(j => params.append('jenis_faskes[]', j));
 
+                    // Filter spesifik atribut
                     if (this.filterAmbulans) params.append('has_ambulans', '1');
                     if (this.filterBpjs) params.append('has_bpjs', '1');
                     if (this.filterRawatInap) params.append('has_rawat_inap', '1');
@@ -797,7 +875,7 @@
                         });
                 },
 
-                // FIX (poin 1): tutup semua popup & bersihkan layer group DULU secara aman
+                // Tutup semua popup & bersihkan layer group DULU secara aman
                 // sebelum layer Leaflet lain (mis. animasi zoom) sempat mereferensikan marker yang sudah tak ada.
                 safeClearFaskesLayer() {
                     if (!this.map) return;
@@ -808,7 +886,7 @@
                     this.markerMap = {};
                 },
 
-                // FIX (poin 1, 2, 3): render marker dengan lifecycle yang aman terhadap animasi Leaflet.
+                // Render marker dengan lifecycle yang aman terhadap animasi Leaflet.
                 renderMarkers(list, fitBounds = false) {
                     if (!this.map) return;
 
@@ -822,7 +900,7 @@
                                 return;
                             }
 
-                            // FIX (poin 2): parsing tegas + validasi finite number sebelum dipakai L.marker
+                            // Parsing tegas + validasi finite number sebelum dipakai L.marker
                             const lat = parseFloat(faskes.latitude);
                             const lng = parseFloat(faskes.longitude);
                             if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
@@ -839,15 +917,14 @@
                         });
 
                         if (fitBounds && bounds.length > 0) {
-                            // FIX (poin 3): animate:false agar kalkulasi posisi piksel tidak rusak
+                            // animate:false agar kalkulasi posisi piksel tidak rusak
                             // saat clearLayers() + addLayer() terjadi hampir bersamaan dengan pan/zoom.
                             this.map.fitBounds(bounds, { padding: [40, 40], animate: false });
                         }
                     };
 
-                    // FIX (poin 1 & 3): jika peta sedang dalam animasi zoom/pan, tunda render
-                    // ke frame berikutnya agar tidak bentrok dengan proses reposisi Leaflet internal
-                    // (sumber utama error _latLngToNewLayerPoint).
+                    // Jika peta sedang dalam animasi zoom/pan, tunda render
+                    // ke frame berikutnya agar tidak bentrok dengan proses reposisi Leaflet internal.
                     if (this.map._animatingZoom) {
                         this.map.once('zoomend', doRender);
                     } else {
@@ -855,7 +932,7 @@
                     }
                 },
 
-                // FIX (poin 1): tutup popup sebelum memindahkan viewport, dan matikan animasi
+                // Tutup popup sebelum memindahkan viewport, dan matikan animasi
                 // supaya tidak tumpang tindih dengan render marker berikutnya.
                 zoomToFaskes(faskes) {
                     if (!faskes.latitude || !faskes.longitude || !this.map) return;
@@ -892,9 +969,7 @@
                     this.applyDynamicFilters(true);
                 },
 
-                // FIX (poin 4): hanya memuat garis batas LUAR kabupaten, non-interaktif, tanpa fill.
-                // Tidak ada kode di file ini yang menggambar polygon per-kecamatan di atas peta —
-                // filter kecamatan murni bekerja sebagai query atribut lewat dropdown sidebar.
+                // Muat Batas Luar Kabupaten Banyumas (Outer Boundary Only & Non-Interaktif)
                 loadKabupatenBoundary() {
                     fetch('{{ asset("geojson/banyumas-kabupaten-outer.json") }}')
                         .then(res => {
@@ -922,6 +997,7 @@
                         });
                 },
 
+                // Toggle Switch Batas Kabupaten (Layer Control)
                 toggleKabupatenLayer() {
                     this.showKabupatenLayer = !this.showKabupatenLayer;
                     if (this.showKabupatenLayer) {
@@ -933,6 +1009,7 @@
                     }
                 },
 
+                // Ambil Lokasi GPS User
                 getCurrentLocation() {
                     if (navigator.geolocation) {
                         navigator.geolocation.getCurrentPosition(
@@ -951,51 +1028,56 @@
                     }
                 },
 
+                // Menetapkan Titik Event Baru
                 setEventPoint(lat, lng) {
-                    if (!this.map) return;
-                    this.map.closePopup();
+    if (!this.map) return;
+    this.map.closePopup();
 
-                    this.eventLat = lat;
-                    this.eventLng = lng;
-                    this.sidebarOpen = true;
-                    this.activeTab = 'event';
+    this.eventLat = lat;
+    this.eventLng = lng;
+    this.sidebarOpen = true;
+    this.activeTab = 'event';
 
-                    this.eventLayerGroup.clearLayers();
+    const popupHtml = `
+        <div class="text-xs p-1">
+            <b class="text-red-600">Titik Event / Kejadian</b><br>
+            Lat: ${lat.toFixed(6)}<br>
+            Lng: ${lng.toFixed(6)}<br>
+            <span class="text-[10px] text-slate-400">Hapus titik di panel untuk memindahkan</span>
+        </div>
+    `;
 
-                    const eventIcon = L.divIcon({
-                        className: 'event-pulse',
-                        html: `
-                            <div style="background-color: #ef4444; width: 32px; height: 32px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(239,68,68,0.5); border: 2px solid #ffffff;">
-                                <span style="transform: rotate(45deg); font-size: 15px; color: white;">📍</span>
-                            </div>
-                        `,
-                        iconSize: [32, 32],
-                        iconAnchor: [16, 32],
-                        popupAnchor: [0, -32]
-                    });
+    if (this.eventMarker) {
+        // Reuse marker yang sudah ada — jangan clearLayers()+recreate (lihat fix sebelumnya)
+        this.eventMarker.setLatLng([lat, lng]);
+        this.eventMarker.setPopupContent(popupHtml);
+    } else {
+        const eventIcon = L.divIcon({
+            className: 'event-pulse',
+            html: `
+                <div style="background-color: #ef4444; width: 32px; height: 32px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(239,68,68,0.5); border: 2px solid #ffffff;">
+                    <span style="transform: rotate(45deg); font-size: 15px; color: white;">📍</span>
+                </div>
+            `,
+            iconSize: [32, 32],
+            iconAnchor: [16, 32],
+            popupAnchor: [0, -32]
+        });
 
-                    this.eventMarker = L.marker([lat, lng], {
-                        icon: eventIcon,
-                        draggable: true
-                    }).addTo(this.eventLayerGroup);
+        // FIX: draggable dihapus. Titik event sekarang cuma bisa dipindah
+        // dengan alur eksplisit: hapus dulu (resetEvent) lalu klik titik baru —
+        // supaya nggak ada risiko kepencet/kegeser nggak sengaja.
+        this.eventMarker = L.marker([lat, lng], {
+            icon: eventIcon
+        }).addTo(this.eventLayerGroup);
 
-                    this.eventMarker.bindPopup(`
-                        <div class="text-xs p-1">
-                            <b class="text-red-600">Titik Event / Kejadian</b><br>
-                            Lat: ${lat.toFixed(6)}<br>
-                            Lng: ${lng.toFixed(6)}<br>
-                            <span class="text-[10px] text-slate-400">Geser marker untuk mengubah titik</span>
-                        </div>
-                    `);
+        this.eventMarker.bindPopup(popupHtml);
+    }
 
-                    this.eventMarker.on('dragend', (e) => {
-                        const newPos = e.target.getLatLng();
-                        this.setEventPoint(newPos.lat, newPos.lng);
-                    });
+    this.updateRadiusCircle();
+},
 
-                    this.updateRadiusCircle();
-                },
-
+                // Update Lingkaran Radius Pencarian
                 updateRadiusCircle() {
                     if (!this.eventLat || !this.eventLng) return;
 
@@ -1014,6 +1096,7 @@
                     }).addTo(this.eventLayerGroup);
                 },
 
+                // Reset Event
                 resetEvent() {
                     if (this.map) this.map.closePopup();
                     this.eventLat = null;
@@ -1026,6 +1109,7 @@
                     this.eventMarker = null;
                 },
 
+                // Jalankan Pencarian Faskes & Rute OSRM
                 cariFaskesTerdekat() {
                     if (!this.eventLat || !this.eventLng) return;
 
@@ -1040,6 +1124,7 @@
                         sort_by: 'jarak_jalan'
                     });
 
+                    // Sertakan filter aktif jenis & spesifik
                     if (this.selectedJenis.length > 0 && this.selectedJenis.length < 6) {
                         this.selectedJenis.forEach(j => params.append('jenis_faskes[]', j));
                     }
@@ -1048,7 +1133,9 @@
                     if (this.filterRawatInap) params.append('has_rawat_inap', '1');
                     if (this.filterPoned) params.append('has_poned', '1');
 
-                    fetch(`/api/analisis-event?${params.toString()}`)
+                    // FIX BUG: pakai helper url() Laravel (bukan path hardcode) supaya tetap benar
+                    // kalau aplikasi di-deploy di subfolder / base path selain root domain.
+                    fetch(`{{ url("/api/analisis-event") }}?${params.toString()}`)
                         .then(res => res.json())
                         .then(res => {
                             this.isLoading = false;
@@ -1099,6 +1186,7 @@
                         });
                 },
 
+                // Fokus ke Salah Satu Rute Faskes
                 fokusKeRute(item, index) {
                     if (!this.map) return;
                     this.map.closePopup();
@@ -1117,6 +1205,7 @@
                     }
                 },
 
+                // URL Helper untuk Export Hasil Analisis (Excel / PDF)
                 getExportUrl(format) {
                     if (!this.eventLat || !this.eventLng) return '#';
                     const base = format === 'excel'
@@ -1139,6 +1228,7 @@
                     return `${base}?${params.toString()}`;
                 },
 
+                // Generator Custom Leaflet Marker Icon Berdasarkan Jenis Faskes
                 createFaskesIcon(jenis) {
                     const iconConfig = {
                         'rumah_sakit':    { color: '#ef4444', label: 'RS' },
@@ -1164,6 +1254,7 @@
                     });
                 },
 
+                // Popup HTML Faskes
                 createFaskesPopupHtml(faskes) {
                     const jenisText = this.formatJenis(faskes.jenis_faskes);
                     const detail = faskes.detail || {};

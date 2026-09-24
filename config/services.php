@@ -40,4 +40,8 @@ return [
         'timeout' => env('OSRM_TIMEOUT', 10),
     ],
 
+    'nominatim' => [
+    'user_agent' => env('NOMINATIM_USER_AGENT', 'SIG-Faskes-Banyumas (datadukungprimerdankestrad2024@gmail.com)'),
+],
+
 ];
