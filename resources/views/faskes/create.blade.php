@@ -1258,13 +1258,13 @@
                                 Kepemilikan Klinik
                             </label>
 
-                            <input type="text"
-                                   name="ku_kepemilikan"
-                                   value="{{ old('ku_kepemilikan', 'Swasta') }}"
-                                   placeholder="Contoh: Swasta, Yayasan, BUMN"
-                                   class="input-modern w-full bg-slate-50
-                                          border border-slate-200 rounded-lg
-                                          px-3 py-2.5 text-xs">
+                            <select name="ku_kepemilikan"
+                                    class="input-modern w-full bg-slate-50
+                                           border border-slate-200 rounded-lg
+                                           px-3 py-2.5 text-xs">
+                                <option value="Swasta" {{ old('ku_kepemilikan', 'Swasta') == 'Swasta' ? 'selected' : '' }}>Swasta</option>
+                                <option value="Pemerintah" {{ old('ku_kepemilikan') == 'Pemerintah' ? 'selected' : '' }}>Pemerintah</option>
+                            </select>
                         </div>
 
 
@@ -1284,7 +1284,7 @@
 
                         <div>
                             <label class="block text-xs font-semibold text-slate-700 mb-1.5">
-                                Ambulans Khusus
+                                Ambulans Transpot
                             </label>
 
                             <input type="number"
@@ -1331,13 +1331,13 @@
                                 Kepemilikan Laboratorium
                             </label>
 
-                            <input type="text"
-                                   name="lab_kepemilikan"
-                                   value="{{ old('lab_kepemilikan', 'Swasta') }}"
-                                   placeholder="Contoh: PT Prodia Widyahusada Tbk, Pemerintah Daerah"
-                                   class="input-modern w-full bg-slate-50
-                                          border border-slate-200 rounded-lg
-                                          px-3 py-2.5 text-xs">
+                            <select name="lab_kepemilikan"
+                                    class="input-modern w-full bg-slate-50
+                                           border border-slate-200 rounded-lg
+                                           px-3 py-2.5 text-xs">
+                                <option value="Swasta" {{ old('lab_kepemilikan', 'Swasta') == 'Swasta' ? 'selected' : '' }}>Swasta</option>
+                                <option value="Pemerintah" {{ old('lab_kepemilikan') == 'Pemerintah' ? 'selected' : '' }}>Pemerintah</option>
+                            </select>
                         </div>
 
 

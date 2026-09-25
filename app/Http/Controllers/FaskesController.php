@@ -244,6 +244,7 @@ class FaskesController extends Controller
             'detail'                    => 'nullable|array',
             'detail.ambulans_transport' => 'nullable|integer|min:0',
             'detail.ambulans_gadar'     => 'nullable|integer|min:0',
+            'detail.kepemilikan'        => 'nullable|string|in:Swasta,Pemerintah',
         ]);
 
         $detailData = $validated['detail'] ?? [];

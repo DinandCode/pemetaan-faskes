@@ -167,6 +167,8 @@ class FaskesCrudController extends Controller
             'status'                => 'required|in:aktif,nonaktif',
             'rs_ambulans_transport' => 'nullable|integer|min:0',
             'rs_ambulans_gadar'     => 'nullable|integer|min:0',
+            'ku_kepemilikan'        => 'nullable|string|in:Swasta,Pemerintah',
+            'lab_kepemilikan'       => 'nullable|string|in:Swasta,Pemerintah',
         ]);
     }
 

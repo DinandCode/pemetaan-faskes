@@ -377,9 +377,15 @@
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div>
                             <label class="block text-[11px] font-semibold text-slate-700 mb-1.5">Kepemilikan Klinik</label>
-                            <input type="text" name="ku_kepemilikan" value="{{ old('ku_kepemilikan', $ku?->kepemilikan ?? 'Swasta') }}"
-                                   placeholder="Contoh: Swasta, Yayasan, BUMN"
-                                   class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs transition focus:bg-white focus:outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10">
+                            @php
+                                $valKuKepemilikan = old('ku_kepemilikan', $ku?->kepemilikan ?? 'Swasta');
+                                $isKuPemerintah = stripos((string)$valKuKepemilikan, 'pemerintah') !== false;
+                            @endphp
+                            <select name="ku_kepemilikan"
+                                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs transition focus:bg-white focus:outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10">
+                                <option value="Swasta" {{ !$isKuPemerintah ? 'selected' : '' }}>Swasta</option>
+                                <option value="Pemerintah" {{ $isKuPemerintah ? 'selected' : '' }}>Pemerintah</option>
+                            </select>
                         </div>
                         <div>
                             <label class="block text-[11px] font-semibold text-slate-700 mb-1.5">Masa Izin Operasional</label>
@@ -405,9 +411,15 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                             <label class="block text-[11px] font-semibold text-slate-700 mb-1.5">Kepemilikan Laboratorium</label>
-                            <input type="text" name="lab_kepemilikan" value="{{ old('lab_kepemilikan', $lab?->kepemilikan ?? 'Swasta') }}"
-                                   placeholder="Contoh: PT Prodia Widyahusada Tbk, Pemerintah Daerah"
-                                   class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs transition focus:bg-white focus:outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10">
+                            @php
+                                $valLabKepemilikan = old('lab_kepemilikan', $lab?->kepemilikan ?? 'Swasta');
+                                $isLabPemerintah = stripos((string)$valLabKepemilikan, 'pemerintah') !== false;
+                            @endphp
+                            <select name="lab_kepemilikan"
+                                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs transition focus:bg-white focus:outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10">
+                                <option value="Swasta" {{ !$isLabPemerintah ? 'selected' : '' }}>Swasta</option>
+                                <option value="Pemerintah" {{ $isLabPemerintah ? 'selected' : '' }}>Pemerintah</option>
+                            </select>
                         </div>
                         <div>
                             <label class="block text-[11px] font-semibold text-slate-700 mb-1.5">Masa Izin Operasional</label>
