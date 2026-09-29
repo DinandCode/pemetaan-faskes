@@ -331,7 +331,7 @@
                                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs transition focus:bg-white focus:outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10">
                         </div>
                         <div>
-                            <label class="block text-[11px] font-semibold text-slate-700 mb-1.5">Masa Izin Operasional</label>
+                            <label class="block text-[11px] font-semibold text-slate-700 mb-1.5">Masa Berlaku Izin Operasional</label>
                             <input type="date" name="kp_masa_izin" value="{{ old('kp_masa_izin', $kp?->masa_izin?->format('Y-m-d')) }}"
                                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs transition focus:bg-white focus:outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10">
                         </div>
@@ -388,7 +388,7 @@
                             </select>
                         </div>
                         <div>
-                            <label class="block text-[11px] font-semibold text-slate-700 mb-1.5">Masa Izin Operasional</label>
+                            <label class="block text-[11px] font-semibold text-slate-700 mb-1.5">Masa Berlaku Izin Operasional</label>
                             <input type="date" name="ku_masa_izin" value="{{ old('ku_masa_izin', $ku?->masa_izin?->format('Y-m-d')) }}"
                                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs transition focus:bg-white focus:outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10">
                         </div>
@@ -422,7 +422,7 @@
                             </select>
                         </div>
                         <div>
-                            <label class="block text-[11px] font-semibold text-slate-700 mb-1.5">Masa Izin Operasional</label>
+                            <label class="block text-[11px] font-semibold text-slate-700 mb-1.5">Masa Berlaku Izin Operasional</label>
                             <input type="date" name="lab_masa_izin" value="{{ old('lab_masa_izin', $lab?->masa_izin?->format('Y-m-d')) }}"
                                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs transition focus:bg-white focus:outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10">
                         </div>

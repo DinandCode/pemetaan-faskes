@@ -1135,7 +1135,7 @@
 
                         <div>
                             <label class="block text-xs font-semibold text-slate-700 mb-1.5">
-                                Masa Izin Operasional
+                                Masa Berlaku Izin Operasional
                             </label>
 
                             <input type="date"
@@ -1270,7 +1270,7 @@
 
                         <div>
                             <label class="block text-xs font-semibold text-slate-700 mb-1.5">
-                                Masa Izin Operasional
+                                Masa Berlaku Izin Operasional
                             </label>
 
                             <input type="date"
@@ -1343,7 +1343,7 @@
 
                         <div>
                             <label class="block text-xs font-semibold text-slate-700 mb-1.5">
-                                Masa Izin Operasional
+                                Masa Berlaku Izin Operasional
                             </label>
 
                             <input type="date"
