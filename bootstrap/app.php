@@ -12,7 +12,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        // Vercel berada di balik proxy: percayai header X-Forwarded-* agar HTTPS terdeteksi
+        $middleware->trustProxies(at: '*');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
