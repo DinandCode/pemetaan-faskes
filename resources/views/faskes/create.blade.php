@@ -138,7 +138,7 @@
             </div>
         @endif
 
- @include('faskes._alerts') 
+ @include('faskes._alert') 
         <form action="{{ route('faskes.store') }}" method="POST" class="space-y-5">
             @csrf
 
