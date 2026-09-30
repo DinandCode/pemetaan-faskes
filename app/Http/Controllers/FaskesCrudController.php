@@ -79,6 +79,7 @@ class FaskesCrudController extends Controller
             return redirect()->route('faskes.index')->with('success', 'Data faskes berhasil ditambahkan.');
         } catch (\Exception $e) {
             DB::rollBack();
+            \Log::error('Gagal simpan faskes: ' . $e->getMessage());
             return back()->withInput()->with('error', 'Gagal menyimpan faskes: ' . $e->getMessage());
         }
     }
@@ -131,6 +132,7 @@ class FaskesCrudController extends Controller
             return redirect()->route('faskes.index')->with('success', 'Data faskes berhasil diperbarui.');
         } catch (\Exception $e) {
             DB::rollBack();
+            \Log::error('Gagal simpan faskes: ' . $e->getMessage());
             return back()->withInput()->with('error', 'Gagal memperbarui faskes: ' . $e->getMessage());
         }
     }
