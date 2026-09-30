@@ -85,18 +85,30 @@ class OsrmService
         $url = "{$this->baseUrl}/route/v1/driving/{$coordinates}";
 
         try {
-            $response = Http::timeout($this->timeout)
-                ->acceptJson()
-                ->get($url, [
-                    'overview'   => 'full',
-                    'geometries' => 'geojson',
-                    'steps'      => 'false',
-                    // Batasi radius pencarian jalan terdekat dari masing-masing titik.
-                    // Kalau tidak ada jalan dalam radius ini, OSRM akan langsung
-                    // mengembalikan kode error (mis. NoSegment) alih-alih diam-diam
-                    // menempel ke jalan yang jauh sekali.
-                    'radiuses'   => "{$this->snapSearchRadiusMeters};{$this->snapSearchRadiusMeters}",
-                ]);
+            $params = [
+                'overview'   => 'full',
+                'geometries' => 'geojson',
+                'steps'      => 'false',
+                // Batasi radius pencarian jalan terdekat dari masing-masing titik.
+                // Kalau tidak ada jalan dalam radius ini, OSRM akan langsung
+                // mengembalikan kode error (mis. NoSegment) alih-alih diam-diam
+                // menempel ke jalan yang jauh sekali.
+                'radiuses'   => "{$this->snapSearchRadiusMeters};{$this->snapSearchRadiusMeters}",
+            ];
+
+            $request = Http::timeout($this->timeout)->acceptJson();
+            $proxyUrl = env('OUTBOUND_PROXY_URL');
+
+            if ($proxyUrl) {
+                // Di Vercel: runtime PHP memakai OpenSSL lama sehingga handshake HTTPS
+                // langsung ke OSRM gagal. Panggilan diteruskan lewat proxy Node (api/proxy.mjs).
+                $response = $request
+                    ->withHeaders(['x-proxy-secret' => (string) env('OUTBOUND_PROXY_SECRET')])
+                    ->get($proxyUrl, $params + ['target' => 'osrm', 'coords' => $coordinates]);
+            } else {
+                // Lokal / lingkungan lain: panggil OSRM langsung seperti biasa.
+                $response = $request->get($url, $params);
+            }
 
             if (! $response->successful()) {
                 Log::warning('OSRM API Error Response', [

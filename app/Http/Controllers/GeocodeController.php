@@ -76,21 +76,36 @@ class GeocodeController extends Controller
     {
         $userAgent = config('services.nominatim.user_agent');
 
-        $response = Http::withHeaders([
-            // WAJIB diisi sesuai kebijakan penggunaan Nominatim: nama aplikasi + kontak yang bisa dihubungi.
-            // Isi lewat .env: NOMINATIM_USER_AGENT="SIG-Faskes-Banyumas (kontak@dinkes-banyumas.go.id)"
-            'User-Agent' => $userAgent,
-        ])
-            ->timeout(6)
-            ->get('https://nominatim.openstreetmap.org/search', [
-                'q'              => $query,
-                'format'         => 'jsonv2',
-                'addressdetails' => 1,
-                'limit'          => 6,
-                'countrycodes'   => 'id',
-                'viewbox'        => self::BANYUMAS_VIEWBOX,
-                'bounded'        => 0, // 0 = bias saja, bukan pembatas mutlak (alamat di luar Banyumas tetap bisa ketemu kalau memang diketik lengkap)
-            ]);
+        $params = [
+            'q'              => $query,
+            'format'         => 'jsonv2',
+            'addressdetails' => 1,
+            'limit'          => 6,
+            'countrycodes'   => 'id',
+            'viewbox'        => self::BANYUMAS_VIEWBOX,
+            'bounded'        => 0, // 0 = bias saja, bukan pembatas mutlak (alamat di luar Banyumas tetap bisa ketemu kalau memang diketik lengkap)
+        ];
+
+        $proxyUrl = env('OUTBOUND_PROXY_URL');
+
+        if ($proxyUrl) {
+            // Di Vercel: runtime PHP memakai OpenSSL lama sehingga handshake HTTPS
+            // langsung ke Nominatim gagal. Panggilan diteruskan lewat proxy Node (api/proxy.mjs).
+            $response = Http::withHeaders([
+                'x-proxy-secret'       => (string) env('OUTBOUND_PROXY_SECRET'),
+                'x-forward-user-agent' => (string) ($userAgent ?: 'SIG-Faskes-Banyumas'),
+            ])
+                ->timeout(10)
+                ->get($proxyUrl, $params + ['target' => 'nominatim']);
+        } else {
+            $response = Http::withHeaders([
+                // WAJIB diisi sesuai kebijakan penggunaan Nominatim: nama aplikasi + kontak yang bisa dihubungi.
+                // Isi lewat .env: NOMINATIM_USER_AGENT="SIG-Faskes-Banyumas (kontak@dinkes-banyumas.go.id)"
+                'User-Agent' => $userAgent,
+            ])
+                ->timeout(6)
+                ->get('https://nominatim.openstreetmap.org/search', $params);
+        }
 
         if (! $response->successful()) {
             Log::warning('Nominatim API non-2xx response', [
@@ -108,7 +123,7 @@ class GeocodeController extends Controller
         }
 
         return collect($raw)
-            ->map(function (array $item) {
+            ->map(function (array $item) use ($query) {
                 $lat = isset($item['lat']) ? (float) $item['lat'] : null;
                 $lon = isset($item['lon']) ? (float) $item['lon'] : null;
 
