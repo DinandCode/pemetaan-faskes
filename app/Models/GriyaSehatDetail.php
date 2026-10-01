@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class KlinikUtamaDetail extends Model
+class GriyaSehatDetail extends Model
 {
     use HasFactory;
 
@@ -15,7 +15,7 @@ class KlinikUtamaDetail extends Model
      *
      * @var string
      */
-    protected $table = 'klinik_utama_details';
+    protected $table = 'griya_sehat_details';
 
     /**
      * The attributes that are mass assignable.
@@ -24,15 +24,10 @@ class KlinikUtamaDetail extends Model
      */
     protected $fillable = [
         'faskes_id',
-        'ambulans',
         'masa_izin',
-        'kemampuan_layanan',
-        'kepemilikan',
-        'kategori_layanan',
-        'bed_rawat_inap',
-        'bpjs',
         'pj',
         'kontak_pj',
+        'jumlah_sdm',
     ];
 
     /**
@@ -43,10 +38,8 @@ class KlinikUtamaDetail extends Model
     protected function casts(): array
     {
         return [
-            'ambulans'       => 'integer',
-            'masa_izin'      => 'date',
-            'bed_rawat_inap' => 'integer',
-            'bpjs'           => 'boolean',
+            'masa_izin'   => 'date',
+            'jumlah_sdm'  => 'integer',
         ];
     }
 

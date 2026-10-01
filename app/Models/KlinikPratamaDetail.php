@@ -32,6 +32,8 @@ class KlinikPratamaDetail extends Model
         'bpjs',
         'pj',
         'kontak_pj',
+        'kategori_layanan',
+        'kepemilikan',
     ];
 
     /**

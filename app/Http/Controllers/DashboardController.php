@@ -21,10 +21,11 @@ class DashboardController extends Controller
         $totalPuskesmas = Faskes::where('jenis_faskes', 'puskesmas')->count();
         $totalRumahSakit = Faskes::where('jenis_faskes', 'rumah_sakit')->count();
 
-        // Total Bed Rawat Inap (Puskesmas + Klinik Pratama)
+        // Total Bed Rawat Inap (Puskesmas + Klinik Pratama + Klinik Utama)
         $bedPuskesmas = (int) PuskesmasDetail::sum('jumlah_tempat_tidur');
         $bedKlinik = (int) KlinikPratamaDetail::sum('bed_rawat_inap');
-        $totalBed = $bedPuskesmas + $bedKlinik;
+        $bedKu = (int) \App\Models\KlinikUtamaDetail::sum('bed_rawat_inap');
+        $totalBed = $bedPuskesmas + $bedKlinik + $bedKu;
 
         // Total Ambulans (Jumlah unit kendaraan dari semua faskes aktif)
         $ambPuskesmas = (int) PuskesmasDetail::whereHas('faskes', fn($q) => $q->where('status', 'aktif'))
@@ -62,6 +63,11 @@ class DashboardController extends Controller
             'klinik_utama'   => 'Klinik Utama',
             'laboratorium'   => 'Laboratorium',
             'upkdk'          => 'UPKDK',
+            'griya_sehat'    => 'Griya Sehat',
+            'tpmd'           => 'TPMD',
+            'tpmdg'          => 'TPMDG',
+            'tpmb'           => 'TPMB',
+            'tpmp'           => 'TPMP',
         ];
 
         $colorMap = [
@@ -71,6 +77,11 @@ class DashboardController extends Controller
             'klinik_utama'   => '#14b8a6', // Teal
             'laboratorium'   => '#8b5cf6', // Ungu
             'upkdk'          => '#f59e0b', // Amber/Kuning
+            'griya_sehat'    => '#06b6d4', // Cyan
+            'tpmd'           => '#0ea5e9', // Sky Blue
+            'tpmdg'          => '#6366f1', // Indigo
+            'tpmb'           => '#ec4899', // Pink
+            'tpmp'           => '#84cc16', // Lime
         ];
 
         $chartKategoriLabels = [];
@@ -90,6 +101,7 @@ class DashboardController extends Controller
             'klinikPratamaDetail',
             'klinikUtamaDetail',
             'laboratoriumDetail',
+            'griyaSehatDetail',
         ])
         ->get()
         ->filter(function ($faskes) {

@@ -237,6 +237,26 @@
                                         UPKDK (Pustu / PKD)
                                     </option>
 
+                                    <option value="griya_sehat">
+                                        Griya Sehat
+                                    </option>
+
+                                    <option value="tpmd">
+                                        TPMD (Praktik Mandiri Dokter)
+                                    </option>
+
+                                    <option value="tpmdg">
+                                        TPMDG (Praktik Mandiri Dokter Gigi)
+                                    </option>
+
+                                    <option value="tpmb">
+                                        TPMB (Praktik Mandiri Bidan)
+                                    </option>
+
+                                    <option value="tpmp">
+                                        TPMP (Praktik Mandiri Perawat)
+                                    </option>
+
                                 </select>
 
                                 <i class="fa-solid fa-chevron-down absolute right-3 top-1/2
@@ -811,7 +831,7 @@
 
                                 <option value="pedesaan"
                                         {{ old('puskesmas_wilayah') == 'pedesaan' ? 'selected' : '' }}>
-                                    Pedesaan
+                                    Perdesaan
                                 </option>
 
                             </select>
@@ -841,7 +861,7 @@
 
                         <div>
                             <label class="block text-xs font-semibold text-slate-700 mb-1.5">
-                                Jumlah Tempat Tidur (Bed)
+                                Jumlah TT Rawat Inap
                             </label>
 
                             <input type="number"
@@ -877,14 +897,14 @@
                     </div>
 
 
-                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-2">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
 
                         <div>
                             <label class="block text-xs font-semibold text-slate-700 mb-1.5">
-                                Status PONED
+                                Kemampuan Pelayanan Persalinan
                             </label>
 
-                            <select name="puskesmas_poned"
+                            <select name="puskesmas_kemampuan_persalinan"
                                     class="input-modern w-full bg-slate-50
                                            border border-slate-200 rounded-lg
                                            px-3 py-2.5 text-xs
@@ -892,41 +912,19 @@
                                            focus:ring-2 focus:ring-blue-500/20
                                            focus:border-blue-500">
 
-                                <option value="Ya PONED"
-                                        {{ old('puskesmas_poned') == 'Ya PONED' ? 'selected' : '' }}>
-                                    Ya PONED
+                                <option value="PONED"
+                                        {{ old('puskesmas_kemampuan_persalinan') == 'PONED' ? 'selected' : '' }}>
+                                    PONED
                                 </option>
 
-                                <option value="Tidak PONED"
-                                        {{ old('puskesmas_poned', 'Tidak PONED') == 'Tidak PONED' ? 'selected' : '' }}>
-                                    Tidak PONED
+                                <option value="NON PONED (Mampu Salin)"
+                                        {{ old('puskesmas_kemampuan_persalinan', 'NON PONED (Mampu Salin)') == 'NON PONED (Mampu Salin)' ? 'selected' : '' }}>
+                                    NON PONED (Mampu Salin)
                                 </option>
 
-                            </select>
-                        </div>
-
-
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1.5">
-                                Mampu Salin
-                            </label>
-
-                            <select name="puskesmas_mampu_salin"
-                                    class="input-modern w-full bg-slate-50
-                                           border border-slate-200 rounded-lg
-                                           px-3 py-2.5 text-xs
-                                           focus:bg-white focus:outline-none
-                                           focus:ring-2 focus:ring-blue-500/20
-                                           focus:border-blue-500">
-
-                                <option value="Ya"
-                                        {{ old('puskesmas_mampu_salin', 'Ya') == 'Ya' ? 'selected' : '' }}>
-                                    Ya
-                                </option>
-
-                                <option value="Tidak"
-                                        {{ old('puskesmas_mampu_salin') == 'Tidak' ? 'selected' : '' }}>
-                                    Tidak
+                                <option value="NON PONED (Tidak Mampu Salin)"
+                                        {{ old('puskesmas_kemampuan_persalinan') == 'NON PONED (Tidak Mampu Salin)' ? 'selected' : '' }}>
+                                    NON PONED (Tidak Mampu Salin)
                                 </option>
 
                             </select>
@@ -982,7 +980,28 @@
 
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
 
-                        <div class="sm:col-span-2">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1.5">
+                                Tipe Rumah Sakit
+                            </label>
+
+                            <select name="rs_tipe_rs"
+                                    class="input-modern w-full bg-slate-50
+                                           border border-slate-200 rounded-lg
+                                           px-3 py-2.5 text-xs
+                                           focus:bg-white focus:outline-none
+                                           focus:ring-2 focus:ring-blue-500/20
+                                           focus:border-blue-500">
+                                <option value="">-- Pilih Tipe RS --</option>
+                                <option value="A" {{ old('rs_tipe_rs') == 'A' ? 'selected' : '' }}>Tipe A</option>
+                                <option value="B" {{ old('rs_tipe_rs') == 'B' ? 'selected' : '' }}>Tipe B</option>
+                                <option value="C" {{ old('rs_tipe_rs') == 'C' ? 'selected' : '' }}>Tipe C</option>
+                                <option value="D" {{ old('rs_tipe_rs') == 'D' ? 'selected' : '' }}>Tipe D</option>
+                                <option value="D Pratama" {{ old('rs_tipe_rs') == 'D Pratama' ? 'selected' : '' }}>Tipe D Pratama</option>
+                            </select>
+                        </div>
+
+                        <div>
                             <label class="block text-xs font-semibold text-slate-700 mb-1.5">
                                 Tingkat Kemampuan Pelayanan
                             </label>
@@ -990,7 +1009,7 @@
                             <input type="text"
                                    name="rs_kemampuan_pelayanan"
                                    value="{{ old('rs_kemampuan_pelayanan') }}"
-                                   placeholder="Contoh: Rujukan Regional Tipe A, RSU Tipe B, RS Bedah Tipe C"
+                                   placeholder="Contoh: Rujukan Regional, RSU Kelas B"
                                    class="input-modern w-full bg-slate-50
                                           border border-slate-200 rounded-lg
                                           px-3 py-2.5 text-xs
@@ -1061,7 +1080,7 @@
 
                         <div>
                             <label class="block text-xs font-semibold text-slate-700 mb-1.5">
-                                Status PONEK
+                                Status Pelayanan PONEK
                             </label>
 
                             <select name="rs_ponek"
@@ -1074,12 +1093,12 @@
 
                                 <option value="Ya PONEK"
                                         {{ old('rs_ponek') == 'Ya PONEK' ? 'selected' : '' }}>
-                                    Ya PONEK
+                                    PONEK (Ya PONEK)
                                 </option>
 
                                 <option value="Tidak PONEK"
                                         {{ old('rs_ponek', 'Tidak PONEK') == 'Tidak PONEK' ? 'selected' : '' }}>
-                                    Tidak PONEK
+                                    NON PONEK (Tidak PONEK)
                                 </option>
 
                             </select>
@@ -1095,11 +1114,39 @@
                      x-transition
                      class="space-y-4">
 
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
 
                         <div>
                             <label class="block text-xs font-semibold text-slate-700 mb-1.5">
-                                Penanggung Jawab (PJ Medis)
+                                Kemampuan Layanan
+                            </label>
+
+                            <select name="kp_kategori_layanan"
+                                    class="input-modern w-full bg-slate-50
+                                           border border-slate-200 rounded-lg
+                                           px-3 py-2.5 text-xs">
+                                <option value="rawat_jalan" {{ old('kp_kategori_layanan', 'rawat_jalan') == 'rawat_jalan' ? 'selected' : '' }}>Rawat Jalan</option>
+                                <option value="rawat_inap" {{ old('kp_kategori_layanan') == 'rawat_inap' ? 'selected' : '' }}>Rawat Inap</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1.5">
+                                Kepemilikan
+                            </label>
+
+                            <select name="kp_kepemilikan"
+                                    class="input-modern w-full bg-slate-50
+                                           border border-slate-200 rounded-lg
+                                           px-3 py-2.5 text-xs">
+                                <option value="Swasta" {{ old('kp_kepemilikan', 'Swasta') == 'Swasta' ? 'selected' : '' }}>Swasta</option>
+                                <option value="Pemerintah" {{ old('kp_kepemilikan') == 'Pemerintah' ? 'selected' : '' }}>Pemerintah</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1.5">
+                                Penanggung Jawab (PJ) Medis
                             </label>
 
                             <input type="text"
@@ -1132,10 +1179,14 @@
                                           focus:border-blue-500">
                         </div>
 
+                    </div>
+
+
+                    <div class="grid grid-cols-1 sm:grid-cols-5 gap-3">
 
                         <div>
                             <label class="block text-xs font-semibold text-slate-700 mb-1.5">
-                                Masa Berlaku Izin Operasional
+                                Masa Berlaku Izin
                             </label>
 
                             <input type="date"
@@ -1149,14 +1200,9 @@
                                           focus:border-blue-500">
                         </div>
 
-                    </div>
-
-
-                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
-
                         <div>
                             <label class="block text-xs font-semibold text-slate-700 mb-1.5">
-                                Bed Rawat Inap
+                                Jumlah TT Rawat Inap
                             </label>
 
                             <input type="number"
@@ -1251,7 +1297,21 @@
                      x-transition
                      class="space-y-4">
 
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1.5">
+                                Kemampuan Layanan
+                            </label>
+
+                            <select name="ku_kategori_layanan"
+                                    class="input-modern w-full bg-slate-50
+                                           border border-slate-200 rounded-lg
+                                           px-3 py-2.5 text-xs">
+                                <option value="rawat_jalan" {{ old('ku_kategori_layanan', 'rawat_jalan') == 'rawat_jalan' ? 'selected' : '' }}>Rawat Jalan</option>
+                                <option value="rawat_inap" {{ old('ku_kategori_layanan') == 'rawat_inap' ? 'selected' : '' }}>Rawat Inap</option>
+                            </select>
+                        </div>
 
                         <div>
                             <label class="block text-xs font-semibold text-slate-700 mb-1.5">
@@ -1267,10 +1327,41 @@
                             </select>
                         </div>
 
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1.5">
+                                Penanggung Jawab (PJ) Medis
+                            </label>
+
+                            <input type="text"
+                                   name="ku_pj"
+                                   value="{{ old('ku_pj') }}"
+                                   placeholder="Contoh: dr. Sp.B / Spesialis"
+                                   class="input-modern w-full bg-slate-50
+                                          border border-slate-200 rounded-lg
+                                          px-3 py-2.5 text-xs">
+                        </div>
 
                         <div>
                             <label class="block text-xs font-semibold text-slate-700 mb-1.5">
-                                Masa Berlaku Izin Operasional
+                                Kontak Penanggung Jawab
+                            </label>
+
+                            <input type="text"
+                                   name="ku_kontak_pj"
+                                   value="{{ old('ku_kontak_pj') }}"
+                                   placeholder="No. HP / WhatsApp"
+                                   class="input-modern w-full bg-slate-50
+                                          border border-slate-200 rounded-lg
+                                          px-3 py-2.5 text-xs">
+                        </div>
+
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1.5">
+                                Masa Berlaku Izin
                             </label>
 
                             <input type="date"
@@ -1281,10 +1372,37 @@
                                           px-3 py-2 text-xs">
                         </div>
 
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1.5">
+                                Jumlah TT Rawat Inap
+                            </label>
+
+                            <input type="number"
+                                   min="0"
+                                   name="ku_bed_rawat_inap"
+                                   value="{{ old('ku_bed_rawat_inap', 0) }}"
+                                   class="input-modern w-full bg-slate-50
+                                          border border-slate-200 rounded-lg
+                                          px-3 py-2.5 text-xs">
+                        </div>
 
                         <div>
                             <label class="block text-xs font-semibold text-slate-700 mb-1.5">
-                                Ambulans Transpot
+                                Melayani BPJS
+                            </label>
+
+                            <select name="ku_bpjs"
+                                    class="input-modern w-full bg-slate-50
+                                           border border-slate-200 rounded-lg
+                                           px-3 py-2.5 text-xs">
+                                <option value="Ya" {{ old('ku_bpjs') == 'Ya' ? 'selected' : '' }}>Ya</option>
+                                <option value="Tidak" {{ old('ku_bpjs', 'Tidak') == 'Tidak' ? 'selected' : '' }}>Tidak</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1.5">
+                                Ambulans Transport
                             </label>
 
                             <input type="number"
@@ -1444,6 +1562,77 @@
 
                     </div>
 
+                </div>
+
+                <!-- 7. CHILD: GRIYA SEHAT -->
+                <div x-show="jenisFaskes === 'griya_sehat'"
+                     x-transition
+                     class="space-y-4">
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1.5">
+                                Penanggung Jawab (PJ) Medis / Pimpinan
+                            </label>
+                            <input type="text"
+                                   name="gs_pj"
+                                   value="{{ old('gs_pj') }}"
+                                   placeholder="Nama lengkap & gelar penanggung jawab"
+                                   class="input-modern w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-xs">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1.5">
+                                Nomor Kontak Penanggung Jawab
+                            </label>
+                            <input type="text"
+                                   name="gs_kontak_pj"
+                                   value="{{ old('gs_kontak_pj') }}"
+                                   placeholder="No. HP / WhatsApp"
+                                   class="input-modern w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-xs">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1.5">
+                                Masa Berlaku Izin Operasional
+                            </label>
+                            <input type="date"
+                                   name="gs_masa_izin"
+                                   value="{{ old('gs_masa_izin') }}"
+                                   class="input-modern w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1.5">
+                                Jumlah Tenaga Kesehatan / SDM
+                            </label>
+                            <input type="number"
+                                   min="0"
+                                   name="gs_jumlah_sdm"
+                                   value="{{ old('gs_jumlah_sdm', 0) }}"
+                                   class="input-modern w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-xs"
+                                   placeholder="Jumlah SDM">
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- 8. CHILD: TEMPAT PRAKTIK MANDIRI (TPMD, TPMDG, TPMB, TPMP) -->
+                <div x-show="['tpmd', 'tpmdg', 'tpmb', 'tpmp'].includes(jenisFaskes)"
+                     x-transition
+                     class="p-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-xs flex items-start gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
+                        <i class="fa-solid fa-user-doctor text-sm"></i>
+                    </div>
+                    <div>
+                        <div class="font-bold text-slate-800 mb-0.5">Praktik Mandiri Nakes</div>
+                        <p class="text-[11px] leading-relaxed text-slate-500">
+                            Fasilitas praktik mandiri tenaga medis/kesehatan menggunakan atribut data pokok (nama, alamat, koordinat, nomor telepon, dan status aktif).
+                            Anda dapat menambahkan atribut khusus secara dinamis melalui fitur <strong>Kolom Tambahan</strong> di bawah.
+                        </p>
+                    </div>
                 </div>
 
             </div>

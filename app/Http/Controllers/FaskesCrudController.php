@@ -22,6 +22,7 @@ class FaskesCrudController extends Controller
             'klinikUtamaDetail',
             'laboratoriumDetail',
             'upkdkDetail',
+            'griyaSehatDetail',
         ]);
 
         if ($request->filled('search')) {
@@ -96,6 +97,7 @@ class FaskesCrudController extends Controller
             'klinikUtamaDetail',
             'laboratoriumDetail',
             'upkdkDetail',
+            'griyaSehatDetail',
         ])->findOrFail($id);
 
         return view('faskes.edit', compact('faskes'));
@@ -158,19 +160,38 @@ class FaskesCrudController extends Controller
     protected function validateFaskes(Request $request): array
     {
         return $request->validate([
-            'nama'          => 'required|string|max:255',
-            'jenis_faskes'  => 'required|string|in:puskesmas,rumah_sakit,klinik_pratama,klinik_utama,laboratorium,upkdk',
-            'alamat'        => 'nullable|string',
-            'kecamatan'     => 'nullable|string|max:255',
-            'desa'          => 'nullable|string|max:255',
-            'latitude'      => 'required|numeric|between:-90,90',
-            'longitude'     => 'required|numeric|between:-180,180',
+            'nama'                  => 'required|string|max:255',
+            'jenis_faskes'          => 'required|string|in:puskesmas,rumah_sakit,klinik_pratama,klinik_utama,laboratorium,upkdk,griya_sehat,tpmd,tpmdg,tpmb,tpmp',
+            'alamat'                => 'nullable|string',
+            'kecamatan'             => 'nullable|string|max:255',
+            'desa'                  => 'nullable|string|max:255',
+            'latitude'              => 'required|numeric|between:-90,90',
+            'longitude'             => 'required|numeric|between:-180,180',
             'nomor_telepon'         => 'nullable|string|max:50',
             'status'                => 'required|in:aktif,nonaktif',
+            // Puskesmas
+            'puskesmas_kemampuan_persalinan' => 'nullable|string|in:PONED,NON PONED (Mampu Salin),NON PONED (Tidak Mampu Salin)',
+            // Rumah Sakit
+            'rs_tipe_rs'            => 'nullable|string|in:A,B,C,D,D Pratama',
             'rs_ambulans_transport' => 'nullable|integer|min:0',
             'rs_ambulans_gadar'     => 'nullable|integer|min:0',
+            // Klinik Pratama
+            'kp_kategori_layanan'   => 'nullable|string|in:rawat_jalan,rawat_inap',
+            'kp_kepemilikan'        => 'nullable|string|in:Swasta,Pemerintah',
+            // Klinik Utama
+            'ku_kategori_layanan'   => 'nullable|string|in:rawat_jalan,rawat_inap',
+            'ku_bed_rawat_inap'     => 'nullable|integer|min:0',
+            'ku_bpjs'               => 'nullable|string|in:Ya,Tidak,0,1',
+            'ku_pj'                 => 'nullable|string|max:255',
+            'ku_kontak_pj'          => 'nullable|string|max:100',
             'ku_kepemilikan'        => 'nullable|string|in:Swasta,Pemerintah',
+            // Laboratorium
             'lab_kepemilikan'       => 'nullable|string|in:Swasta,Pemerintah',
+            // Griya Sehat
+            'gs_masa_izin'          => 'nullable|date',
+            'gs_pj'                 => 'nullable|string|max:255',
+            'gs_kontak_pj'          => 'nullable|string|max:100',
+            'gs_jumlah_sdm'         => 'nullable|integer|min:0',
         ]);
     }
 
@@ -181,10 +202,27 @@ class FaskesCrudController extends Controller
     {
         switch ($faskes->jenis_faskes) {
             case 'puskesmas':
+                $persalinan = $request->input('puskesmas_kemampuan_persalinan');
+                $poned = 'Tidak PONED';
+                $mampuSalin = 'Tidak';
+                if ($persalinan === 'PONED') {
+                    $poned = 'Ya PONED';
+                    $mampuSalin = 'Ya';
+                } elseif ($persalinan === 'NON PONED (Mampu Salin)') {
+                    $poned = 'Tidak PONED';
+                    $mampuSalin = 'Ya';
+                } elseif ($persalinan === 'NON PONED (Tidak Mampu Salin)') {
+                    $poned = 'Tidak PONED';
+                    $mampuSalin = 'Tidak';
+                } else {
+                    $poned = $request->input('puskesmas_poned', 'Tidak PONED');
+                    $mampuSalin = $request->input('puskesmas_mampu_salin', 'Ya');
+                }
+
                 $data = [
                     'kategori'            => $request->input('puskesmas_kategori', 'rawat_jalan'),
-                    'poned'               => $request->input('puskesmas_poned', 'Tidak PONED'),
-                    'mampu_salin'         => $request->input('puskesmas_mampu_salin', 'Ya'),
+                    'poned'               => $poned,
+                    'mampu_salin'         => $mampuSalin,
                     'jumlah_tempat_tidur' => (int) $request->input('puskesmas_jumlah_tempat_tidur', 0),
                     'ambulans_transport'  => (int) $request->input('puskesmas_ambulans_transport', 0),
                     'ambulans_roda_dua'   => (int) $request->input('puskesmas_ambulans_roda_dua', 0),
@@ -201,6 +239,7 @@ class FaskesCrudController extends Controller
                     'ambulans_gadar'      => (int) $request->input('rs_ambulans_gadar', 0),
                     'ponek'               => $request->input('rs_ponek', 'Tidak PONEK'),
                     'kemampuan_pelayanan' => $request->input('rs_kemampuan_pelayanan'),
+                    'tipe_rs'             => $request->input('rs_tipe_rs') ?: null,
                     'masa_izin'           => $request->input('rs_masa_izin') ?: null,
                 ];
                 $faskes->rumahSakitDetail()->updateOrCreate(['faskes_id' => $faskes->id], $data);
@@ -213,10 +252,12 @@ class FaskesCrudController extends Controller
                 $data = [
                     'ambulans_transport' => (int) $request->input('kp_ambulans_transport', 0),
                     'masa_izin'          => $request->input('kp_masa_izin') ?: null,
+                    'kategori_layanan'   => $request->input('kp_kategori_layanan') ?: 'rawat_jalan',
                     'jenis_layanan'      => $request->input('kp_jenis_layanan'),
                     'jumlah_sdm'         => (int) $request->input('kp_jumlah_sdm', 0),
                     'bed_rawat_inap'     => (int) $request->input('kp_bed_rawat_inap', 0),
                     'bpjs'               => $isBpjs,
+                    'kepemilikan'        => $request->input('kp_kepemilikan') ?: 'Swasta',
                     'pj'                 => $request->input('kp_pj'),
                     'kontak_pj'          => $request->input('kp_kontak_pj'),
                 ];
@@ -224,11 +265,19 @@ class FaskesCrudController extends Controller
                 break;
 
             case 'klinik_utama':
+                $kuBpjsInput = $request->input('ku_bpjs');
+                $isKuBpjs = ($kuBpjsInput === 'Ya' || $kuBpjsInput === '1' || $kuBpjsInput === true);
+
                 $data = [
                     'ambulans'          => (int) $request->input('ku_ambulans', 0),
                     'masa_izin'         => $request->input('ku_masa_izin') ?: null,
                     'kemampuan_layanan' => $request->input('ku_kemampuan_layanan'),
+                    'kategori_layanan'  => $request->input('ku_kategori_layanan') ?: 'rawat_jalan',
+                    'bed_rawat_inap'    => (int) $request->input('ku_bed_rawat_inap', 0),
+                    'bpjs'              => $isKuBpjs,
                     'kepemilikan'       => $request->input('ku_kepemilikan'),
+                    'pj'                => $request->input('ku_pj'),
+                    'kontak_pj'         => $request->input('ku_kontak_pj'),
                 ];
                 $faskes->klinikUtamaDetail()->updateOrCreate(['faskes_id' => $faskes->id], $data);
                 break;
@@ -249,6 +298,16 @@ class FaskesCrudController extends Controller
                     'jumlah_sdm' => (int) $request->input('upkdk_jumlah_sdm', 0),
                 ];
                 $faskes->upkdkDetail()->updateOrCreate(['faskes_id' => $faskes->id], $data);
+                break;
+
+            case 'griya_sehat':
+                $data = [
+                    'masa_izin'  => $request->input('gs_masa_izin') ?: null,
+                    'pj'         => $request->input('gs_pj'),
+                    'kontak_pj'  => $request->input('gs_kontak_pj'),
+                    'jumlah_sdm' => (int) $request->input('gs_jumlah_sdm', 0),
+                ];
+                $faskes->griyaSehatDetail()->updateOrCreate(['faskes_id' => $faskes->id], $data);
                 break;
         }
     }
@@ -276,6 +335,9 @@ class FaskesCrudController extends Controller
                 break;
             case 'upkdk':
                 $faskes->upkdkDetail()->delete();
+                break;
+            case 'griya_sehat':
+                $faskes->griyaSehatDetail()->delete();
                 break;
         }
     }

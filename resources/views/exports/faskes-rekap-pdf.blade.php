@@ -18,6 +18,8 @@
         .badge-klinik { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
         .badge-lab { background: #faf5ff; color: #7c3aed; border: 1px solid #e9d5ff; }
         .badge-upkdk { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
+        .badge-griya { background: #ecfeff; color: #0891b2; border: 1px solid #a5f3fc; }
+        .badge-tpm { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
         .badge-aktif { background: #ecfdf5; color: #059669; }
         .badge-nonaktif { background: #f1f5f9; color: #64748b; }
         .kecamatan-header { background-color: #f1f5f9; padding: 6px 10px; font-weight: bold; font-size: 11px; color: #1e40af; margin-top: 12px; margin-bottom: 4px; border-left: 4px solid #1e40af; }
@@ -58,6 +60,8 @@
                                     'klinik_pratama', 'klinik_utama' => 'badge-klinik',
                                     'laboratorium' => 'badge-lab',
                                     'upkdk' => 'badge-upkdk',
+                                    'griya_sehat' => 'badge-griya',
+                                    'tpmd', 'tpmdg', 'tpmb', 'tpmp' => 'badge-tpm',
                                     default => '',
                                 };
                             @endphp

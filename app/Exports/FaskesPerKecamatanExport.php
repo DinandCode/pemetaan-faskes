@@ -36,6 +36,7 @@ class FaskesPerKecamatanExport implements FromCollection, WithHeadings, WithMapp
             'klinikUtamaDetail',
             'laboratoriumDetail',
             'upkdkDetail',
+            'griyaSehatDetail',
         ]);
 
         if (! empty($this->kecamatan)) {
@@ -97,7 +98,8 @@ class FaskesPerKecamatanExport implements FromCollection, WithHeadings, WithMapp
             $masaIzin = $faskes->puskesmasDetail->masa_izin ? $faskes->puskesmasDetail->masa_izin->format('d/m/Y') : '-';
         } elseif ($faskes->jenis_faskes === 'rumah_sakit' && $faskes->rumahSakitDetail) {
             $isPonek = ($faskes->rumahSakitDetail->ponek === 'Ya PONEK');
-            $layanan = ($faskes->rumahSakitDetail->kemampuan_pelayanan ?: 'Rumah Sakit Umum') . ($isPonek ? ' (PONEK)' : '');
+            $tipePrefix = $faskes->rumahSakitDetail->tipe_rs ? 'Tipe ' . $faskes->rumahSakitDetail->tipe_rs . ' - ' : '';
+            $layanan = $tipePrefix . ($faskes->rumahSakitDetail->kemampuan_pelayanan ?: 'Rumah Sakit Umum') . ($isPonek ? ' (PONEK)' : '');
             $totalAmb = $faskes->rumahSakitDetail->ambulans_gadar + $faskes->rumahSakitDetail->ambulans_transport;
             $ambulans = $totalAmb > 0 ? "{$totalAmb} Unit" : 'Tidak';
             $masaIzin = $faskes->rumahSakitDetail->masa_izin ? $faskes->rumahSakitDetail->masa_izin->format('d/m/Y') : '-';
@@ -108,6 +110,7 @@ class FaskesPerKecamatanExport implements FromCollection, WithHeadings, WithMapp
             $masaIzin = $faskes->klinikPratamaDetail->masa_izin ? $faskes->klinikPratamaDetail->masa_izin->format('d/m/Y') : '-';
         } elseif ($faskes->jenis_faskes === 'klinik_utama' && $faskes->klinikUtamaDetail) {
             $layanan = $faskes->klinikUtamaDetail->kemampuan_layanan ?: 'Spesialistik';
+            $bed = (string) $faskes->klinikUtamaDetail->bed_rawat_inap;
             $ambulans = $faskes->klinikUtamaDetail->ambulans > 0 ? "{$faskes->klinikUtamaDetail->ambulans} Unit" : 'Tidak';
             $masaIzin = $faskes->klinikUtamaDetail->masa_izin ? $faskes->klinikUtamaDetail->masa_izin->format('d/m/Y') : '-';
         } elseif ($faskes->jenis_faskes === 'laboratorium' && $faskes->laboratoriumDetail) {
@@ -119,6 +122,9 @@ class FaskesPerKecamatanExport implements FromCollection, WithHeadings, WithMapp
             if ($faskes->upkdkDetail->is_pkd === 'Ya') $tipe[] = 'PKD';
             $namaTipe = !empty($tipe) ? implode('/', $tipe) : strtoupper($faskes->upkdkDetail->jenis ?? 'UPKDK');
             $layanan = "{$namaTipe} (SDM: {$faskes->upkdkDetail->jumlah_sdm})";
+        } elseif ($faskes->jenis_faskes === 'griya_sehat' && $faskes->griyaSehatDetail) {
+            $layanan = 'Griya Sehat' . ($faskes->griyaSehatDetail->jumlah_sdm ? " (SDM: {$faskes->griyaSehatDetail->jumlah_sdm})" : '');
+            $masaIzin = $faskes->griyaSehatDetail->masa_izin ? $faskes->griyaSehatDetail->masa_izin->format('d/m/Y') : '-';
         }
 
         return [

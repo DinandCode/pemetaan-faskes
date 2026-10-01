@@ -49,7 +49,7 @@ class AnalisisEventController extends Controller
             // rule sebelumnya (`string|in:...`) tidak cocok dengan bentuk array dan bisa membuat
             // filter jenis gagal tervalidasi secara diam-diam.
             'jenis_faskes'   => 'nullable|array',
-            'jenis_faskes.*' => 'string|in:puskesmas,rumah_sakit,klinik_pratama,klinik_utama,laboratorium,upkdk',
+            'jenis_faskes.*' => 'string|in:puskesmas,rumah_sakit,klinik_pratama,klinik_utama,laboratorium,upkdk,griya_sehat,tpmd,tpmdg,tpmb,tpmp',
             'limit'          => 'nullable|integer|min:1|max:20',
             'sort_by'        => 'nullable|string|in:jarak_jalan,jarak_lurus,estimasi_waktu',
             'has_ambulans'   => 'nullable|boolean',
@@ -76,6 +76,7 @@ class AnalisisEventController extends Controller
                 'klinikUtamaDetail',
                 'laboratoriumDetail',
                 'upkdkDetail',
+                'griyaSehatDetail',
             ])
             ->withDistance($eventLat, $eventLng)
             ->withinRadius($eventLat, $eventLng, $radiusKm);
@@ -106,6 +107,8 @@ class AnalisisEventController extends Controller
             $query->where(function ($q) {
                 $q->whereHas('klinikPratamaDetail', function ($sub) {
                     $sub->where('bpjs', true);
+                })->orWhereHas('klinikUtamaDetail', function ($sub) {
+                    $sub->where('bpjs', true);
                 })->orWhereIn('jenis_faskes', ['puskesmas', 'rumah_sakit']);
             });
         }
@@ -116,7 +119,9 @@ class AnalisisEventController extends Controller
                     ->orWhereHas('puskesmasDetail', function ($sub) {
                         $sub->where('kategori', 'rawat_inap')->orWhere('jumlah_tempat_tidur', '>', 0);
                     })->orWhereHas('klinikPratamaDetail', function ($sub) {
-                        $sub->where('bed_rawat_inap', '>', 0);
+                        $sub->where('bed_rawat_inap', '>', 0)->orWhere('kategori_layanan', 'rawat_inap');
+                    })->orWhereHas('klinikUtamaDetail', function ($sub) {
+                        $sub->where('bed_rawat_inap', '>', 0)->orWhere('kategori_layanan', 'rawat_inap');
                     });
             });
         }

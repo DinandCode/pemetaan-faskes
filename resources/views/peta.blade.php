@@ -203,6 +203,12 @@
             <span class="inline-flex items-center px-2 xl:px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 font-medium border border-amber-200">
                 <span class="w-2.5 h-2.5 rounded-full bg-amber-500 mr-1.5"></span> UPKDK
             </span>
+            <span class="inline-flex items-center px-2 xl:px-2.5 py-1 rounded-full bg-cyan-50 text-cyan-700 font-medium border border-cyan-200">
+                <span class="w-2.5 h-2.5 rounded-full bg-cyan-500 mr-1.5"></span> Griya Sehat
+            </span>
+            <span class="inline-flex items-center px-2 xl:px-2.5 py-1 rounded-full bg-sky-50 text-sky-700 font-medium border border-sky-200">
+                <span class="w-2.5 h-2.5 rounded-full bg-sky-500 mr-1.5"></span> TPM
+            </span>
         </div>
 
         <!-- Action Buttons -->
@@ -368,7 +374,47 @@
                             <input type="checkbox" value="upkdk" x-model="selectedJenis" @change="applyDynamicFilters()"
                                    class="rounded text-amber-600 focus:ring-amber-500">
                             <span class="w-2.5 h-2.5 rounded-full bg-amber-500 flex-shrink-0"></span>
-                            <span class="text-slate-700 font-medium truncate">UPKDK (Pustu/PKD)</span>
+                            <span class="text-slate-700 font-medium truncate">UPKDK</span>
+                        </label>
+
+                        <!-- Griya Sehat -->
+                        <label class="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-slate-50 border border-slate-100 cursor-pointer transition">
+                            <input type="checkbox" value="griya_sehat" x-model="selectedJenis" @change="applyDynamicFilters()"
+                                   class="rounded text-cyan-600 focus:ring-cyan-500">
+                            <span class="w-2.5 h-2.5 rounded-full bg-cyan-500 flex-shrink-0"></span>
+                            <span class="text-slate-700 font-medium truncate">Griya Sehat</span>
+                        </label>
+
+                        <!-- TPMD -->
+                        <label class="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-slate-50 border border-slate-100 cursor-pointer transition">
+                            <input type="checkbox" value="tpmd" x-model="selectedJenis" @change="applyDynamicFilters()"
+                                   class="rounded text-sky-600 focus:ring-sky-500">
+                            <span class="w-2.5 h-2.5 rounded-full bg-sky-500 flex-shrink-0"></span>
+                            <span class="text-slate-700 font-medium truncate">TPMD (Dokter)</span>
+                        </label>
+
+                        <!-- TPMDG -->
+                        <label class="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-slate-50 border border-slate-100 cursor-pointer transition">
+                            <input type="checkbox" value="tpmdg" x-model="selectedJenis" @change="applyDynamicFilters()"
+                                   class="rounded text-indigo-600 focus:ring-indigo-500">
+                            <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 flex-shrink-0"></span>
+                            <span class="text-slate-700 font-medium truncate">TPMDG (Dokter Gigi)</span>
+                        </label>
+
+                        <!-- TPMB -->
+                        <label class="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-slate-50 border border-slate-100 cursor-pointer transition">
+                            <input type="checkbox" value="tpmb" x-model="selectedJenis" @change="applyDynamicFilters()"
+                                   class="rounded text-pink-600 focus:ring-pink-500">
+                            <span class="w-2.5 h-2.5 rounded-full bg-pink-500 flex-shrink-0"></span>
+                            <span class="text-slate-700 font-medium truncate">TPMB (Bidan)</span>
+                        </label>
+
+                        <!-- TPMP -->
+                        <label class="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-slate-50 border border-slate-100 cursor-pointer transition">
+                            <input type="checkbox" value="tpmp" x-model="selectedJenis" @change="applyDynamicFilters()"
+                                   class="rounded text-lime-600 focus:ring-lime-500">
+                            <span class="w-2.5 h-2.5 rounded-full bg-lime-500 flex-shrink-0"></span>
+                            <span class="text-slate-700 font-medium truncate">TPMP (Perawat)</span>
                         </label>
                     </div>
                 </div>
@@ -701,7 +747,12 @@
                                                       'bg-emerald-100 text-emerald-700': item.detail_faskes.jenis_faskes === 'klinik_pratama',
                                                       'bg-teal-100 text-teal-700': item.detail_faskes.jenis_faskes === 'klinik_utama',
                                                       'bg-purple-100 text-purple-700': item.detail_faskes.jenis_faskes === 'laboratorium',
-                                                      'bg-amber-100 text-amber-800': item.detail_faskes.jenis_faskes === 'upkdk'
+                                                      'bg-amber-100 text-amber-800': item.detail_faskes.jenis_faskes === 'upkdk',
+                                                      'bg-cyan-100 text-cyan-700': item.detail_faskes.jenis_faskes === 'griya_sehat',
+                                                      'bg-sky-100 text-sky-700': item.detail_faskes.jenis_faskes === 'tpmd',
+                                                      'bg-indigo-100 text-indigo-700': item.detail_faskes.jenis_faskes === 'tpmdg',
+                                                      'bg-pink-100 text-pink-700': item.detail_faskes.jenis_faskes === 'tpmb',
+                                                      'bg-lime-100 text-lime-700': item.detail_faskes.jenis_faskes === 'tpmp'
                                                   }"
                                                   x-text="formatJenis(item.detail_faskes.jenis_faskes)">
                                             </span>
@@ -769,7 +820,7 @@
                 totalFaskes: 0,
 
                 // Filter Atribut Dinamis
-                selectedJenis: ['rumah_sakit', 'puskesmas', 'klinik_pratama', 'klinik_utama', 'laboratorium', 'upkdk'],
+                selectedJenis: ['rumah_sakit', 'puskesmas', 'klinik_pratama', 'klinik_utama', 'laboratorium', 'upkdk', 'griya_sehat', 'tpmd', 'tpmdg', 'tpmb', 'tpmp'],
                 filterAmbulans: false,
                 filterBpjs: false,
                 filterRawatInap: false,
@@ -912,7 +963,7 @@
                 // Menghitung jumlah filter aktif
                 activeFilterCount() {
                     let count = 0;
-                    if (this.selectedJenis.length < 6) count++;
+                    if (this.selectedJenis.length < 11) count++;
                     if (this.filterAmbulans) count++;
                     if (this.filterBpjs) count++;
                     if (this.filterRawatInap) count++;
@@ -1055,7 +1106,7 @@
                 },
 
                 selectAllJenis() {
-                    this.selectedJenis = ['rumah_sakit', 'puskesmas', 'klinik_pratama', 'klinik_utama', 'laboratorium', 'upkdk'];
+                    this.selectedJenis = ['rumah_sakit', 'puskesmas', 'klinik_pratama', 'klinik_utama', 'laboratorium', 'upkdk', 'griya_sehat', 'tpmd', 'tpmdg', 'tpmb', 'tpmp'];
                     this.applyDynamicFilters();
                 },
 
@@ -1065,7 +1116,7 @@
                 },
 
                 resetDynamicFilters() {
-                    this.selectedJenis = ['rumah_sakit', 'puskesmas', 'klinik_pratama', 'klinik_utama', 'laboratorium', 'upkdk'];
+                    this.selectedJenis = ['rumah_sakit', 'puskesmas', 'klinik_pratama', 'klinik_utama', 'laboratorium', 'upkdk', 'griya_sehat', 'tpmd', 'tpmdg', 'tpmb', 'tpmp'];
                     this.filterAmbulans = false;
                     this.filterBpjs = false;
                     this.filterRawatInap = false;
@@ -1235,7 +1286,7 @@
                     });
 
                     // Sertakan filter aktif jenis & spesifik
-                    if (this.selectedJenis.length > 0 && this.selectedJenis.length < 6) {
+                    if (this.selectedJenis.length > 0 && this.selectedJenis.length < 11) {
                         this.selectedJenis.forEach(j => params.append('jenis_faskes[]', j));
                     }
                     if (this.filterAmbulans) params.append('has_ambulans', '1');
@@ -1327,7 +1378,7 @@
                         radius_km: this.radiusKm,
                         limit: 5
                     });
-                    if (this.selectedJenis.length > 0 && this.selectedJenis.length < 6) {
+                    if (this.selectedJenis.length > 0 && this.selectedJenis.length < 11) {
                         this.selectedJenis.forEach(j => params.append('jenis_faskes[]', j));
                     }
                     if (this.filterAmbulans) params.append('has_ambulans', '1');
@@ -1343,10 +1394,15 @@
                     const iconConfig = {
                         'rumah_sakit':    { color: '#ef4444', label: 'RS' },
                         'puskesmas':      { color: '#3b82f6', label: 'PKM' },
-                        'klinik_pratama': { color: '#10b981', label: 'KL' },
-                        'klinik_utama':   { color: '#14b8a6', label: 'KL' },
+                        'klinik_pratama': { color: '#10b981', label: 'KP' },
+                        'klinik_utama':   { color: '#14b8a6', label: 'KU' },
                         'laboratorium':   { color: '#8b5cf6', label: 'LAB' },
-                        'upkdk':          { color: '#f59e0b', label: 'UPK' }
+                        'upkdk':          { color: '#f59e0b', label: 'UPK' },
+                        'griya_sehat':    { color: '#06b6d4', label: 'GS' },
+                        'tpmd':           { color: '#0ea5e9', label: 'TD' },
+                        'tpmdg':          { color: '#6366f1', label: 'TG' },
+                        'tpmb':           { color: '#ec4899', label: 'TB' },
+                        'tpmp':           { color: '#84cc16', label: 'TP' }
                     };
 
                     const cfg = iconConfig[jenis] || { color: '#64748b', label: 'F' };
@@ -1378,6 +1434,13 @@
                                           (parseInt(detail.ambulans_gadar) || 0) +
                                           (parseInt(detail.ambulans) || 0);
 
+                    if (detail.tipe_rs) {
+                        badgeHtml += `<span class="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold bg-red-100 text-red-800 mr-1">Tipe ${detail.tipe_rs}</span>`;
+                    }
+                    if (detail.kategori_layanan) {
+                        const katLabel = detail.kategori_layanan === 'rawat_inap' ? 'Rawat Inap' : 'Rawat Jalan';
+                        badgeHtml += `<span class="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-100 text-slate-700 mr-1">${katLabel}</span>`;
+                    }
                     if (totalAmbulans > 0) {
                         badgeHtml += `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-800 mr-1">${icon('ic-medical')} ${totalAmbulans} Ambulans</span>`;
                     }
@@ -1402,6 +1465,12 @@
                     }
                     if (detail.is_pkd === 'Ya') {
                         badgeHtml += '<span class="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold bg-orange-100 text-orange-800 mr-1">PKD</span>';
+                    }
+                    if (detail.kepemilikan) {
+                        badgeHtml += `<span class="inline-block px-1.5 py-0.5 rounded text-[9px] font-medium bg-slate-100 text-slate-600 mr-1">${detail.kepemilikan}</span>`;
+                    }
+                    if (faskes.jenis_faskes === 'griya_sehat' && detail.pj) {
+                        badgeHtml += `<span class="inline-block px-1.5 py-0.5 rounded text-[9px] font-medium bg-cyan-100 text-cyan-800 mr-1">PJ: ${detail.pj}</span>`;
                     }
 
                     return `
@@ -1429,7 +1498,12 @@
                         'klinik_pratama': 'Klinik Pratama',
                         'klinik_utama': 'Klinik Utama',
                         'laboratorium': 'Laboratorium',
-                        'upkdk': 'UPKDK'
+                        'upkdk': 'UPKDK',
+                        'griya_sehat': 'Griya Sehat',
+                        'tpmd': 'TPMD (Dokter)',
+                        'tpmdg': 'TPMDG (Dokter Gigi)',
+                        'tpmb': 'TPMB (Bidan)',
+                        'tpmp': 'TPMP (Perawat)'
                     };
                     return map[jenis] || jenis;
                 }

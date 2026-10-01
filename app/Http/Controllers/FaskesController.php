@@ -60,6 +60,7 @@ class FaskesController extends Controller
             'klinikUtamaDetail',
             'laboratoriumDetail',
             'upkdkDetail',
+            'griyaSehatDetail',
         ]);
 
         // 1. Filter Jenis Faskes (bisa array, string tunggal, atau comma-separated)
@@ -89,10 +90,12 @@ class FaskesController extends Controller
             });
         }
 
-        // 3. Filter Spesifik: Melayani BPJS (whereHas pada Klinik Pratama & Faskes Pemerintah)
+        // 3. Filter Spesifik: Melayani BPJS (whereHas pada Klinik Pratama, Klinik Utama & Faskes Pemerintah)
         if ($request->boolean('has_bpjs')) {
             $query->where(function ($q) {
                 $q->whereHas('klinikPratamaDetail', function ($sub) {
+                    $sub->where('bpjs', true);
+                })->orWhereHas('klinikUtamaDetail', function ($sub) {
                     $sub->where('bpjs', true);
                 })->orWhereIn('jenis_faskes', ['puskesmas', 'rumah_sakit']);
             });
@@ -105,7 +108,9 @@ class FaskesController extends Controller
                   ->orWhereHas('puskesmasDetail', function ($sub) {
                       $sub->where('kategori', 'rawat_inap')->orWhere('jumlah_tempat_tidur', '>', 0);
                   })->orWhereHas('klinikPratamaDetail', function ($sub) {
-                      $sub->where('bed_rawat_inap', '>', 0);
+                      $sub->where('bed_rawat_inap', '>', 0)->orWhere('kategori_layanan', 'rawat_inap');
+                  })->orWhereHas('klinikUtamaDetail', function ($sub) {
+                      $sub->where('bed_rawat_inap', '>', 0)->orWhere('kategori_layanan', 'rawat_inap');
                   });
             });
         }
@@ -156,6 +161,7 @@ class FaskesController extends Controller
             'klinikUtamaDetail',
             'laboratoriumDetail',
             'upkdkDetail',
+            'griyaSehatDetail',
         ])->findOrFail($id);
 
         return response()->json([
@@ -233,7 +239,7 @@ class FaskesController extends Controller
     {
         $validated = $request->validate([
             'nama'          => 'required|string|max:255',
-            'jenis_faskes'  => 'required|string|in:puskesmas,rumah_sakit,klinik_pratama,klinik_utama,laboratorium,upkdk',
+            'jenis_faskes'  => 'required|string|in:puskesmas,rumah_sakit,klinik_pratama,klinik_utama,laboratorium,upkdk,griya_sehat,tpmd,tpmdg,tpmb,tpmp',
             'alamat'        => 'nullable|string',
             'kecamatan'     => 'nullable|string|max:255',
             'desa'          => 'nullable|string|max:255',
@@ -263,7 +269,7 @@ class FaskesController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Faskes berhasil ditambahkan.',
-                'data'    => $faskes->fresh(['puskesmasDetail', 'rumahSakitDetail', 'klinikPratamaDetail', 'klinikUtamaDetail', 'laboratoriumDetail', 'upkdkDetail']),
+                'data'    => $faskes->fresh(['puskesmasDetail', 'rumahSakitDetail', 'klinikPratamaDetail', 'klinikUtamaDetail', 'laboratoriumDetail', 'upkdkDetail', 'griyaSehatDetail']),
             ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -311,6 +317,9 @@ class FaskesController extends Controller
                 break;
             case 'upkdk':
                 $faskes->upkdkDetail()->create($detailData);
+                break;
+            case 'griya_sehat':
+                $faskes->griyaSehatDetail()->create($detailData);
                 break;
         }
     }

@@ -181,6 +181,14 @@ class Faskes extends Model
     }
 
     /**
+     * Relasi hasOne ke detail Griya Sehat.
+     */
+    public function griyaSehatDetail(): HasOne
+    {
+        return $this->hasOne(GriyaSehatDetail::class, 'faskes_id');
+    }
+
+    /**
      * Helper accessor untuk mengambil model detail aktif sesuai jenis_faskes.
      */
     public function getDetailAttribute(): ?Model
@@ -192,6 +200,7 @@ class Faskes extends Model
             'klinik_utama'   => $this->klinikUtamaDetail,
             'laboratorium'   => $this->laboratoriumDetail,
             'upkdk'          => $this->upkdkDetail,
+            'griya_sehat'    => $this->griyaSehatDetail,
             default          => null,
         };
     }

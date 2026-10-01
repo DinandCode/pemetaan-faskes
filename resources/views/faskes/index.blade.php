@@ -165,6 +165,11 @@
                         <option value="klinik_utama" {{ request('jenis_faskes') == 'klinik_utama' ? 'selected' : '' }}>Klinik Utama</option>
                         <option value="laboratorium" {{ request('jenis_faskes') == 'laboratorium' ? 'selected' : '' }}>Laboratorium</option>
                         <option value="upkdk" {{ request('jenis_faskes') == 'upkdk' ? 'selected' : '' }}>UPKDK (Pustu / PKD)</option>
+                        <option value="griya_sehat" {{ request('jenis_faskes') == 'griya_sehat' ? 'selected' : '' }}>Griya Sehat</option>
+                        <option value="tpmd" {{ request('jenis_faskes') == 'tpmd' ? 'selected' : '' }}>TPMD (Praktik Mandiri Dokter)</option>
+                        <option value="tpmdg" {{ request('jenis_faskes') == 'tpmdg' ? 'selected' : '' }}>TPMDG (Praktik Mandiri Dokter Gigi)</option>
+                        <option value="tpmb" {{ request('jenis_faskes') == 'tpmb' ? 'selected' : '' }}>TPMB (Praktik Mandiri Bidan)</option>
+                        <option value="tpmp" {{ request('jenis_faskes') == 'tpmp' ? 'selected' : '' }}>TPMP (Praktik Mandiri Perawat)</option>
                     </select>
                 </div>
 
@@ -236,9 +241,14 @@
                                             'rumah_sakit'    => 'bg-red-50 text-red-700 border-red-200',
                                             'puskesmas'      => 'bg-blue-50 text-blue-700 border-blue-200',
                                             'klinik_pratama' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
-                                            'klinik_utama'   => 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                                            'klinik_utama'   => 'bg-teal-50 text-teal-700 border-teal-200',
                                             'laboratorium'   => 'bg-purple-50 text-purple-700 border-purple-200',
                                             'upkdk'          => 'bg-amber-50 text-amber-800 border-amber-200',
+                                            'griya_sehat'    => 'bg-cyan-50 text-cyan-700 border-cyan-200',
+                                            'tpmd'           => 'bg-sky-50 text-sky-700 border-sky-200',
+                                            'tpmdg'          => 'bg-indigo-50 text-indigo-700 border-indigo-200',
+                                            'tpmb'           => 'bg-pink-50 text-pink-700 border-pink-200',
+                                            'tpmp'           => 'bg-lime-50 text-lime-700 border-lime-200',
                                         ];
                                         $labels = [
                                             'rumah_sakit'    => 'Rumah Sakit',
@@ -247,6 +257,11 @@
                                             'klinik_utama'   => 'Klinik Utama',
                                             'laboratorium'   => 'Laboratorium',
                                             'upkdk'          => 'UPKDK',
+                                            'griya_sehat'    => 'Griya Sehat',
+                                            'tpmd'           => 'TPMD',
+                                            'tpmdg'          => 'TPMDG',
+                                            'tpmb'           => 'TPMB',
+                                            'tpmp'           => 'TPMP',
                                         ];
                                         $badgeClass = $badgeClasses[$faskes->jenis_faskes] ?? 'bg-slate-100 text-slate-700 border-slate-200';
                                         $label = $labels[$faskes->jenis_faskes] ?? $faskes->jenis_faskes;
@@ -271,13 +286,6 @@
                                 </td>
 
                                 <!-- Spesifikasi Detail -->
-                                {{-- Setiap jenis faskes menyimpan detailnya di tabel child masing-masing (lihat
-                                     FaskesCrudController::saveChildDetail). Blok di bawah sekarang menjumlahkan
-                                     SEMUA kolom ambulans yang relevan per jenis (mis. puskesmas: ambulans_transport
-                                     + ambulans_roda_dua; RS: ambulans_transport + ambulans_gadar) dan menampilkannya
-                                     sebagai angka, bukan cuma badge ya/tidak seperti sebelumnya. Field lain yang
-                                     tadinya tersimpan tapi tidak pernah tampil (jumlah_sdm, wilayah, ponek,
-                                     kepemilikan, is_pustu/is_pkd) juga sekarang ditampilkan. --}}
                                 <td class="py-3 px-4 text-[11px] align-top">
                                     @php
                                         $icAmbulans = '<svg class="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.83H14.25M16.5 18.75h-2.25m0-11.25h-8.25a1.125 1.125 0 00-1.125 1.125v8.25c0 .621.504 1.125 1.125 1.125h1.5m5.25-10.5V18.75m0-11.25H12" /></svg>';
@@ -292,6 +300,8 @@
                                             <span class="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 font-medium">{{ ucfirst(str_replace('_', ' ', $pkm->kategori)) }}</span>
                                             @if($pkm->poned === 'Ya PONED')
                                                 <span class="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded font-medium">PONED</span>
+                                            @elseif($pkm->mampu_salin === 'Ya')
+                                                <span class="px-1.5 py-0.5 bg-sky-100 text-sky-700 rounded font-medium">Mampu Salin</span>
                                             @endif
                                             @if($pkm->jumlah_tempat_tidur > 0)
                                                 <span class="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded font-medium inline-flex items-center gap-1">
@@ -317,7 +327,12 @@
                                             $ambulansRs = (int) $rs->ambulans_transport + (int) $rs->ambulans_gadar;
                                         @endphp
                                         <div class="space-y-1">
-                                            <div class="font-medium text-slate-700">{{ $rs->kemampuan_pelayanan ?: 'Umum' }}</div>
+                                            <div class="flex items-center gap-1.5">
+                                                @if($rs->tipe_rs)
+                                                    <span class="px-1.5 py-0.5 bg-red-100 text-red-800 font-bold rounded text-[10px]">Tipe {{ $rs->tipe_rs }}</span>
+                                                @endif
+                                                <span class="font-medium text-slate-700">{{ $rs->kemampuan_pelayanan ?: 'Umum' }}</span>
+                                            </div>
                                             <div class="flex flex-wrap gap-1">
                                                 @if($rs->ponek === 'Ya PONEK')
                                                     <span class="px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded text-[10px] font-medium">PONEK</span>
@@ -333,6 +348,12 @@
                                         @php $kp = $faskes->klinikPratamaDetail; @endphp
                                         <div class="space-y-1">
                                             <div class="flex flex-wrap gap-1">
+                                                @if($kp->kategori_layanan)
+                                                    <span class="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 font-medium">{{ ucfirst(str_replace('_', ' ', $kp->kategori_layanan)) }}</span>
+                                                @endif
+                                                @if($kp->kepemilikan)
+                                                    <span class="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 font-medium">{{ $kp->kepemilikan }}</span>
+                                                @endif
                                                 @if($kp->bpjs)
                                                     <span class="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded font-medium">BPJS</span>
                                                 @endif
@@ -352,7 +373,16 @@
                                         @php $ku = $faskes->klinikUtamaDetail; @endphp
                                         <div class="space-y-1">
                                             <div class="flex flex-wrap gap-1 items-center">
+                                                @if($ku->kategori_layanan)
+                                                    <span class="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 font-medium">{{ ucfirst(str_replace('_', ' ', $ku->kategori_layanan)) }}</span>
+                                                @endif
                                                 <span class="font-medium text-slate-700">{{ $ku->kepemilikan ?: 'Swasta' }}</span>
+                                                @if($ku->bpjs)
+                                                    <span class="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded font-medium">BPJS</span>
+                                                @endif
+                                                @if($ku->bed_rawat_inap > 0)
+                                                    <span class="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded font-medium">{{ $ku->bed_rawat_inap }} Bed</span>
+                                                @endif
                                                 <span class="px-1.5 py-0.5 rounded text-[10px] font-medium inline-flex items-center gap-1 {{ $ku->ambulans > 0 ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-400' }}">
                                                     {!! $icAmbulans !!}
                                                     {{ (int) $ku->ambulans }} Ambulans
@@ -382,6 +412,19 @@
                                             @endif
                                             <span class="text-slate-500">SDM: {{ (int) $upk->jumlah_sdm }}</span>
                                         </div>
+
+                                    @elseif($faskes->jenis_faskes === 'griya_sehat' && $faskes->griyaSehatDetail)
+                                        @php $gs = $faskes->griyaSehatDetail; @endphp
+                                        <div class="space-y-0.5">
+                                            <div class="font-medium text-slate-700">Griya Sehat</div>
+                                            <div class="text-slate-500 text-[10.5px]">
+                                                @if($gs->pj) PJ: {{ $gs->pj }} @endif
+                                                @if($gs->jumlah_sdm) &bull; SDM: {{ (int) $gs->jumlah_sdm }} @endif
+                                            </div>
+                                        </div>
+
+                                    @elseif(in_array($faskes->jenis_faskes, ['tpmd', 'tpmdg', 'tpmb', 'tpmp']))
+                                        <div class="text-slate-500 italic text-[10.5px]">Praktik Mandiri</div>
 
                                     @else
                                         <span class="text-slate-400 italic">-</span>

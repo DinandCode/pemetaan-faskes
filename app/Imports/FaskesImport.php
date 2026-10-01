@@ -109,6 +109,21 @@ class FaskesImport implements ToCollection, WithHeadingRow
         if (str_contains($cleaned, 'upkdk') || str_contains($cleaned, 'pustu') || str_contains($cleaned, 'pkd')) {
             return 'upkdk';
         }
+        if (str_contains($cleaned, 'griya') || str_contains($cleaned, 'griya_sehat')) {
+            return 'griya_sehat';
+        }
+        if (str_contains($cleaned, 'tpmdg') || str_contains($cleaned, 'dokter_gigi')) {
+            return 'tpmdg';
+        }
+        if (str_contains($cleaned, 'tpmd') || str_contains($cleaned, 'dokter')) {
+            return 'tpmd';
+        }
+        if (str_contains($cleaned, 'tpmb') || str_contains($cleaned, 'bidan')) {
+            return 'tpmb';
+        }
+        if (str_contains($cleaned, 'tpmp') || str_contains($cleaned, 'perawat')) {
+            return 'tpmp';
+        }
 
         return 'puskesmas';
     }
@@ -200,7 +215,8 @@ class FaskesImport implements ToCollection, WithHeadingRow
                         'ambulans_transport'  => $this->parseInteger($row['ambulans_transport'] ?? $row['ambulans'] ?? null, 1),
                         'ambulans_gadar'      => $this->parseInteger($row['ambulans_gadar'] ?? null, 1),
                         'ponek'               => $isPonek ? 'Ya PONEK' : 'Tidak PONEK',
-                        'kemampuan_pelayanan' => $row['kemampuan_pelayanan'] ?? $row['tipe'] ?? null,
+                        'tipe_rs'             => $row['tipe_rs'] ?? $row['tipe'] ?? null,
+                        'kemampuan_pelayanan' => $row['kemampuan_pelayanan'] ?? null,
                         'masa_izin'           => !empty($row['masa_izin']) ? $row['masa_izin'] : null,
                     ]
                 );
@@ -210,6 +226,8 @@ class FaskesImport implements ToCollection, WithHeadingRow
                 $faskes->klinikPratamaDetail()->updateOrCreate(
                     ['faskes_id' => $faskes->id],
                     [
+                        'kategori_layanan'   => $row['kategori_layanan'] ?? null,
+                        'kepemilikan'        => $row['kepemilikan'] ?? 'Swasta',
                         'ambulans_transport' => $this->parseInteger($row['ambulans_transport'] ?? $row['ambulans'] ?? null),
                         'masa_izin'          => !empty($row['masa_izin']) ? $row['masa_izin'] : null,
                         'jenis_layanan'      => $row['jenis_layanan'] ?? null,
@@ -226,6 +244,11 @@ class FaskesImport implements ToCollection, WithHeadingRow
                 $faskes->klinikUtamaDetail()->updateOrCreate(
                     ['faskes_id' => $faskes->id],
                     [
+                        'kategori_layanan'  => $row['kategori_layanan'] ?? null,
+                        'bed_rawat_inap'    => (int) ($row['bed_rawat_inap'] ?? $row['bed'] ?? 0),
+                        'bpjs'              => $this->parseBoolean($row['bpjs'] ?? null, false),
+                        'pj'                => $row['pj'] ?? $row['penanggung_jawab'] ?? null,
+                        'kontak_pj'         => $row['kontak_pj'] ?? null,
                         'ambulans'          => $this->parseInteger($row['ambulans'] ?? null),
                         'masa_izin'         => !empty($row['masa_izin']) ? $row['masa_izin'] : null,
                         'kemampuan_layanan' => $row['kemampuan_layanan'] ?? $row['layanan'] ?? null,
@@ -263,6 +286,25 @@ class FaskesImport implements ToCollection, WithHeadingRow
                         'jumlah_sdm' => (int) ($row['jumlah_sdm'] ?? $row['sdm'] ?? 2),
                     ]
                 );
+                break;
+
+            case 'griya_sehat':
+                $faskes->griyaSehatDetail()->updateOrCreate(
+                    ['faskes_id' => $faskes->id],
+                    [
+                        'masa_izin'  => !empty($row['masa_izin']) ? $row['masa_izin'] : null,
+                        'pj'         => $row['pj'] ?? $row['penanggung_jawab'] ?? null,
+                        'kontak_pj'  => $row['kontak_pj'] ?? null,
+                        'jumlah_sdm' => (int) ($row['jumlah_sdm'] ?? $row['sdm'] ?? 0),
+                    ]
+                );
+                break;
+
+            case 'tpmd':
+            case 'tpmdg':
+            case 'tpmb':
+            case 'tpmp':
+                // TPM types have no dedicated child table
                 break;
         }
     }

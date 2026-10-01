@@ -28,6 +28,7 @@ class RumahSakitDetail extends Model
         'ambulans_gadar',
         'ponek',
         'kemampuan_pelayanan',
+        'tipe_rs',
         'masa_izin',
     ];
 
