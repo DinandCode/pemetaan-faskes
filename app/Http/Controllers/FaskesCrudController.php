@@ -44,9 +44,146 @@ class FaskesCrudController extends Controller
             $query->where('status', $request->status);
         }
 
+        // --- FILTER LANJUTAN (TUGAS 3B) ---
+        // 1. Kecamatan
+        if ($request->filled('kecamatan')) {
+            $query->where('kecamatan', $request->kecamatan);
+        }
+
+        // 2. Kepemilikan (Swasta / Pemerintah)
+        if ($request->filled('kepemilikan') && in_array($request->kepemilikan, ['Swasta', 'Pemerintah'], true)) {
+            $kep = $request->kepemilikan;
+            $query->where(function ($q) use ($kep) {
+                $q->whereHas('klinikPratamaDetail', fn ($sub) => $sub->where('kepemilikan', 'ilike', $kep))
+                  ->orWhereHas('klinikUtamaDetail', fn ($sub) => $sub->where('kepemilikan', 'ilike', $kep))
+                  ->orWhereHas('laboratoriumDetail', fn ($sub) => $sub->where('kepemilikan', 'ilike', $kep));
+            });
+        }
+
+        // 3. Kerja sama BPJS (Ya / Tidak)
+        if ($request->filled('bpjs') && in_array($request->bpjs, ['Ya', 'Tidak'], true)) {
+            $isBpjs = $request->bpjs === 'Ya';
+            $query->where(function ($q) use ($isBpjs) {
+                $q->whereHas('klinikPratamaDetail', fn ($sub) => $sub->where('bpjs', $isBpjs))
+                  ->orWhereHas('klinikUtamaDetail', fn ($sub) => $sub->where('bpjs', $isBpjs));
+            });
+        }
+
+        // 4. Memiliki Ambulans (Ya / Tidak)
+        if ($request->filled('has_ambulans') && in_array($request->has_ambulans, ['Ya', 'Tidak'], true)) {
+            if ($request->has_ambulans === 'Ya') {
+                $query->where(function ($q) {
+                    $q->whereHas('rumahSakitDetail', fn ($sub) => $sub->where('ambulans_transport', '>', 0)->orWhere('ambulans_gadar', '>', 0))
+                      ->orWhereHas('klinikPratamaDetail', fn ($sub) => $sub->where('ambulans_transport', '>', 0))
+                      ->orWhereHas('klinikUtamaDetail', fn ($sub) => $sub->where('ambulans', '>', 0));
+                });
+            } else {
+                $query->where(function ($q) {
+                    $q->whereHas('rumahSakitDetail', fn ($sub) => $sub->where(fn ($s) => $s->whereNull('ambulans_transport')->orWhere('ambulans_transport', '<=', 0))->where(fn ($s) => $s->whereNull('ambulans_gadar')->orWhere('ambulans_gadar', '<=', 0)))
+                      ->orWhereHas('klinikPratamaDetail', fn ($sub) => $sub->whereNull('ambulans_transport')->orWhere('ambulans_transport', '<=', 0))
+                      ->orWhereHas('klinikUtamaDetail', fn ($sub) => $sub->whereNull('ambulans')->orWhere('ambulans', '<=', 0));
+                });
+            }
+        }
+
+        // 5. Memiliki Bed Rawat Inap (Ya / Tidak)
+        if ($request->filled('has_bed') && in_array($request->has_bed, ['Ya', 'Tidak'], true)) {
+            if ($request->has_bed === 'Ya') {
+                $query->where(function ($q) {
+                    $q->where('jenis_faskes', 'rumah_sakit')
+                      ->orWhereHas('puskesmasDetail', fn ($sub) => $sub->where('kategori', 'rawat_inap'))
+                      ->orWhereHas('klinikPratamaDetail', fn ($sub) => $sub->where('kategori_layanan', 'rawat_inap')->orWhere('bed_rawat_inap', '>', 0))
+                      ->orWhereHas('klinikUtamaDetail', fn ($sub) => $sub->where('kategori_layanan', 'rawat_inap')->orWhere('bed_rawat_inap', '>', 0));
+                });
+            } else {
+                $query->where(function ($q) {
+                    $q->whereHas('puskesmasDetail', fn ($sub) => $sub->where('kategori', '!=', 'rawat_inap'))
+                      ->orWhereHas('klinikPratamaDetail', fn ($sub) => $sub->where(fn ($s) => $s->whereNull('bed_rawat_inap')->orWhere('bed_rawat_inap', '<=', 0))->where(fn ($s) => $s->whereNull('kategori_layanan')->orWhere('kategori_layanan', '!=', 'rawat_inap')))
+                      ->orWhereHas('klinikUtamaDetail', fn ($sub) => $sub->where(fn ($s) => $s->whereNull('bed_rawat_inap')->orWhere('bed_rawat_inap', '<=', 0))->where(fn ($s) => $s->whereNull('kategori_layanan')->orWhere('kategori_layanan', '!=', 'rawat_inap')));
+                });
+            }
+        }
+
+        // 6. Kategori Kemampuan Persalinan Puskesmas
+        $validPersalinan = ['PONED', 'NON PONED (Mampu Salin)', 'NON PONED (Tidak Mampu Salin)'];
+        if ($request->filled('persalinan') && in_array($request->persalinan, $validPersalinan, true)) {
+            if ($request->persalinan === 'PONED') {
+                $query->whereHas('puskesmasDetail', fn ($sub) => $sub->where('poned', 'Ya PONED'));
+            } elseif ($request->persalinan === 'NON PONED (Mampu Salin)') {
+                $query->whereHas('puskesmasDetail', fn ($sub) => $sub->where('poned', '!=', 'Ya PONED')->where('mampu_salin', 'Ya'));
+            } else {
+                $query->whereHas('puskesmasDetail', fn ($sub) => $sub->where('poned', '!=', 'Ya PONED')->where(fn ($s) => $s->whereNull('mampu_salin')->orWhere('mampu_salin', '!=', 'Ya')));
+            }
+        }
+
+        // 7. Tipe RS
+        $validTipeRs = ['A', 'B', 'C', 'D', 'D Pratama'];
+        if ($request->filled('tipe_rs') && in_array($request->tipe_rs, $validTipeRs, true)) {
+            $query->whereHas('rumahSakitDetail', fn ($sub) => $sub->where('tipe_rs', $request->tipe_rs));
+        }
+
+        // 8. Status Izin Operasional
+        $validStatusIzin = ['berlaku', 'segera_berakhir', 'kedaluwarsa'];
+        if ($request->filled('status_izin') && in_array($request->status_izin, $validStatusIzin, true)) {
+            $today = now()->toDateString();
+            $threshold = now()->addDays(90)->toDateString();
+
+            if ($request->status_izin === 'berlaku') {
+                $query->where(function ($q) use ($threshold) {
+                    $q->whereHas('puskesmasDetail', fn ($sub) => $sub->whereNotNull('masa_izin')->whereDate('masa_izin', '>', $threshold))
+                      ->orWhereHas('klinikPratamaDetail', fn ($sub) => $sub->whereNotNull('masa_izin')->whereDate('masa_izin', '>', $threshold))
+                      ->orWhereHas('klinikUtamaDetail', fn ($sub) => $sub->whereNotNull('masa_izin')->whereDate('masa_izin', '>', $threshold))
+                      ->orWhereHas('laboratoriumDetail', fn ($sub) => $sub->whereNotNull('masa_izin')->whereDate('masa_izin', '>', $threshold))
+                      ->orWhereHas('griyaSehatDetail', fn ($sub) => $sub->whereNotNull('masa_izin')->whereDate('masa_izin', '>', $threshold));
+                });
+            } elseif ($request->status_izin === 'segera_berakhir') {
+                $query->where(function ($q) use ($today, $threshold) {
+                    $q->whereHas('puskesmasDetail', fn ($sub) => $sub->whereNotNull('masa_izin')->whereDate('masa_izin', '>=', $today)->whereDate('masa_izin', '<=', $threshold))
+                      ->orWhereHas('klinikPratamaDetail', fn ($sub) => $sub->whereNotNull('masa_izin')->whereDate('masa_izin', '>=', $today)->whereDate('masa_izin', '<=', $threshold))
+                      ->orWhereHas('klinikUtamaDetail', fn ($sub) => $sub->whereNotNull('masa_izin')->whereDate('masa_izin', '>=', $today)->whereDate('masa_izin', '<=', $threshold))
+                      ->orWhereHas('laboratoriumDetail', fn ($sub) => $sub->whereNotNull('masa_izin')->whereDate('masa_izin', '>=', $today)->whereDate('masa_izin', '<=', $threshold))
+                      ->orWhereHas('griyaSehatDetail', fn ($sub) => $sub->whereNotNull('masa_izin')->whereDate('masa_izin', '>=', $today)->whereDate('masa_izin', '<=', $threshold));
+                });
+            } else {
+                $query->where(function ($q) use ($today) {
+                    $q->whereHas('puskesmasDetail', fn ($sub) => $sub->whereNotNull('masa_izin')->whereDate('masa_izin', '<', $today))
+                      ->orWhereHas('klinikPratamaDetail', fn ($sub) => $sub->whereNotNull('masa_izin')->whereDate('masa_izin', '<', $today))
+                      ->orWhereHas('klinikUtamaDetail', fn ($sub) => $sub->whereNotNull('masa_izin')->whereDate('masa_izin', '<', $today))
+                      ->orWhereHas('laboratoriumDetail', fn ($sub) => $sub->whereNotNull('masa_izin')->whereDate('masa_izin', '<', $today))
+                      ->orWhereHas('griyaSehatDetail', fn ($sub) => $sub->whereNotNull('masa_izin')->whereDate('masa_izin', '<', $today));
+                });
+            }
+        }
+
+        // 9. Kolom Tambahan Dinamis
+        if ($request->has('custom_filter') && is_array($request->custom_filter)) {
+            foreach ($request->custom_filter as $defId => $val) {
+                if ($val !== null && trim((string) $val) !== '') {
+                    $query->whereHas('fieldValues', function ($sub) use ($defId, $val) {
+                        $sub->where('field_definition_id', (int) $defId)->where('value', trim((string) $val));
+                    });
+                }
+            }
+        }
+
         $faskesList = $query->orderBy('nama', 'asc')->paginate(10)->withQueryString();
 
-        return view('faskes.index', compact('faskesList'));
+        if ($request->ajax()) {
+            return view('faskes._table', compact('faskesList'));
+        }
+
+        $kecamatanList = Faskes::whereNotNull('kecamatan')
+            ->where('kecamatan', '!=', '')
+            ->distinct()
+            ->orderBy('kecamatan')
+            ->pluck('kecamatan');
+
+        $activeFieldDefinitions = \App\Models\FaskesFieldDefinition::where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('label')
+            ->get();
+
+        return view('faskes.index', compact('faskesList', 'kecamatanList', 'activeFieldDefinitions'));
     }
 
     /**
@@ -177,6 +314,53 @@ class FaskesCrudController extends Controller
             return redirect()->route('faskes.index')->with('success', 'Faskes berhasil dihapus.');
         } catch (\Exception $e) {
             return back()->with('error', 'Gagal menghapus faskes: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Menghapus beberapa faskes sekaligus (massal - Tugas 3C).
+     */
+    public function bulkDestroy(Request $request)
+    {
+        $validated = $request->validate([
+            'ids'   => 'required|array|min:1|max:100',
+            'ids.*' => 'required|integer|exists:faskes,id',
+        ], [
+            'ids.required' => 'Pilih minimal satu faskes untuk dihapus.',
+            'ids.min'      => 'Pilih minimal satu faskes untuk dihapus.',
+            'ids.max'      => 'Maksimal 100 faskes yang dapat dihapus sekaligus.',
+            'ids.*.exists' => 'Data faskes tidak ditemukan di sistem.',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $count = Faskes::whereIn('id', $validated['ids'])->delete();
+            DB::commit();
+
+            $message = "{$count} faskes berhasil dihapus.";
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'count'   => $count,
+                    'message' => $message,
+                ]);
+            }
+
+            return redirect()->route('faskes.index', $request->query())
+                ->with('success', $message);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Gagal hapus massal faskes: ' . $e->getMessage());
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal menghapus faskes terpilih: ' . $e->getMessage(),
+                ], 500);
+            }
+
+            return back()->with('error', 'Gagal menghapus faskes terpilih: ' . $e->getMessage());
         }
     }
 

@@ -137,7 +137,7 @@
                     <!-- Alamat Lengkap -->
                     <div>
                         <label class="block text-[11px] font-semibold text-slate-700 mb-1.5">Alamat Lengkap</label>
-                        <textarea name="alamat" rows="2" placeholder="Nama jalan, nomor gedung, RT/RW..."
+                        <textarea name="alamat" x-ref="alamatInput" rows="2" placeholder="Nama jalan, nomor gedung, RT/RW..."
                                   class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 placeholder:text-slate-400 transition focus:bg-white focus:outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10">{{ old('alamat', $faskes->alamat) }}</textarea>
                     </div>
 
@@ -174,6 +174,71 @@
                             <span>Titik Koordinat Spasial</span>
                         </h2>
                         <span class="text-[10px] bg-blue-50 text-blue-700 px-2.5 py-1 rounded-lg font-semibold border border-blue-100">PostGIS SRID 4326</span>
+                    </div>
+
+                    <!-- Pencarian Alamat -->
+                    <div class="relative">
+                        <label class="block text-[11px] font-semibold text-slate-600 mb-1.5">
+                            Cari Alamat
+                            <span class="font-normal text-slate-400">(opsional — bantu isi koordinat otomatis)</span>
+                        </label>
+                        <div class="relative">
+                            <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                            <input type="text"
+                                   x-model="addressQuery"
+                                   @input="onAddressInput()"
+                                   @keydown.escape="clearAddressResults()"
+                                   placeholder="Ketik alamat, contoh: Jl. Gerilya, Purwokerto"
+                                   autocomplete="off"
+                                   class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-9 py-2.5 text-xs text-slate-800 placeholder:text-slate-400 transition focus:bg-white focus:outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10">
+
+                            <!-- Spinner -->
+                            <template x-if="isSearchingAddress">
+                                <svg class="animate-spin h-3.5 w-3.5 text-blue-500 absolute right-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                                </svg>
+                            </template>
+
+                            <!-- Tombol clear -->
+                            <template x-if="!isSearchingAddress && addressQuery">
+                                <button type="button"
+                                        @click="addressQuery = ''; clearAddressResults()"
+                                        class="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-slate-200 hover:bg-slate-300 text-slate-500 flex items-center justify-center transition">
+                                    <i class="fa-solid fa-xmark text-[9px]"></i>
+                                </button>
+                            </template>
+                        </div>
+
+                        <!-- Dropdown Hasil Pencarian -->
+                        <template x-if="addressResults.length > 0">
+                            <div class="absolute z-[600] mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-xl max-h-56 overflow-y-auto">
+                                <template x-for="(result, idx) in addressResults" :key="idx">
+                                    <button type="button"
+                                            @click="selectAddressResult(result)"
+                                            class="w-full text-left px-3 py-2.5 text-[11px] text-slate-700 hover:bg-blue-50 border-b border-slate-100 last:border-b-0 transition flex items-start gap-2">
+                                        <i class="fa-solid fa-location-dot text-blue-500 mt-0.5 shrink-0"></i>
+                                        <span x-text="result.display_name"></span>
+                                    </button>
+                                </template>
+                            </div>
+                        </template>
+
+                        <!-- Info Tidak Ditemukan -->
+                        <template x-if="hasSearchedAddress && !isSearchingAddress && addressResults.length === 0">
+                            <div class="mt-1 text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-2 flex items-start gap-2">
+                                <i class="fa-solid fa-triangle-exclamation mt-0.5"></i>
+                                <span>Alamat tidak ditemukan. Tandai titik lokasi secara manual lewat peta di bawah.</span>
+                            </div>
+                        </template>
+
+                        <!-- Error -->
+                        <template x-if="addressSearchError">
+                            <div class="mt-1 text-[11px] text-red-600 bg-red-50 border border-red-200 rounded-lg px-2.5 py-2 flex items-start gap-2">
+                                <i class="fa-solid fa-circle-exclamation mt-0.5"></i>
+                                <span x-text="addressSearchError"></span>
+                            </div>
+                        </template>
                     </div>
 
                     <!-- Mini Map Container -->
@@ -855,6 +920,16 @@
                     }
                 },
 
+                addressQuery: '',
+                addressResults: [],
+                isSearchingAddress: false,
+                hasSearchedAddress: false,
+                addressSearchError: null,
+                lastSourceIsGeocode: false,
+
+                _addressDebounceTimer: null,
+                _addressAbortController: null,
+
                 initMiniMap() {
                     this.map = L.map('mini-map', {
                         zoomControl: false
@@ -877,6 +952,7 @@
                         const pos = e.target.getLatLng();
                         this.lat = parseFloat(pos.lat.toFixed(7));
                         this.lng = parseFloat(pos.lng.toFixed(7));
+                        this.lastSourceIsGeocode = false;
                     });
 
                     // Saat peta diklik
@@ -884,6 +960,7 @@
                         this.lat = parseFloat(e.latlng.lat.toFixed(7));
                         this.lng = parseFloat(e.latlng.lng.toFixed(7));
                         this.marker.setLatLng([this.lat, this.lng]);
+                        this.lastSourceIsGeocode = false;
                     });
                 },
 
@@ -892,6 +969,7 @@
                     if (!isNaN(this.lat) && !isNaN(this.lng) && this.lat >= -90 && this.lat <= 90 && this.lng >= -180 && this.lng <= 180) {
                         this.marker.setLatLng([this.lat, this.lng]);
                         this.map.panTo([this.lat, this.lng]);
+                        this.lastSourceIsGeocode = false;
                     }
                 },
 
@@ -904,12 +982,85 @@
                                 this.lng = parseFloat(pos.coords.longitude.toFixed(7));
                                 this.marker.setLatLng([this.lat, this.lng]);
                                 this.map.setView([this.lat, this.lng], 15);
+                                this.lastSourceIsGeocode = false;
                             },
                             (err) => alert('Gagal mendeteksi lokasi: ' + err.message)
                         );
                     } else {
                         alert('Browser Anda tidak mendukung Geolocation.');
                     }
+                },
+
+                onAddressInput() {
+                    if (this._addressDebounceTimer) {
+                        clearTimeout(this._addressDebounceTimer);
+                    }
+
+                    const query = this.addressQuery.trim();
+                    if (query.length < 3) {
+                        this.clearAddressResults();
+                        return;
+                    }
+
+                    this._addressDebounceTimer = setTimeout(() => {
+                        this.performAddressSearch(query);
+                    }, 500);
+                },
+
+                performAddressSearch(query) {
+                    if (this._addressAbortController) {
+                        this._addressAbortController.abort();
+                    }
+
+                    this._addressAbortController = new AbortController();
+                    this.isSearchingAddress = true;
+                    this.hasSearchedAddress = false;
+
+                    fetch(`{{ url('/api/geocode/search') }}?q=${encodeURIComponent(query)}`, {
+                        signal: this._addressAbortController.signal
+                    })
+                    .then(res => res.json())
+                    .then(res => {
+                        this.isSearchingAddress = false;
+                        this.hasSearchedAddress = true;
+                        if (!res.success) {
+                            this.addressResults = [];
+                            this.addressSearchError = res.message || 'Gagal mencari alamat.';
+                            return;
+                        }
+                        this.addressResults = res.data || [];
+                    })
+                    .catch(err => {
+                        if (err.name === 'AbortError') return;
+                        this.isSearchingAddress = false;
+                        this.hasSearchedAddress = true;
+                        this.addressResults = [];
+                        this.addressSearchError = 'Tidak dapat menghubungi layanan pencarian alamat. Silakan tandai lokasi manual di peta.';
+                        console.error('Geocode search error:', err);
+                    });
+                },
+
+                selectAddressResult(result) {
+                    this.lat = parseFloat(Number(result.lat).toFixed(7));
+                    this.lng = parseFloat(Number(result.lon).toFixed(7));
+
+                    this.marker.setLatLng([this.lat, this.lng]);
+                    this.map.setView([this.lat, this.lng], 16);
+                    this.lastSourceIsGeocode = true;
+
+                    // Isi textarea alamat HANYA jika masih kosong
+                    if (this.$refs.alamatInput && !this.$refs.alamatInput.value.trim()) {
+                        this.$refs.alamatInput.value = result.display_name;
+                    }
+
+                    this.addressQuery = result.display_name;
+                    this.clearAddressResults();
+                },
+
+                clearAddressResults() {
+                    this.addressResults = [];
+                    this.hasSearchedAddress = false;
+                    this.addressSearchError = null;
                 }
             };
         }

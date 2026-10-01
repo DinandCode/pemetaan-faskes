@@ -35,6 +35,10 @@ Route::prefix('faskes-fields')->name('faskes-fields.')->group(function () {
     Route::delete('/{id}', [FaskesFieldController::class, 'destroy'])->name('destroy');
 });
 
+// Bulk Destroy Faskes (ditempatkan sebelum Route::resource)
+Route::delete('faskes/bulk-destroy', [FaskesCrudController::class, 'bulkDestroy'])->name('faskes.bulk-destroy');
+
 // Resource CRUD Master Data Faskes
 Route::resource('faskes', FaskesCrudController::class);
+
 
