@@ -75,6 +75,15 @@
                     <span>Export PDF</span>
                 </a>
 
+                <!-- Kelola Kolom Tambahan Button -->
+                <a href="{{ route('faskes-fields.index') }}"
+                   class="px-3.5 py-2 text-xs font-semibold rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition flex items-center gap-1.5">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
+                    </svg>
+                    <span>Kelola Kolom Tambahan</span>
+                </a>
+
                 <a href="{{ route('faskes.create') }}"
                    class="px-4 py-2 text-xs font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 text-white shadow-sm shadow-blue-500/25 transition flex items-center gap-1.5">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -428,6 +437,19 @@
 
                                     @else
                                         <span class="text-slate-400 italic">-</span>
+                                    @endif
+
+                                    {{-- Kolom Tambahan (Custom Fields) Chips --}}
+                                    @if($faskes->fieldValues && $faskes->fieldValues->isNotEmpty())
+                                        <div class="flex flex-wrap gap-1 mt-1.5 pt-1 border-t border-slate-100">
+                                            @foreach($faskes->fieldValues as $fv)
+                                                @if($fv->definition && $fv->value)
+                                                    <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-200" title="{{ $fv->definition->label }}: {{ $fv->value }}">
+                                                        <span class="text-indigo-500 font-semibold">{{ $fv->definition->label }}:</span> {{ $fv->value }}
+                                                    </span>
+                                                @endif
+                                            @endforeach
+                                        </div>
                                     @endif
                                 </td>
 

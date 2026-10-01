@@ -61,6 +61,7 @@ class FaskesController extends Controller
             'laboratoriumDetail',
             'upkdkDetail',
             'griyaSehatDetail',
+            'fieldValues.definition',
         ]);
 
         // 1. Filter Jenis Faskes (bisa array, string tunggal, atau comma-separated)
@@ -162,6 +163,7 @@ class FaskesController extends Controller
             'laboratoriumDetail',
             'upkdkDetail',
             'griyaSehatDetail',
+            'fieldValues.definition',
         ])->findOrFail($id);
 
         return response()->json([

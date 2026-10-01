@@ -23,6 +23,7 @@ class FaskesCrudController extends Controller
             'laboratoriumDetail',
             'upkdkDetail',
             'griyaSehatDetail',
+            'fieldValues.definition',
         ]);
 
         if ($request->filled('search')) {
@@ -53,7 +54,12 @@ class FaskesCrudController extends Controller
      */
     public function create(): View
     {
-        return view('faskes.create');
+        $customFieldDefinitions = \App\Models\FaskesFieldDefinition::where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('label')
+            ->get();
+
+        return view('faskes.create', compact('customFieldDefinitions'));
     }
 
     /**
@@ -75,9 +81,15 @@ class FaskesCrudController extends Controller
             // Simpan detail child
             $this->saveChildDetail($faskes, $request);
 
+            // Simpan kolom tambahan (custom fields)
+            $this->saveCustomFields($faskes, $request);
+
             DB::commit();
 
             return redirect()->route('faskes.index')->with('success', 'Data faskes berhasil ditambahkan.');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollBack();
+            throw $e;
         } catch (\Exception $e) {
             DB::rollBack();
             \Log::error('Gagal simpan faskes: ' . $e->getMessage());
@@ -98,9 +110,17 @@ class FaskesCrudController extends Controller
             'laboratoriumDetail',
             'upkdkDetail',
             'griyaSehatDetail',
+            'fieldValues.definition',
         ])->findOrFail($id);
 
-        return view('faskes.edit', compact('faskes'));
+        $customFieldDefinitions = \App\Models\FaskesFieldDefinition::where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('label')
+            ->get();
+
+        $existingCustomValues = $faskes->fieldValues->pluck('value', 'field_definition_id')->toArray();
+
+        return view('faskes.edit', compact('faskes', 'customFieldDefinitions', 'existingCustomValues'));
     }
 
     /**
@@ -129,9 +149,15 @@ class FaskesCrudController extends Controller
             // Simpan atau update child detail yang aktif
             $this->saveChildDetail($faskes, $request);
 
+            // Simpan kolom tambahan (custom fields)
+            $this->saveCustomFields($faskes, $request);
+
             DB::commit();
 
             return redirect()->route('faskes.index')->with('success', 'Data faskes berhasil diperbarui.');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollBack();
+            throw $e;
         } catch (\Exception $e) {
             DB::rollBack();
             \Log::error('Gagal simpan faskes: ' . $e->getMessage());
@@ -339,6 +365,73 @@ class FaskesCrudController extends Controller
             case 'griya_sehat':
                 $faskes->griyaSehatDetail()->delete();
                 break;
+        }
+    }
+
+    /**
+     * Menyimpan nilai kolom tambahan (custom fields).
+     */
+    protected function saveCustomFields(Faskes $faskes, Request $request): void
+    {
+        $customInputs = $request->input('custom', []);
+        if (! is_array($customInputs)) {
+            $customInputs = [];
+        }
+
+        // Ambil definisi aktif yang berlaku untuk jenis faskes ini (atau berlaku untuk semua jenis)
+        $definitions = \App\Models\FaskesFieldDefinition::where('is_active', true)
+            ->where(function ($q) use ($faskes) {
+                $q->whereNull('jenis_faskes')
+                  ->orWhere('jenis_faskes', $faskes->jenis_faskes);
+            })
+            ->get();
+
+        $errors = [];
+
+        foreach ($definitions as $def) {
+            $val = $customInputs[$def->id] ?? null;
+            if ($val !== null) {
+                $val = trim((string) $val);
+            }
+
+            if ($def->is_required && ($val === null || $val === '')) {
+                $errors["custom.{$def->id}"] = "Kolom '{$def->label}' wajib dipilih.";
+                continue;
+            }
+
+            if ($val === null || $val === '') {
+                // Nilai kosong -> hapus record nilainya jika ada
+                \App\Models\FaskesFieldValue::where('faskes_id', $faskes->id)
+                    ->where('field_definition_id', $def->id)
+                    ->delete();
+            } else {
+                // Validasi bahwa nilainya ada di daftar opsi terdefinisi (atau nilai lama)
+                $allowedOptions = (array) ($def->options ?? []);
+                $existingVal = \App\Models\FaskesFieldValue::where('faskes_id', $faskes->id)
+                    ->where('field_definition_id', $def->id)
+                    ->value('value');
+                if ($existingVal !== null && $existingVal !== '') {
+                    $allowedOptions[] = $existingVal;
+                }
+
+                if (in_array($val, $allowedOptions, true)) {
+                    \App\Models\FaskesFieldValue::updateOrCreate(
+                        [
+                            'faskes_id' => $faskes->id,
+                            'field_definition_id' => $def->id,
+                        ],
+                        [
+                            'value' => $val,
+                        ]
+                    );
+                } else {
+                    $errors["custom.{$def->id}"] = "Pilihan untuk kolom '{$def->label}' tidak valid.";
+                }
+            }
+        }
+
+        if (! empty($errors)) {
+            throw \Illuminate\Validation\ValidationException::withMessages($errors);
         }
     }
 }

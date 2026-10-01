@@ -556,19 +556,55 @@
                     </div>
                 </div>
 
-                <!-- 8. CHILD: TEMPAT PRAKTIK MANDIRI (TPMD, TPMDG, TPMB, TPMP) -->
-                <div x-show="['tpmd', 'tpmdg', 'tpmb', 'tpmp'].includes(jenisFaskes)"
-                     x-transition
-                     class="p-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-xs flex items-start gap-3">
-                    <div class="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
-                        <i class="fa-solid fa-user-doctor text-sm"></i>
+                <!-- SUB-BAGIAN: KOLOM TAMBAHAN (CUSTOM FIELDS) -->
+                <div class="pt-4 border-t border-slate-100">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+                            <h3 class="text-xs font-bold text-slate-800">Kolom Tambahan</h3>
+                            <span class="text-[10px] text-slate-400">&bull; Dropdown spesifikasi dinamis</span>
+                        </div>
+                        <button type="button" @click="openCustomFieldModal()"
+                                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition">
+                            <i class="fa-solid fa-plus text-[10px]"></i>
+                            <span>Tambah Kolom</span>
+                        </button>
                     </div>
-                    <div>
-                        <div class="font-bold text-slate-800 mb-0.5">Praktik Mandiri Nakes</div>
-                        <p class="text-[11px] leading-relaxed text-slate-500">
-                            Fasilitas praktik mandiri tenaga medis/kesehatan menggunakan atribut data pokok (nama, alamat, koordinat, nomor telepon, dan status aktif).
-                            Anda dapat menambahkan atribut khusus secara dinamis melalui fitur <strong>Kolom Tambahan</strong> di bawah.
-                        </p>
+
+                    <!-- Dynamic Fields Grid -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3" x-show="visibleCustomFields.length > 0">
+                        <template x-for="field in visibleCustomFields" :key="field.id">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1.5">
+                                    <span x-text="field.label"></span>
+                                    <template x-if="field.is_required">
+                                        <span class="text-rose-500 font-bold">*</span>
+                                    </template>
+                                </label>
+                                <select :name="'custom[' + field.id + ']'"
+                                        :required="field.is_required"
+                                        x-model="customValues[field.id]"
+                                        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs transition focus:bg-white focus:outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10">
+                                    <option value="">-- Pilih --</option>
+                                    <template x-for="opt in field.options" :key="opt">
+                                        <option :value="opt" x-text="opt" :selected="customValues[field.id] == opt"></option>
+                                    </template>
+                                    <template x-if="field.old_unlisted_value">
+                                        <option :value="field.old_unlisted_value" x-text="field.old_unlisted_value + ' (nilai lama)'" selected></option>
+                                    </template>
+                                </select>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Empty state if no fields for this jenis -->
+                    <div x-show="visibleCustomFields.length === 0"
+                         class="p-4 rounded-xl bg-slate-50 border border-dashed border-slate-200 text-center text-xs text-slate-400">
+                        <span>Belum ada kolom tambahan untuk jenis faskes ini. Klik </span>
+                        <button type="button" @click="openCustomFieldModal()" class="text-indigo-600 font-semibold hover:underline">
+                            + Tambah Kolom
+                        </button>
+                        <span> untuk menambahkan dropdown baru.</span>
                     </div>
                 </div>
             </div>
@@ -589,6 +625,115 @@
 
     </main>
 
+    <!-- Modal Tambah Kolom Tambahan (Alpine) -->
+    <div x-show="customModalOpen" x-cloak
+         class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-100 relative"
+             @click.away="if(!isSavingCustomField) customModalOpen = false">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                        <i class="fa-solid fa-plus text-xs"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-sm">Tambah Kolom Tambahan</h3>
+                        <p class="text-[11px] text-slate-400">Dropdown kustom baru langsung aktif di form</p>
+                    </div>
+                </div>
+                <button type="button" @click="customModalOpen = false" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+
+            <!-- Error message inside modal -->
+            <template x-if="customModalError">
+                <div class="mt-3 p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs" x-text="customModalError"></div>
+            </template>
+
+            <form @submit.prevent="submitNewCustomField()" class="mt-4 space-y-3.5">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Label Kolom <span class="text-rose-500">*</span></label>
+                    <input type="text" x-model="newField.label" required placeholder="Contoh: Layanan 24 Jam, Akreditasi..."
+                           class="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Lingkup Jenis Faskes</label>
+                        <select x-model="newField.jenis_faskes"
+                                class="w-full text-xs px-2.5 py-2 border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:outline-none">
+                            <option value="">Semua Jenis (Global)</option>
+                            <option value="puskesmas">Puskesmas</option>
+                            <option value="rumah_sakit">Rumah Sakit</option>
+                            <option value="klinik_pratama">Klinik Pratama</option>
+                            <option value="klinik_utama">Klinik Utama</option>
+                            <option value="laboratorium">Laboratorium</option>
+                            <option value="upkdk">UPKDK</option>
+                            <option value="griya_sehat">Griya Sehat</option>
+                            <option value="tpmd">TPMD</option>
+                            <option value="tpmdg">TPMDG</option>
+                            <option value="tpmb">TPMB</option>
+                            <option value="tpmp">TPMP</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Urutan Tampil</label>
+                        <input type="number" x-model.number="newField.sort_order" min="0"
+                               class="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg focus:outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="text-xs font-semibold text-slate-700">Daftar Pilihan Opsi <span class="text-rose-500">*</span></label>
+                        <button type="button" @click="addModalOption()"
+                                class="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800">
+                            + Tambah Opsi
+                        </button>
+                    </div>
+                    <div class="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                        <template x-for="(opt, idx) in newField.options" :key="idx">
+                            <div class="flex items-center gap-1.5">
+                                <input type="text" x-model="newField.options[idx]" required
+                                       :placeholder="'Opsi ' + (idx + 1)"
+                                       class="flex-1 text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                <button type="button" @click="removeModalOption(idx)"
+                                        x-show="newField.options.length > 1"
+                                        class="p-1.5 text-slate-400 hover:text-rose-600 transition">
+                                    <i class="fa-solid fa-trash text-[11px]"></i>
+                                </button>
+                            </div>
+                        </template>
+                    </div>
+                    <p class="text-[10px] text-slate-400 mt-1">Maksimal 30 opsi per dropdown.</p>
+                </div>
+
+                <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
+                    <label class="inline-flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" x-model="newField.is_required"
+                               class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                        <span class="text-xs text-slate-700 font-medium">Wajib diisi</span>
+                    </label>
+
+                    <div class="flex items-center gap-2">
+                        <button type="button" @click="customModalOpen = false" :disabled="isSavingCustomField"
+                                class="px-3.5 py-2 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition">
+                            Batal
+                        </button>
+                        <button type="submit" :disabled="isSavingCustomField"
+                                class="px-4 py-2 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition inline-flex items-center gap-1.5">
+                            <template x-if="isSavingCustomField">
+                                <i class="fa-solid fa-spinner fa-spin text-xs"></i>
+                            </template>
+                            <span>Simpan</span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Leaflet & Alpine.js Logic -->
     <script>
         function faskesFormApp(config) {
@@ -598,6 +743,117 @@
                 lng: config.initialLng,
                 map: null,
                 marker: null,
+
+                // Custom Fields (Tugas 2)
+                customFieldDefinitions: @json($customFieldDefinitions ?? []),
+                customValues: @json($existingCustomValues ?? (old('custom') ?: (object)[])),
+                customModalOpen: false,
+                isSavingCustomField: false,
+                customModalError: null,
+                newField: {
+                    label: '',
+                    jenis_faskes: '',
+                    options: ['Opsi 1', 'Opsi 2'],
+                    is_required: false,
+                    sort_order: 0
+                },
+
+                get visibleCustomFields() {
+                    const currentJenis = this.jenisFaskes;
+                    return this.customFieldDefinitions.filter(f => {
+                        if (!f.is_active) return false;
+                        if (!f.jenis_faskes) return true;
+                        return f.jenis_faskes === currentJenis;
+                    }).map(f => {
+                        const currentVal = this.customValues ? this.customValues[f.id] : null;
+                        const opts = Array.isArray(f.options) ? f.options : [];
+                        let oldUnlisted = null;
+                        if (currentVal && !opts.includes(currentVal)) {
+                            oldUnlisted = currentVal;
+                        }
+                        return {
+                            ...f,
+                            options: opts,
+                            old_unlisted_value: oldUnlisted
+                        };
+                    });
+                },
+
+                openCustomFieldModal() {
+                    this.newField = {
+                        label: '',
+                        jenis_faskes: this.jenisFaskes || '',
+                        options: ['Opsi 1', 'Opsi 2'],
+                        is_required: false,
+                        sort_order: 0
+                    };
+                    this.customModalError = null;
+                    this.customModalOpen = true;
+                },
+
+                addModalOption() {
+                    if (this.newField.options.length < 30) {
+                        this.newField.options.push('');
+                    }
+                },
+
+                removeModalOption(idx) {
+                    if (this.newField.options.length > 1) {
+                        this.newField.options.splice(idx, 1);
+                    }
+                },
+
+                async submitNewCustomField() {
+                    if (!this.newField.label.trim()) {
+                        this.customModalError = 'Label kolom wajib diisi.';
+                        return;
+                    }
+                    const cleanOpts = this.newField.options.map(o => o.trim()).filter(o => o !== '');
+                    if (cleanOpts.length === 0) {
+                        this.customModalError = 'Minimal harus ada 1 opsi pilihan.';
+                        return;
+                    }
+
+                    this.isSavingCustomField = true;
+                    this.customModalError = null;
+
+                    try {
+                        const response = await fetch('{{ url("/faskes-fields") }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            },
+                            body: JSON.stringify({
+                                label: this.newField.label,
+                                jenis_faskes: this.newField.jenis_faskes || null,
+                                options: cleanOpts,
+                                is_required: this.newField.is_required ? 1 : 0,
+                                sort_order: this.newField.sort_order || 0
+                            })
+                        });
+
+                        const resData = await response.json();
+
+                        if (!response.ok || resData.status !== 'success') {
+                            const errs = resData.errors ? Object.values(resData.errors).flat().join(' ') : (resData.message || 'Gagal menyimpan kolom.');
+                            this.customModalError = errs;
+                            this.isSavingCustomField = false;
+                            return;
+                        }
+
+                        const createdField = resData.data;
+                        createdField.is_active = true;
+                        this.customFieldDefinitions.push(createdField);
+
+                        this.customModalOpen = false;
+                        this.isSavingCustomField = false;
+                    } catch (e) {
+                        this.customModalError = 'Terjadi kesalahan jaringan: ' + e.message;
+                        this.isSavingCustomField = false;
+                    }
+                },
 
                 initMiniMap() {
                     this.map = L.map('mini-map', {

@@ -189,6 +189,14 @@ class Faskes extends Model
     }
 
     /**
+     * Relasi hasMany ke nilai kolom tambahan (custom fields).
+     */
+    public function fieldValues(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(FaskesFieldValue::class, 'faskes_id');
+    }
+
+    /**
      * Helper accessor untuk mengambil model detail aktif sesuai jenis_faskes.
      */
     public function getDetailAttribute(): ?Model

@@ -1473,6 +1473,14 @@
                         badgeHtml += `<span class="inline-block px-1.5 py-0.5 rounded text-[9px] font-medium bg-cyan-100 text-cyan-800 mr-1">PJ: ${detail.pj}</span>`;
                     }
 
+                    if (Array.isArray(faskes.field_values) && faskes.field_values.length > 0) {
+                        faskes.field_values.forEach(fv => {
+                            if (fv.definition && fv.value) {
+                                badgeHtml += `<span class="inline-block px-1.5 py-0.5 rounded text-[9px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-200 mr-1">${fv.definition.label}: ${fv.value}</span>`;
+                            }
+                        });
+                    }
+
                     return `
                         <div class="text-xs p-1 max-w-[240px]">
                             <div class="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 mb-1">

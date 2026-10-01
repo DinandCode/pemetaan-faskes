@@ -25,5 +25,16 @@ Route::get('faskes/export/pdf', [ImportExportController::class, 'exportFaskesPdf
 Route::match(['get', 'post'], 'analisis/export/excel', [ImportExportController::class, 'exportAnalisisExcel'])->name('analisis.export.excel');
 Route::match(['get', 'post'], 'analisis/export/pdf', [ImportExportController::class, 'exportAnalisisPdf'])->name('analisis.export.pdf');
 
+use App\Http\Controllers\FaskesFieldController;
+
+// Kelola Definisi Kolom Tambahan (Custom Fields)
+Route::prefix('faskes-fields')->name('faskes-fields.')->group(function () {
+    Route::get('/', [FaskesFieldController::class, 'index'])->name('index');
+    Route::post('/', [FaskesFieldController::class, 'store'])->name('store');
+    Route::put('/{id}', [FaskesFieldController::class, 'update'])->name('update');
+    Route::delete('/{id}', [FaskesFieldController::class, 'destroy'])->name('destroy');
+});
+
 // Resource CRUD Master Data Faskes
 Route::resource('faskes', FaskesCrudController::class);
+
