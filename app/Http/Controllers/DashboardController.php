@@ -9,12 +9,14 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
+use App\Services\IzinOperasionalService;
+
 class DashboardController extends Controller
 {
     /**
      * Menampilkan dashboard analitik dan ringkasan faskes.
      */
-    public function index()
+    public function index(IzinOperasionalService $izinService)
     {
         // 1. Ringkasan Kartu Statistik
         $totalFaskes = Faskes::count();
@@ -139,6 +141,10 @@ class DashboardController extends Controller
         ->take(5)
         ->values();
 
+        // 4. Data Ringkasan Pemantauan Izin Operasional (Tugas 6)
+        $ringkasanIzin = $izinService->getRingkasan();
+        $urgentIzinList = $izinService->getUrgentList(10);
+
         return view('dashboard', compact(
             'totalFaskes',
             'totalPuskesmas',
@@ -150,7 +156,27 @@ class DashboardController extends Controller
             'chartKategoriLabels',
             'chartKategoriData',
             'chartKategoriColors',
-            'allWithIzin'
+            'allWithIzin',
+            'ringkasanIzin',
+            'urgentIzinList'
         ));
+    }
+
+    /**
+     * Endpoint API JSON untuk data pemantauan izin operasional terpaginasi (Tugas 6).
+     */
+    public function getIzinOperasional(Request $request, IzinOperasionalService $izinService)
+    {
+        $filters = [
+            'level'        => $request->query('level', 'all'),
+            'jenis_faskes' => $request->query('jenis_faskes'),
+            'kecamatan'    => $request->query('kecamatan'),
+            'page'         => $request->query('page', 1),
+            'per_page'     => $request->query('per_page', 10),
+        ];
+
+        $result = $izinService->getPagedData($filters);
+
+        return response()->json($result);
     }
 }

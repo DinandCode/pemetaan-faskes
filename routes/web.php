@@ -17,6 +17,7 @@ Route::get('/peta', function () {
 
 // Halaman Dashboard Analitik & Statistik
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+Route::get('/dashboard/izin-operasional', [DashboardController::class, 'getIzinOperasional'])->name('dashboard.izin-operasional');
 
 // Import & Export Faskes (ditempatkan sebelum Route::resource agar tidak tertimpa faskes/{faske})
 Route::get('faskes/import/template', [ImportExportController::class, 'downloadTemplate'])->name('faskes.import.template');
