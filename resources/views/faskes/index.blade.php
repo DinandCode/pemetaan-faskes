@@ -517,72 +517,289 @@
         </div>
     </div>
 
-    <!-- Modal Import Excel -->
+    <!-- Modal Import Excel (Tugas 5) -->
     <div x-show="importModalOpen"
          x-cloak
          class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-        <div @click.away="importModalOpen = false"
-             class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 border border-slate-100">
-            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div @click.away="closeImportModal()"
+             class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4 border border-slate-100 max-h-[90vh] flex flex-col">
+            
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3 flex-shrink-0">
                 <div class="flex items-center gap-2.5">
                     <div class="w-9 h-9 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center flex-shrink-0">
-                        <svg class="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" />
                         </svg>
                     </div>
                     <div>
-                        <h3 class="text-sm font-bold text-slate-800">Import Data Rekapitulasi Dinkes</h3>
-                        <p class="text-[11px] text-slate-500">Format Excel (.xlsx, .xls, .csv)</p>
+                        <h3 class="text-sm font-bold text-slate-800">Import Data Fasilitas Kesehatan</h3>
+                        <p class="text-[11px] text-slate-500">Mendukung file Excel (.xlsx, .xls) & CSV</p>
                     </div>
                 </div>
-                <button @click="importModalOpen = false" class="text-slate-400 hover:text-slate-600 p-1 rounded-md transition">
+                <button @click="closeImportModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-md transition">
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                 </button>
             </div>
 
-            <form action="{{ route('faskes.import') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
-                @csrf
-                <div class="border-2 border-dashed border-slate-200 hover:border-blue-400 rounded-xl p-5 text-center transition bg-slate-50">
-                    <svg class="w-6 h-6 mx-auto mb-2 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-                    </svg>
-                    <input type="file" name="file" accept=".xlsx,.xls,.csv" required class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer">
-                    <p class="text-[11px] text-slate-400 mt-2">Maksimal ukuran file: 10 MB</p>
+            <!-- Tab Selection: Per Jenis vs Format Lama -->
+            <div class="flex items-center gap-4 border-b border-slate-200 text-xs font-semibold flex-shrink-0">
+                <button type="button"
+                        @click="importTab = 'per_jenis'; importReport = null; importFileError = ''"
+                        :class="importTab === 'per_jenis' ? 'text-blue-600 border-b-2 border-blue-600 pb-2 font-bold' : 'text-slate-500 hover:text-slate-800 pb-2'">
+                    Format Khusus Per Jenis (Rekomendasi)
+                </button>
+                <button type="button"
+                        @click="importTab = 'legacy'; importReport = null; importFileError = ''"
+                        :class="importTab === 'legacy' ? 'text-blue-600 border-b-2 border-blue-600 pb-2 font-bold' : 'text-slate-500 hover:text-slate-800 pb-2'">
+                    Format Rekapitulasi Lama (Multijenis)
+                </button>
+            </div>
+
+            <!-- Modal Content (Scrollable) -->
+            <div class="overflow-y-auto space-y-4 pr-1 text-xs">
+                <!-- TAB 1: FORMAT PER JENIS FASKES (TUGAS 5) -->
+                <div x-show="importTab === 'per_jenis'" class="space-y-4">
+                    
+                    <!-- Langkah 1: Pilih Jenis Faskes & Unduh Template -->
+                    <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-3">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                            <label class="block font-bold text-slate-700">
+                                1. Pilih Jenis Fasilitas Kesehatan:
+                            </label>
+                            <!-- Tombol Unduh Template -->
+                            <a :href="'{{ route('faskes.import.template') }}?jenis_faskes=' + selectedJenisImport"
+                               target="_blank"
+                               class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-medium shadow-xs text-xs transition">
+                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M7.5 12L12 16.5m0 0L16.5 12M12 3v13.5" />
+                                </svg>
+                                <span>Unduh Template Excel</span>
+                            </a>
+                        </div>
+                        <select x-model="selectedJenisImport"
+                                @change="importReport = null; importFileError = ''"
+                                class="w-full text-xs font-semibold rounded-lg border-slate-300 focus:border-blue-500 focus:ring focus:ring-blue-200 bg-white py-2 px-3">
+                            <option value="puskesmas">Puskesmas</option>
+                            <option value="rumah_sakit">Rumah Sakit</option>
+                            <option value="klinik_pratama">Klinik Pratama</option>
+                            <option value="klinik_utama">Klinik Utama</option>
+                            <option value="laboratorium">Laboratorium</option>
+                            <option value="upkdk">UPKDK (Pustu / PKD)</option>
+                            <option value="griya_sehat">Griya Sehat</option>
+                            <option value="tpmd">TPMD (Praktik Mandiri Dokter)</option>
+                            <option value="tpmdg">TPMDG (Praktik Mandiri Dokter Gigi)</option>
+                            <option value="tpmb">TPMB (Praktik Mandiri Bidan)</option>
+                            <option value="tpmp">TPMP (Praktik Mandiri Perawat)</option>
+                        </select>
+                        <p class="text-[11px] text-slate-500 leading-relaxed">
+                            *Template Excel otomatis menyesuaikan spesifikasi kolom faskes di atas, dilengkapi dropdown validasi (Sheet 1) dan petunjuk pengisian lengkap (Sheet 2).
+                        </p>
+                    </div>
+
+                    <!-- Langkah 2: Opsi Pengunggahan & Penanganan Duplikat -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1.5">
+                                Jika Faskes Sudah Terdaftar:
+                            </label>
+                            <div class="space-y-1.5">
+                                <label class="flex items-center gap-2 cursor-pointer text-slate-600">
+                                    <input type="radio" value="skip" x-model="importOnDuplicate" class="text-blue-600 focus:ring-blue-500">
+                                    <span>Lewati baris duplikat (Default)</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer text-slate-600">
+                                    <input type="radio" value="update" x-model="importOnDuplicate" class="text-blue-600 focus:ring-blue-500">
+                                    <span>Perbarui data faskes yang cocok</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1.5">
+                                Mode Eksekusi / Transaksi:
+                            </label>
+                            <div class="space-y-1.5">
+                                <label class="flex items-center gap-2 cursor-pointer text-slate-600">
+                                    <input type="radio" value="valid_only" x-model="importTransactionMode" class="text-blue-600 focus:ring-blue-500">
+                                    <span>Simpan hanya baris valid (Default)</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer text-slate-600">
+                                    <input type="radio" value="rollback_all" x-model="importTransactionMode" class="text-blue-600 focus:ring-blue-500">
+                                    <span>Batalkan semua jika ada error</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Langkah 3: Pilih File Excel -->
+                    <div class="border-2 border-dashed border-slate-300 hover:border-blue-400 rounded-xl p-4 text-center transition bg-slate-50">
+                        <svg class="w-7 h-7 mx-auto mb-1.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                        </svg>
+                        <input type="file"
+                               x-ref="importFileInput"
+                               accept=".xlsx,.xls,.csv"
+                               @change="importReport = null; importFileError = ''"
+                               class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer">
+                        <p class="text-[11px] text-slate-400 mt-1">Maksimal 1000 baris & 4 MB (.xlsx, .xls, .csv)</p>
+                    </div>
+
+                    <!-- Error Alert -->
+                    <div x-show="importFileError" x-cloak class="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs">
+                        <p x-text="importFileError"></p>
+                    </div>
+
+                    <!-- Laporan Hasil Pengecekan / Import -->
+                    <div x-show="importReport" x-cloak class="space-y-3">
+                        <div :class="importReport && importReport.success ? (importReport.error_count > 0 ? 'bg-amber-50 border-amber-200 text-amber-800' : 'bg-emerald-50 border-emerald-200 text-emerald-800') : 'bg-rose-50 border-rose-200 text-rose-800'"
+                             class="p-3.5 rounded-xl border flex items-start gap-2.5">
+                            <svg x-show="importReport && importReport.success && importReport.error_count === 0" class="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <svg x-show="importReport && (importReport.error_count > 0 || !importReport.success)" class="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                            </svg>
+                            <div>
+                                <p class="font-bold text-xs" x-text="importReport && importReport.is_dry_run ? 'Hasil Pengecekan File (Dry-Run):' : 'Status Eksekusi Import:'"></p>
+                                <p class="text-[11px] mt-0.5 leading-relaxed" x-text="importReport ? importReport.message : ''"></p>
+                            </div>
+                        </div>
+
+                        <!-- Ringkasan Angka -->
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+                            <div class="p-2 rounded-lg bg-slate-100 border border-slate-200">
+                                <div class="text-[10px] text-slate-500 font-semibold">Total Baris</div>
+                                <div class="text-base font-bold text-slate-800" x-text="importReport ? importReport.total_rows : 0"></div>
+                            </div>
+                            <div class="p-2 rounded-lg bg-emerald-50 border border-emerald-200">
+                                <div class="text-[10px] text-emerald-700 font-semibold" x-text="importReport && importReport.is_dry_run ? 'Baris Valid' : 'Baris Tersimpan'"></div>
+                                <div class="text-base font-bold text-emerald-700" x-text="importReport ? (importReport.is_dry_run ? importReport.valid_count : (importReport.imported || 0) + (importReport.updated || 0)) : 0"></div>
+                            </div>
+                            <div class="p-2 rounded-lg bg-amber-50 border border-amber-200">
+                                <div class="text-[10px] text-amber-700 font-semibold" x-text="importReport && importReport.is_dry_run ? 'Duplikat Terdeteksi' : 'Dilewati'"></div>
+                                <div class="text-base font-bold text-amber-700" x-text="importReport ? (importReport.is_dry_run ? importReport.duplicate_count : (importReport.skipped || 0)) : 0"></div>
+                            </div>
+                            <div class="p-2 rounded-lg bg-rose-50 border border-rose-200">
+                                <div class="text-[10px] text-rose-700 font-semibold">Error / Gagal</div>
+                                <div class="text-base font-bold text-rose-700" x-text="importReport ? (importReport.is_dry_run ? importReport.error_count : (importReport.failed || 0)) : 0"></div>
+                            </div>
+                        </div>
+
+                        <!-- Daftar Rincian Error Per Baris -->
+                        <template x-if="importReport && importReport.errors && importReport.errors.length > 0">
+                            <div class="space-y-1.5">
+                                <p class="font-bold text-slate-700 text-[11px] flex items-center justify-between">
+                                    <span>Rincian Kesalahan (<span x-text="importReport.errors.length"></span> temuan):</span>
+                                    <span class="text-[10px] font-normal text-slate-400">Harap perbaiki file Excel lalu coba lagi</span>
+                                </p>
+                                <div class="max-h-48 overflow-y-auto border border-slate-200 rounded-lg">
+                                    <table class="w-full text-left text-[11px] border-collapse">
+                                        <thead class="bg-slate-100 sticky top-0 text-slate-700 border-b border-slate-200">
+                                            <tr>
+                                                <th class="p-1.5 w-16 text-center">Baris</th>
+                                                <th class="p-1.5 w-32">Kolom</th>
+                                                <th class="p-1.5">Pesan Masalah</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-100 bg-white">
+                                            <template x-for="(err, idx) in importReport.errors" :key="idx">
+                                                <tr class="hover:bg-rose-50/50">
+                                                    <td class="p-1.5 text-center font-bold text-slate-600" x-text="err.row || '-'"></td>
+                                                    <td class="p-1.5 font-medium text-slate-800" x-text="err.column || '-'"></td>
+                                                    <td class="p-1.5 text-rose-600" x-text="err.message"></td>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Tombol Aksi: Cek File & Import -->
+                    <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                        <button type="button" @click="closeImportModal()"
+                                class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg text-xs transition">
+                            Tutup
+                        </button>
+                        
+                        <!-- Tombol Cek File (Dry Run) -->
+                        <button type="button"
+                                @click="checkImportFile()"
+                                :disabled="isCheckingImport || isExecutingImport"
+                                class="px-4 py-2 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white font-semibold rounded-lg text-xs transition flex items-center gap-1.5 shadow-sm shadow-amber-500/20">
+                            <svg x-show="!isCheckingImport" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <svg x-show="isCheckingImport" x-cloak class="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                            </svg>
+                            <span x-text="isCheckingImport ? 'Memeriksa...' : 'Cek File'"></span>
+                        </button>
+
+                        <!-- Tombol Eksekusi Import -->
+                        <button type="button"
+                                @click="executeImportFile()"
+                                :disabled="isCheckingImport || isExecutingImport"
+                                class="px-5 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold rounded-lg text-xs transition flex items-center gap-1.5 shadow-sm shadow-blue-500/25">
+                            <svg x-show="!isExecutingImport" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                            </svg>
+                            <svg x-show="isExecutingImport" x-cloak class="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                            </svg>
+                            <span x-text="isExecutingImport ? 'Mengimpor...' : 'Import Data'"></span>
+                        </button>
+                    </div>
                 </div>
 
-                <!-- Info Mapping Kolom -->
-                <div class="bg-blue-50/60 border border-blue-100 rounded-xl p-3 text-[11px] text-slate-600 space-y-1">
-                    <p class="font-bold text-blue-900 flex items-center gap-1.5">
-                        <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
-                        </svg>
-                        Kolom Sheet Rekapitulasi yang Didukung:
-                    </p>
-                    <p class="text-slate-500">
-                        <code>nama / nama_faskes</code>, <code>jenis_faskes</code> (puskesmas, rumah_sakit, klinik_pratama, dll),
-                        <code>latitude</code>, <code>longitude</code>, <code>alamat</code>, <code>kecamatan</code>, <code>desa</code>, <code>nomor_telepon</code>.
-                    </p>
-                    <p class="text-slate-400 text-[10px] mt-1">
-                        *Kolom koordinat akan otomatis dipetakan ke field spasial PostGIS <code>lokasi</code> (SRID 4326) dan data spesifikasi disimpan ke tabel child yang sesuai.
-                    </p>
-                </div>
+                <!-- TAB 2: FORMAT REKAPITULASI MULTIJENIS (LEGACY / LAMA) -->
+                <div x-show="importTab === 'legacy'" x-cloak class="space-y-4">
+                    <form action="{{ route('faskes.import') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
+                        @csrf
+                        <div class="border-2 border-dashed border-slate-200 hover:border-blue-400 rounded-xl p-5 text-center transition bg-slate-50">
+                            <svg class="w-6 h-6 mx-auto mb-2 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                            </svg>
+                            <input type="file" name="file" accept=".xlsx,.xls,.csv" required class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer">
+                            <p class="text-[11px] text-slate-400 mt-2">Maksimal ukuran file: 10 MB</p>
+                        </div>
 
-                <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-                    <button type="button" @click="importModalOpen = false"
-                            class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg text-xs transition">
-                        Batal
-                    </button>
-                    <button type="submit"
-                            class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-xs transition flex items-center gap-1.5 shadow-sm shadow-blue-500/25">
-                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <span>Unggah & Impor</span>
-                    </button>
+                        <!-- Info Mapping Kolom Format Lama -->
+                        <div class="bg-blue-50/60 border border-blue-100 rounded-xl p-3 text-[11px] text-slate-600 space-y-1">
+                            <p class="font-bold text-blue-900 flex items-center gap-1.5">
+                                <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                Kolom Sheet Rekapitulasi Lama yang Didukung:
+                            </p>
+                            <p class="text-slate-500">
+                                <code>nama / nama_faskes</code>, <code>jenis_faskes</code> (puskesmas, rumah_sakit, dll),
+                                <code>latitude</code>, <code>longitude</code>, <code>alamat</code>, <code>kecamatan</code>, <code>desa</code>, <code>nomor_telepon</code>.
+                            </p>
+                        </div>
+
+                        <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                            <button type="button" @click="closeImportModal()"
+                                    class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg text-xs transition">
+                                Batal
+                            </button>
+                            <button type="submit"
+                                    class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-xs transition flex items-center gap-1.5 shadow-sm shadow-blue-500/25">
+                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span>Unggah & Impor Format Lama</span>
+                            </button>
+                        </div>
+                    </form>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
 
@@ -591,7 +808,7 @@
         &copy; {{ date('Y') }} Sistem Informasi Geografis Faskes &bull; Dinas Kesehatan Kabupaten Banyumas
     </footer>
 
-    <!-- Alpine Component Script for Index Page (Tugas 3B & 3C) -->
+    <!-- Alpine Component Script for Index Page (Tugas 3B, 3C & 5) -->
     <script>
         function faskesIndexApp(initialFilters) {
             return {
@@ -606,6 +823,16 @@
                 searchDebounceTimer: null,
                 selectedIds: [],
                 selectedItems: {}, // id -> nama
+
+                // Import Modal State (Tugas 5)
+                importTab: 'per_jenis',
+                selectedJenisImport: 'puskesmas',
+                importOnDuplicate: 'skip',
+                importTransactionMode: 'valid_only',
+                isCheckingImport: false,
+                isExecutingImport: false,
+                importFileError: '',
+                importReport: null,
 
                 filters: {
                     search: initialFilters.search || '',
@@ -875,6 +1102,129 @@
                     })
                     .finally(() => {
                         this.isBulkDeleting = false;
+                    });
+                },
+
+                // Tutup Modal Import & Reset Form (Tugas 5)
+                closeImportModal() {
+                    this.importModalOpen = false;
+                    this.importReport = null;
+                    this.importFileError = '';
+                    if (this.$refs.importFileInput) {
+                        this.$refs.importFileInput.value = '';
+                    }
+                },
+
+                // Pengecekan / Validasi File Excel Dry-run (Tugas 5)
+                checkImportFile() {
+                    const fileInput = this.$refs.importFileInput;
+                    if (!fileInput || !fileInput.files.length) {
+                        this.importFileError = 'Silakan pilih file Excel terlebih dahulu.';
+                        return;
+                    }
+                    this.importFileError = '';
+                    this.isCheckingImport = true;
+                    this.importReport = null;
+
+                    const formData = new FormData();
+                    formData.append('file', fileInput.files[0]);
+                    formData.append('jenis_faskes', this.selectedJenisImport);
+                    formData.append('on_duplicate', this.importOnDuplicate);
+                    formData.append('transaction_mode', this.importTransactionMode);
+
+                    fetch("{{ route('faskes.import.check') }}", {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
+                        },
+                        body: formData
+                    })
+                    .then(async res => {
+                        const data = await res.json();
+                        if (!res.ok && !data.errors && !data.total_rows) {
+                            throw new Error(data.message || 'Gagal mengecek file import');
+                        }
+                        return data;
+                    })
+                    .then(data => {
+                        this.importReport = {
+                            is_dry_run: true,
+                            success: data.success,
+                            message: data.message || (data.error_count === 0 ? 'File valid dan siap diimpor!' : `Ditemukan ${data.error_count} baris bermasalah dari total ${data.total_rows} baris.`),
+                            total_rows: data.total_rows || 0,
+                            valid_count: data.valid_count || 0,
+                            duplicate_count: data.duplicate_count || 0,
+                            error_count: data.error_count || 0,
+                            errors: data.errors || []
+                        };
+                    })
+                    .catch(err => {
+                        this.importFileError = err.message || 'Terjadi kesalahan saat memeriksa file.';
+                    })
+                    .finally(() => {
+                        this.isCheckingImport = false;
+                    });
+                },
+
+                // Eksekusi Import Data ke Database (Tugas 5)
+                executeImportFile() {
+                    const fileInput = this.$refs.importFileInput;
+                    if (!fileInput || !fileInput.files.length) {
+                        this.importFileError = 'Silakan pilih file Excel terlebih dahulu.';
+                        return;
+                    }
+                    this.importFileError = '';
+                    this.isExecutingImport = true;
+                    this.importReport = null;
+
+                    const formData = new FormData();
+                    formData.append('file', fileInput.files[0]);
+                    formData.append('jenis_faskes', this.selectedJenisImport);
+                    formData.append('on_duplicate', this.importOnDuplicate);
+                    formData.append('transaction_mode', this.importTransactionMode);
+
+                    fetch("{{ route('faskes.import') }}", {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
+                        },
+                        body: formData
+                    })
+                    .then(async res => {
+                        const data = await res.json();
+                        if (!res.ok && !data.total_rows && !data.imported) {
+                            throw new Error(data.message || 'Gagal mengimpor data faskes');
+                        }
+                        return data;
+                    })
+                    .then(data => {
+                        this.importReport = {
+                            is_dry_run: false,
+                            success: data.success,
+                            message: data.message,
+                            total_rows: data.total_rows || 0,
+                            valid_count: data.valid_count || 0,
+                            imported: data.imported || 0,
+                            updated: data.updated || 0,
+                            skipped: data.skipped || 0,
+                            failed: data.failed || 0,
+                            error_count: data.error_count || 0,
+                            errors: data.errors || []
+                        };
+                        if (data.success && fileInput) {
+                            fileInput.value = '';
+                        }
+                        this.fetchTable();
+                    })
+                    .catch(err => {
+                        this.importFileError = err.message || 'Terjadi kesalahan sistem saat mengimpor data.';
+                    })
+                    .finally(() => {
+                        this.isExecutingImport = false;
                     });
                 }
             };

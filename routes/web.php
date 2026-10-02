@@ -19,6 +19,8 @@ Route::get('/peta', function () {
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
 // Import & Export Faskes (ditempatkan sebelum Route::resource agar tidak tertimpa faskes/{faske})
+Route::get('faskes/import/template', [ImportExportController::class, 'downloadTemplate'])->name('faskes.import.template');
+Route::post('faskes/import/check', [ImportExportController::class, 'checkImport'])->name('faskes.import.check');
 Route::post('faskes/import', [ImportExportController::class, 'importFaskes'])->name('faskes.import');
 Route::get('faskes/export/excel', [ImportExportController::class, 'exportFaskesExcel'])->name('faskes.export.excel');
 Route::get('faskes/export/pdf', [ImportExportController::class, 'exportFaskesPdf'])->name('faskes.export.pdf');
