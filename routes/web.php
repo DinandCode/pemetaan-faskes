@@ -6,11 +6,13 @@ use App\Http\Controllers\ImportExportController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('peta');
+    $activeFieldDefinitions = \App\Models\FaskesFieldDefinition::where('is_active', true)->orderBy('sort_order')->get();
+    return view('peta', compact('activeFieldDefinitions'));
 });
 
 Route::get('/peta', function () {
-    return view('peta');
+    $activeFieldDefinitions = \App\Models\FaskesFieldDefinition::where('is_active', true)->orderBy('sort_order')->get();
+    return view('peta', compact('activeFieldDefinitions'));
 });
 
 // Halaman Dashboard Analitik & Statistik

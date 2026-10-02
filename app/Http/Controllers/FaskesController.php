@@ -147,6 +147,9 @@ class FaskesController extends Controller
             });
         }
 
+        // 7. Filter Atribut Lanjutan (Tugas 4: Jumlah, Kategori, Izin Operasional, Custom Fields)
+        \App\Support\FaskesAttributeFilter::apply($query, $request);
+
         return $query;
     }
 

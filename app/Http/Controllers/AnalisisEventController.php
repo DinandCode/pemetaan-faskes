@@ -56,6 +56,22 @@ class AnalisisEventController extends Controller
             'has_bpjs'       => 'nullable|boolean',
             'has_rawat_inap' => 'nullable|boolean',
             'has_poned'      => 'nullable|boolean',
+            // Filter Atribut Lanjutan (Tugas 4)
+            'min_total_ambulans'     => 'nullable|integer|min:0|max:100',
+            'min_ambulans_gadar'     => 'nullable|integer|min:0|max:50',
+            'min_ambulans_roda_dua'  => 'nullable|integer|min:0|max:50',
+            'min_bed'                => 'nullable|integer|min:0|max:500',
+            'min_sdm'                => 'nullable|integer|min:0|max:1000',
+            'kepemilikan'            => 'nullable|string|in:Swasta,Pemerintah',
+            'tipe_rs'                => 'nullable|string|in:A,B,C,D,D Pratama',
+            'kategori_puskesmas'     => 'nullable|string|in:rawat_inap,rawat_jalan',
+            'wilayah_puskesmas'      => 'nullable|string|in:perkotaan,pedesaan',
+            'persalinan_puskesmas'   => 'nullable|string|in:poned,mampu_salin,tidak_mampu_salin',
+            'ponek_rs'               => 'nullable|string',
+            'kategori_layanan_klinik' => 'nullable|string|in:rawat_jalan,rawat_inap',
+            'bpjs_klinik'            => 'nullable|string',
+            'status_izin'            => 'nullable|string|in:berlaku,berakhir_6_bulan,berakhir_3_bulan,berakhir_1_bulan,kedaluwarsa,belum_diisi',
+            'custom_filter'          => 'nullable|array',
         ]);
 
         $eventLat = (float) $validated['latitude'];
@@ -131,6 +147,9 @@ class AnalisisEventController extends Controller
                 $sub->where('poned', 'Ya PONED');
             });
         }
+
+        // Filter Atribut Lanjutan (Tugas 4: Jumlah, Kategori, Izin Operasional, Custom Fields)
+        \App\Support\FaskesAttributeFilter::apply($query, $request);
 
         // FIX AKURASI: ambil kandidat lebih banyak dari $limit final SEBELUM dihitung jarak jalannya,
         // supaya faskes yang sedikit lebih jauh secara garis lurus tapi ternyata lebih dekat lewat
