@@ -49,6 +49,77 @@ class FaskesController extends Controller
     }
 
     /**
+     * Endpoint API ringan untuk render ribuan marker peta (Tugas 8A).
+     * Menggunakan query builder murni (toBase) tanpa eager loading & tanpa $appends Eloquent,
+     * sehingga sangat hemat memori dan cepat dieksekusi.
+     *
+     * Format respons data: Array of compact objects:
+     * [{ id, nama, jenis_faskes, lat, lng, status, kecamatan }]
+     */
+    public function markers(Request $request): JsonResponse
+    {
+        $query = $this->buildFilterQuery($request);
+
+        // Buang eager loading model relasi agar query ringan
+        $query->setEagerLoads([]);
+
+        // Konversi ke Query Builder murni (stdClass, bukan model Eloquent ber-appends)
+        $rawQuery = $query->toBase()
+            ->select([
+                'id',
+                'nama',
+                'jenis_faskes',
+                'latitude',
+                'longitude',
+                'status',
+                'kecamatan',
+            ]);
+
+        // Pagar validasi koordinat: hanya koordinat valid (not null & rentang geografis benar)
+        $rawQuery->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->whereBetween('latitude', [-90, 90])
+            ->whereBetween('longitude', [-180, 180]);
+
+        // Opsional: Filter bounding box jika dikirim klien (minLng,minLat,maxLng,maxLat)
+        if ($request->filled('bbox')) {
+            $parts = explode(',', $request->query('bbox'));
+            if (count($parts) === 4) {
+                $minLng = (float) $parts[0];
+                $minLat = (float) $parts[1];
+                $maxLng = (float) $parts[2];
+                $maxLat = (float) $parts[3];
+                if ($minLat <= $maxLat && $minLng <= $maxLng) {
+                    $rawQuery->whereBetween('latitude', [$minLat, $maxLat])
+                        ->whereBetween('longitude', [$minLng, $maxLng]);
+                }
+            }
+        }
+
+        // Batasi jumlah titik (default 20000)
+        $limit = min(20000, max(1, $request->integer('limit', 20000)));
+        $rows = $rawQuery->orderBy('nama', 'asc')->limit($limit)->get();
+
+        $data = $rows->map(function ($row) {
+            return [
+                'id'           => (int) $row->id,
+                'nama'         => $row->nama,
+                'jenis_faskes' => $row->jenis_faskes,
+                'lat'          => (float) $row->latitude,
+                'lng'          => (float) $row->longitude,
+                'status'       => $row->status,
+                'kecamatan'    => $row->kecamatan,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'total'   => $data->count(),
+            'data'    => $data,
+        ])->header('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=60');
+    }
+
+    /**
      * Membangun Query Eloquent dengan filter relasi whereHas dinamis.
      */
     protected function buildFilterQuery(Request $request): Builder

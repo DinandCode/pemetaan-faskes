@@ -10,6 +10,10 @@
     <!-- Leaflet CSS (Di-import SEBELUM Tailwind CSS agar tidak bentrok atau terkena reset CSS) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
+    <!-- Leaflet MarkerCluster CSS (v1.5.3) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" />
+
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
 
@@ -18,12 +22,21 @@
 
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Leaflet MarkerCluster JS (v1.5.3) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
     <script src="{{ url('/js/faskes-basemaps.js') }}"></script>
 
     <style>
         html, body {
             height: 100%;
             -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Perbaikan CSS Leaflet - Reset Tailwind pada img & svg Leaflet (cegah bug marker melayang/rusak) */
+        .leaflet-container img,
+        .leaflet-container svg {
+            max-width: none !important;
+            max-height: none !important;
         }
 
         /* Perbaikan CSS Leaflet - Hilangkan kotak hitam & border default */
@@ -33,6 +46,32 @@
         path.leaflet-interactive:focus,
         .leaflet-container path:focus {
             outline: none !important;
+        }
+
+        /* Rapikan styling MarkerCluster agar serasi dengan Tailwind */
+        .marker-cluster-small {
+            background-color: rgba(59, 130, 246, 0.35) !important;
+        }
+        .marker-cluster-small div {
+            background-color: rgba(37, 99, 235, 0.9) !important;
+            color: #ffffff !important;
+            font-weight: 700 !important;
+        }
+        .marker-cluster-medium {
+            background-color: rgba(245, 158, 11, 0.35) !important;
+        }
+        .marker-cluster-medium div {
+            background-color: rgba(217, 119, 6, 0.9) !important;
+            color: #ffffff !important;
+            font-weight: 700 !important;
+        }
+        .marker-cluster-large {
+            background-color: rgba(239, 68, 68, 0.35) !important;
+        }
+        .marker-cluster-large div {
+            background-color: rgba(220, 38, 38, 0.9) !important;
+            color: #ffffff !important;
+            font-weight: 700 !important;
         }
         .leaflet-tooltip {
             background: rgba(255, 255, 255, 0.95) !important;
@@ -314,6 +353,34 @@
                         </button>
                     </div>
                 </div>
+
+                <!-- Progress Rendering Marker Bertahap (Tugas 8B) -->
+                <template x-if="isRenderingClusters && clusterProgressTotal > 0">
+                    <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-2.5 space-y-1.5 transition">
+                        <div class="flex items-center justify-between text-[11px] text-indigo-800 font-medium">
+                            <span class="flex items-center gap-1.5">
+                                <svg class="animate-spin h-3 w-3 text-indigo-600" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                                </svg>
+                                Memuat marker bertahap...
+                            </span>
+                            <span class="font-bold" x-text="`${clusterProgressProcessed} / ${clusterProgressTotal}`"></span>
+                        </div>
+                        <div class="w-full bg-indigo-200 rounded-full h-1.5 overflow-hidden">
+                            <div class="bg-indigo-600 h-1.5 rounded-full transition-all duration-100"
+                                 :style="`width: ${Math.round((clusterProgressProcessed / clusterProgressTotal) * 100)}%`"></div>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Pagar Sanitasi: Notifikasi Koordinat Tidak Valid (Tugas 8B) -->
+                <template x-if="invalidCoordinateCount > 0">
+                    <div class="bg-amber-50 border border-amber-200 rounded-xl p-2.5 flex items-start gap-2 text-[11px] text-amber-800">
+                        <svg class="icon w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5"><use href="#ic-warning"/></svg>
+                        <span><b x-text="invalidCoordinateCount"></b> titik dilewati karena koordinat tidak valid / di luar batas Kab. Banyumas.</span>
+                    </div>
+                </template>
 
                 <!-- 1. Pilihan Jenis Faskes (Checkbox) -->
                 <div class="bg-white rounded-xl p-3.5 border border-slate-200 shadow-sm space-y-2.5">
@@ -1210,12 +1277,20 @@
                 // Layer Groups Leaflet
                 kabupatenLayerGroup: null,
                 kabupatenGeoJsonLayer: null,
-                faskesLayerGroup: null,
+                clusterGroup: null,
+                fallbackLayerGroup: null,
                 eventLayerGroup: null,
                 routeLayerGroup: null,
                 radiusCircle: null,
                 eventMarker: null,
                 markerMap: {},
+                iconCache: {},
+                faskesDetailCache: new Map(),
+                isRenderingClusters: false,
+                clusterProgressProcessed: 0,
+                clusterProgressTotal: 0,
+                invalidCoordinateCount: 0,
+                currentRequestId: 0,
                 basemapHelper: null,
                 currentBasemapName: 'Peta Jalan',
 
@@ -1251,13 +1326,39 @@
 
                     // Layer Groups Leaflet:
                     // 1. Batas Kabupaten (Garis pembatas non-interaktif)
-                    // 2. Faskes Markers
+                    // 2. Faskes Markers (MarkerClusterGroup atau fallback LayerGroup)
                     // 3. Rute OSRM
                     // 4. Titik Event & Radius Circle
                     this.kabupatenLayerGroup = L.layerGroup().addTo(this.map);
-                    this.faskesLayerGroup = L.layerGroup().addTo(this.map);
                     this.routeLayerGroup = L.layerGroup().addTo(this.map);
                     this.eventLayerGroup = L.layerGroup().addTo(this.map);
+
+                    // Inisialisasi Marker Cluster Group dengan chunkedLoading (Tugas 8B)
+                    if (typeof L.markerClusterGroup === 'function') {
+                        this.clusterGroup = L.markerClusterGroup({
+                            chunkedLoading: true,
+                            chunkInterval: 100,
+                            chunkDelay: 20,
+                            removeOutsideVisibleBounds: true,
+                            spiderfyOnMaxZoom: true,
+                            showCoverageOnHover: false,
+                            maxClusterRadius: 50,
+                            disableClusteringAtZoom: 17,
+                            chunkProgress: (processed, total, elapsed) => {
+                                this.clusterProgressProcessed = processed;
+                                this.clusterProgressTotal = total;
+                                this.isRenderingClusters = (processed < total);
+                            }
+                        });
+                        this.map.addLayer(this.clusterGroup);
+                    } else {
+                        console.warn('Leaflet.markercluster tidak terdeteksi, menggunakan fallback L.layerGroup');
+                        this.clusterGroup = null;
+                        this.fallbackLayerGroup = L.layerGroup().addTo(this.map);
+                    }
+
+                    // Inisialisasi cache icon satu kali untuk 11 jenis faskes (Tugas 8B)
+                    this.initIconCache();
 
                     // Muat Batas Luar Kabupaten Banyumas (Non-Interaktif)
                     this.loadKabupatenBoundary();
@@ -1389,31 +1490,39 @@
                     return count;
                 },
 
-                // Muat Data Pertama Kali
+                // Muat Data Pertama Kali (Endpoint Ringan /api/faskes/markers - Tugas 8A)
                 loadInitialFaskes() {
                     this.isFiltering = true;
-                    fetch('{{ url("/api/faskes") }}?all=true')
+                    this.currentRequestId = (this.currentRequestId || 0) + 1;
+                    const reqId = this.currentRequestId;
+
+                    fetch('{{ url("/api/faskes/markers") }}')
                         .then(res => res.json())
                         .then(res => {
+                            if (reqId !== this.currentRequestId) return;
                             this.isFiltering = false;
                             if (!res.success) return;
 
                             this.faskesList = res.data;
-                            this.totalFaskes = this.faskesList.length;
+                            this.totalFaskes = res.total;
                             this.renderMarkers(this.faskesList, true);
                         })
                         .catch(err => {
-                            this.isFiltering = false;
-                            console.error('Error load initial faskes:', err);
+                            if (reqId === this.currentRequestId) {
+                                this.isFiltering = false;
+                            }
+                            console.error('Error load initial faskes markers:', err);
                         });
                 },
 
-                // AJAX: Ambil data faskes tersaring dari endpoint API /api/faskes/filter
+                // AJAX: Ambil data faskes tersaring dari endpoint ringan /api/faskes/markers (Tugas 8A)
                 applyDynamicFilters(fitBounds = false) {
                     if (this.filterAbortController) {
                         this.filterAbortController.abort();
                     }
                     this.filterAbortController = new AbortController();
+                    this.currentRequestId = (this.currentRequestId || 0) + 1;
+                    const reqId = this.currentRequestId;
 
                     this.isFiltering = true;
 
@@ -1460,11 +1569,12 @@
                         }
                     }
 
-                    fetch(`{{ url("/api/faskes/filter") }}?${params.toString()}`, {
+                    fetch(`{{ url("/api/faskes/markers") }}?${params.toString()}`, {
                         signal: this.filterAbortController.signal
                     })
                         .then(res => res.json())
                         .then(res => {
+                            if (reqId !== this.currentRequestId) return;
                             this.isFiltering = false;
                             if (!res.success) return;
 
@@ -1473,61 +1583,110 @@
                         })
                         .catch(err => {
                             if (err.name === 'AbortError') return;
-                            this.isFiltering = false;
-                            console.error('Error filtering faskes:', err);
+                            if (reqId === this.currentRequestId) {
+                                this.isFiltering = false;
+                            }
+                            console.error('Error filtering faskes markers:', err);
                         });
                 },
 
-                // Tutup semua popup & bersihkan layer group DULU secara aman
-                // sebelum layer Leaflet lain (mis. animasi zoom) sempat mereferensikan marker yang sudah tak ada.
+                // Tutup semua popup & bersihkan layer group / cluster DULU secara aman (Tugas 8B)
                 safeClearFaskesLayer() {
                     if (!this.map) return;
                     try {
                         this.map.closePopup();
                     } catch (e) { /* no-op */ }
-                    this.faskesLayerGroup.clearLayers();
+                    if (this.clusterGroup) {
+                        this.clusterGroup.clearLayers();
+                    } else if (this.fallbackLayerGroup) {
+                        this.fallbackLayerGroup.clearLayers();
+                    }
                     this.markerMap = {};
                 },
 
-                // Render marker dengan lifecycle yang aman terhadap animasi Leaflet.
+                // Render marker dengan lifecycle aman, clustering bertahap, dan pagar sanitasi (Tugas 8B & 8C)
                 renderMarkers(list, fitBounds = false) {
                     if (!this.map) return;
 
                     const doRender = () => {
                         this.safeClearFaskesLayer();
                         const bounds = [];
+                        const markers = [];
+                        this.invalidCoordinateCount = 0;
 
-                        list.forEach(faskes => {
-                            if (faskes.latitude === null || faskes.longitude === null ||
-                                faskes.latitude === undefined || faskes.longitude === undefined) {
+                        list.forEach(item => {
+                            const rawLat = item.lat !== undefined ? item.lat : item.latitude;
+                            const rawLng = item.lng !== undefined ? item.lng : item.longitude;
+
+                            if (rawLat === null || rawLng === null || rawLat === undefined || rawLng === undefined) {
+                                this.invalidCoordinateCount++;
                                 return;
                             }
 
-                            // Parsing tegas + validasi finite number sebelum dipakai L.marker
-                            const lat = parseFloat(faskes.latitude);
-                            const lng = parseFloat(faskes.longitude);
-                            if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+                            const lat = parseFloat(rawLat);
+                            const lng = parseFloat(rawLng);
+
+                            // Pagar Sanitasi 1: Validitas angka & rentang koordinat global
+                            if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+                                this.invalidCoordinateCount++;
+                                return;
+                            }
+
+                            // Pagar Sanitasi 2: Bounding Box Kabupaten Banyumas (+ buffer aman perbatasan)
+                            // Lat: -7.80 .. -7.10, Lon: 108.85 .. 109.60
+                            if (lat < -7.80 || lat > -7.10 || lng < 108.85 || lng > 109.60) {
+                                this.invalidCoordinateCount++;
+                                return;
+                            }
 
                             bounds.push([lat, lng]);
 
-                            const markerIcon = this.createFaskesIcon(faskes.jenis_faskes);
+                            const markerIcon = this.iconCache[item.jenis_faskes] || this.iconCache['default'];
                             const marker = L.marker([lat, lng], { icon: markerIcon });
 
-                            marker.bindPopup(this.createFaskesPopupHtml(faskes));
-                            this.faskesLayerGroup.addLayer(marker);
+                            // Lazy Popup: Bind placeholder ringan, fetch detail spesifikasi saat dibuka (Tugas 8B)
+                            marker.bindPopup(() => this.getFaskesPopupPlaceholder(item), {
+                                maxWidth: 280,
+                                minWidth: 220,
+                                autoPanPadding: [20, 20]
+                            });
 
-                            this.markerMap[faskes.id] = marker;
+                            marker.on('popupopen', () => {
+                                this.fetchFaskesDetailAndPopulatePopup(marker, item.id);
+                            });
+
+                            markers.push(marker);
+                            this.markerMap[item.id] = marker;
                         });
 
+                        // Tambahkan ke cluster group atau fallback layer group
+                        if (this.clusterGroup) {
+                            this.clusterGroup.addLayers(markers);
+                        } else if (this.fallbackLayerGroup) {
+                            // Fallback bertahap jika CDN markercluster tidak aktif (~200 per frame)
+                            let chunkIndex = 0;
+                            const chunkSize = 200;
+                            const addChunk = () => {
+                                const chunk = markers.slice(chunkIndex, chunkIndex + chunkSize);
+                                chunk.forEach(m => this.fallbackLayerGroup.addLayer(m));
+                                chunkIndex += chunkSize;
+                                this.clusterProgressProcessed = Math.min(chunkIndex, markers.length);
+                                this.clusterProgressTotal = markers.length;
+                                this.isRenderingClusters = chunkIndex < markers.length;
+                                if (chunkIndex < markers.length) {
+                                    requestAnimationFrame(addChunk);
+                                }
+                            };
+                            this.isRenderingClusters = true;
+                            requestAnimationFrame(addChunk);
+                        }
+
                         if (fitBounds && bounds.length > 0) {
-                            // animate:false agar kalkulasi posisi piksel tidak rusak
-                            // saat clearLayers() + addLayer() terjadi hampir bersamaan dengan pan/zoom.
                             this.map.fitBounds(bounds, { padding: [40, 40], animate: false });
                         }
                     };
 
-                    // Jika peta sedang dalam animasi zoom/pan, tunda render
-                    // ke frame berikutnya agar tidak bentrok dengan proses reposisi Leaflet internal.
+                    // Jika peta sedang dalam animasi zoom/pan, tunda render ke zoomend
                     if (this.map._animatingZoom) {
                         this.map.once('zoomend', doRender);
                     } else {
@@ -1535,19 +1694,23 @@
                     }
                 },
 
-                // Tutup popup sebelum memindahkan viewport, dan matikan animasi
-                // supaya tidak tumpang tindih dengan render marker berikutnya.
+                // Tutup popup sebelum memindahkan viewport, dan uncluster marker saat difokuskan
                 zoomToFaskes(faskes) {
-                    if (!faskes.latitude || !faskes.longitude || !this.map) return;
-                    const lat = parseFloat(faskes.latitude);
-                    const lng = parseFloat(faskes.longitude);
+                    if (!this.map) return;
+                    const lat = parseFloat(faskes.lat !== undefined ? faskes.lat : faskes.latitude);
+                    const lng = parseFloat(faskes.lng !== undefined ? faskes.lng : faskes.longitude);
                     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
 
                     this.map.closePopup();
-                    this.map.setView([lat, lng], 15, { animate: false });
 
-                    if (this.markerMap[faskes.id]) {
-                        this.markerMap[faskes.id].openPopup();
+                    const marker = this.markerMap[faskes.id];
+                    if (marker && this.clusterGroup && typeof this.clusterGroup.zoomToShowLayer === 'function') {
+                        this.clusterGroup.zoomToShowLayer(marker, () => {
+                            marker.openPopup();
+                        });
+                    } else {
+                        this.map.setView([lat, lng], 16, { animate: false });
+                        if (marker) marker.openPopup();
                     }
                 },
 
@@ -1846,7 +2009,7 @@
                         });
                 },
 
-                // Fokus ke Salah Satu Rute Faskes
+                // Fokus ke Salah Satu Rute Faskes (Tugas 8B)
                 fokusKeRute(item, index) {
                     if (!this.map) return;
                     this.map.closePopup();
@@ -1857,11 +2020,20 @@
                         const tempLayer = L.geoJSON(item.titik_rute_jalan);
                         this.map.fitBounds(tempLayer.getBounds(), { padding: [60, 60], animate: false });
                     } else {
-                        const lat = parseFloat(faskes.latitude);
-                        const lng = parseFloat(faskes.longitude);
+                        const lat = parseFloat(faskes.lat !== undefined ? faskes.lat : faskes.latitude);
+                        const lng = parseFloat(faskes.lng !== undefined ? faskes.lng : faskes.longitude);
                         if (Number.isFinite(lat) && Number.isFinite(lng)) {
                             this.map.setView([lat, lng], 15, { animate: false });
                         }
+                    }
+
+                    const marker = this.markerMap[faskes.id];
+                    if (marker && this.clusterGroup && typeof this.clusterGroup.zoomToShowLayer === 'function') {
+                        this.clusterGroup.zoomToShowLayer(marker, () => {
+                            marker.openPopup();
+                        });
+                    } else if (marker) {
+                        marker.openPopup();
                     }
                 },
 
@@ -1909,8 +2081,8 @@
                     return `${base}?${params.toString()}`;
                 },
 
-                // Generator Custom Leaflet Marker Icon Berdasarkan Jenis Faskes
-                createFaskesIcon(jenis) {
+                // Inisialisasi Objek L.divIcon Satu Kali per Jenis Faskes (Tugas 8B & 8C)
+                initIconCache() {
                     const iconConfig = {
                         'rumah_sakit':    { color: '#ef4444', label: 'RS' },
                         'puskesmas':      { color: '#3b82f6', label: 'PKM' },
@@ -1925,19 +2097,98 @@
                         'tpmp':           { color: '#84cc16', label: 'TP' }
                     };
 
-                    const cfg = iconConfig[jenis] || { color: '#64748b', label: 'F' };
+                    this.iconCache = {};
+                    for (const [jenis, cfg] of Object.entries(iconConfig)) {
+                        this.iconCache[jenis] = this.createFaskesDivIcon(cfg.color, cfg.label);
+                    }
+                    this.iconCache['default'] = this.createFaskesDivIcon('#64748b', 'F');
+                },
 
+                // Generator SVG Pin Marker Bebas Distorsi Rotasi & Terpasang Presisi di Koordinat (Tugas 8C)
+                createFaskesDivIcon(color, label) {
                     return L.divIcon({
                         className: 'custom-faskes-marker',
                         html: `
-                            <div style="background-color: ${cfg.color}; width: 32px; height: 32px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3); border: 2px solid #ffffff;">
-                                <span style="transform: rotate(45deg); color: white; font-size: 10px; font-weight: 800; letter-spacing: -0.5px;">${cfg.label}</span>
+                            <div style="width: 30px; height: 38px; pointer-events: auto;">
+                                <svg width="30" height="38" viewBox="0 0 30 38" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block; filter: drop-shadow(0 3px 5px rgba(0,0,0,0.35));">
+                                    <path d="M15 0C6.716 0 0 6.716 0 15c0 10.2 15 23 15 23s15-12.8 15-23c0-8.284-6.716-15-15-15z" fill="${color}" stroke="#ffffff" stroke-width="2"/>
+                                    <text x="15" y="15.5" text-anchor="middle" dominant-baseline="central" fill="#ffffff" font-size="10" font-weight="800" font-family="system-ui, -apple-system, sans-serif" letter-spacing="-0.5px">${label}</text>
+                                </svg>
                             </div>
                         `,
-                        iconSize: [32, 32],
-                        iconAnchor: [16, 32],
-                        popupAnchor: [0, -32]
+                        iconSize: [30, 38],
+                        iconAnchor: [15, 38],
+                        popupAnchor: [0, -38]
                     });
+                },
+
+                // Helper kompatibilitas untuk mendapatkan icon faskes
+                createFaskesIcon(jenis) {
+                    if (!this.iconCache || Object.keys(this.iconCache).length === 0) {
+                        this.initIconCache();
+                    }
+                    return this.iconCache[jenis] || this.iconCache['default'];
+                },
+
+                // Placeholder popup ringan saat marker diklik pertama kali (Tugas 8B)
+                getFaskesPopupPlaceholder(item) {
+                    if (this.faskesDetailCache.has(item.id)) {
+                        return this.createFaskesPopupHtml(this.faskesDetailCache.get(item.id));
+                    }
+
+                    const jenisText = this.formatJenis(item.jenis_faskes);
+                    const icon = (name, cls = 'w-3 h-3') =>
+                        `<svg class="icon ${cls} inline-block align-[-2px]"><use href="#${name}"/></svg>`;
+
+                    const lat = item.lat !== undefined ? item.lat : item.latitude;
+                    const lng = item.lng !== undefined ? item.lng : item.longitude;
+
+                    return `
+                        <div class="text-xs p-1 max-w-[240px]">
+                            <div class="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 mb-1">
+                                ${jenisText}
+                            </div>
+                            <h4 class="font-bold text-slate-900 text-sm leading-tight">${item.nama}</h4>
+                            <p class="text-slate-500 text-[11px] mt-1">${item.kecamatan ? 'Kec. ' + item.kecamatan : '-'}</p>
+                            <div class="my-2 py-1 px-2 rounded bg-blue-50/80 text-blue-600 text-[11px] font-medium flex items-center justify-center gap-1.5 border border-blue-100">
+                                <svg class="animate-spin h-3.5 w-3.5 text-blue-500" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                                <span>Memuat detail spesifikasi...</span>
+                            </div>
+                            <hr class="my-2 border-slate-100">
+                            <button onclick="window.dispatchEvent(new CustomEvent('set-event-here', {detail: {lat: ${lat}, lng: ${lng}}}))"
+                                    class="w-full text-center py-1 rounded bg-blue-50 text-blue-600 hover:bg-blue-100 font-semibold text-[11px] transition flex items-center justify-center gap-1">
+                                ${icon('ic-pin', 'w-3.5 h-3.5')} Jadikan Titik Event
+                            </button>
+                        </div>
+                    `;
+                },
+
+                // Ambil detail faskes on-demand dari endpoint /api/faskes/{id} dan cache hasilnya (Tugas 8A & 8B)
+                fetchFaskesDetailAndPopulatePopup(marker, id) {
+                    if (this.faskesDetailCache.has(id)) {
+                        const cached = this.faskesDetailCache.get(id);
+                        if (marker.isPopupOpen()) {
+                            marker.setPopupContent(this.createFaskesPopupHtml(cached));
+                        }
+                        return;
+                    }
+
+                    fetch(`{{ url('/api/faskes') }}/${id}`)
+                        .then(res => res.json())
+                        .then(res => {
+                            if (!res.success || !res.data) return;
+                            const fullFaskes = res.data.faskes || res.data;
+                            if (res.data.detail) {
+                                fullFaskes.detail = res.data.detail;
+                            }
+                            this.faskesDetailCache.set(id, fullFaskes);
+                            if (marker.isPopupOpen()) {
+                                marker.setPopupContent(this.createFaskesPopupHtml(fullFaskes));
+                            }
+                        })
+                        .catch(err => {
+                            console.error('Error fetching detail faskes id ' + id + ':', err);
+                        });
                 },
 
                 // Popup HTML Faskes (string HTML mentah yang dirender Leaflet, jadi boleh pakai <svg><use></use></svg>
@@ -2014,7 +2265,7 @@
                             ${faskes.nomor_telepon ? `<p class="text-slate-600 text-[11px] mt-1 flex items-center gap-1">${icon('ic-phone', 'w-3.5 h-3.5')} ${faskes.nomor_telepon}</p>` : ''}
                             ${badgeHtml ? `<div class="mt-2 flex flex-wrap gap-1">${badgeHtml}</div>` : ''}
                             <hr class="my-2 border-slate-100">
-                            <button onclick="window.dispatchEvent(new CustomEvent('set-event-here', {detail: {lat: ${faskes.latitude}, lng: ${faskes.longitude}}}))"
+                            <button onclick="window.dispatchEvent(new CustomEvent('set-event-here', {detail: {lat: ${faskes.latitude !== undefined ? faskes.latitude : faskes.lat}, lng: ${faskes.longitude !== undefined ? faskes.longitude : faskes.lng}}}))"
                                     class="w-full text-center py-1 rounded bg-blue-50 text-blue-600 hover:bg-blue-100 font-semibold text-[11px] transition flex items-center justify-center gap-1">
                                 ${icon('ic-pin', 'w-3.5 h-3.5')} Jadikan Titik Event
                             </button>
