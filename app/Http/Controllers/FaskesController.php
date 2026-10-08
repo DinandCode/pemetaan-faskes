@@ -120,6 +120,71 @@ class FaskesController extends Controller
     }
 
     /**
+     * Endpoint API ringan untuk menghitung jumlah faskes per jenis_faskes berdasarkan filter aktif (Tugas 9).
+     * Menggunakan GROUP BY pada Query Builder murni tanpa memuat koordinat atau instansiasi model.
+     *
+     * Format respons:
+     * {
+     *   success: true,
+     *   total: 852,
+     *   counts: {
+     *     rumah_sakit: 12,
+     *     puskesmas: 40,
+     *     ...
+     *   }
+     * }
+     */
+    public function markersCount(Request $request): JsonResponse
+    {
+        $query = $this->buildFilterQuery($request);
+
+        // Buang eager loading relasi
+        $query->setEagerLoads([]);
+
+        $rawQuery = $query->toBase();
+
+        // Pagar validasi koordinat: hanya hitung titik yang koordinatnya valid
+        $rawQuery->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->whereBetween('latitude', [-90, 90])
+            ->whereBetween('longitude', [-180, 180]);
+
+        $rows = $rawQuery->select([
+            'jenis_faskes',
+            DB::raw('COUNT(*) as aggregate_count')
+        ])
+        ->groupBy('jenis_faskes')
+        ->get();
+
+        $counts = [
+            'rumah_sakit'    => 0,
+            'puskesmas'      => 0,
+            'klinik_utama'   => 0,
+            'klinik_pratama' => 0,
+            'laboratorium'   => 0,
+            'griya_sehat'    => 0,
+            'upkdk'          => 0,
+            'tpmd'           => 0,
+            'tpmdg'          => 0,
+            'tpmb'           => 0,
+            'tpmp'           => 0,
+        ];
+
+        $total = 0;
+        foreach ($rows as $row) {
+            $cnt = (int) $row->aggregate_count;
+            $counts[$row->jenis_faskes] = $cnt;
+            $total += $cnt;
+        }
+
+        return response()->json([
+            'success' => true,
+            'total'   => $total,
+            'counts'  => $counts,
+        ])->header('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=60');
+    }
+
+    /**
      * Membangun Query Eloquent dengan filter relasi whereHas dinamis.
      */
     protected function buildFilterQuery(Request $request): Builder

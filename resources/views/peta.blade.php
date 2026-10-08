@@ -226,28 +226,70 @@
             </div>
         </div>
 
-        <!-- Legend Pills (Tablet & Desktop) -->
+        <!-- Legend Pills (Tablet & Desktop) dengan Indikator Status Zoom LOD (Tugas 9) -->
         <div class="hidden md:flex flex-wrap items-center gap-1.5 text-[11px] xl:text-xs">
-            <span class="inline-flex items-center px-2 xl:px-2.5 py-1 rounded-full bg-red-50 text-red-700 font-medium border border-red-200">
-                <span class="w-2.5 h-2.5 rounded-full bg-red-500 mr-1.5"></span> Rumah Sakit
+            <span class="inline-flex items-center px-2 xl:px-2.5 py-1 rounded-full bg-red-50 text-red-700 font-medium border border-red-200 transition-all duration-200"
+                  :class="isTypeUnlocked('rumah_sakit') ? 'opacity-100 shadow-xs' : 'opacity-40 grayscale-[40%] border-dashed'"
+                  :title="getTypeZoomStatusTooltip('rumah_sakit')">
+                <span class="w-2.5 h-2.5 rounded-full bg-red-500 mr-1.5"></span>
+                <span>Rumah Sakit</span>
+                <template x-if="!isTypeUnlocked('rumah_sakit')">
+                    <svg class="w-3 h-3 ml-1 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                </template>
             </span>
-            <span class="inline-flex items-center px-2 xl:px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 font-medium border border-blue-200">
-                <span class="w-2.5 h-2.5 rounded-full bg-blue-500 mr-1.5"></span> Puskesmas
+            <span class="inline-flex items-center px-2 xl:px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 font-medium border border-blue-200 transition-all duration-200"
+                  :class="isTypeUnlocked('puskesmas') ? 'opacity-100 shadow-xs' : 'opacity-40 grayscale-[40%] border-dashed'"
+                  :title="getTypeZoomStatusTooltip('puskesmas')">
+                <span class="w-2.5 h-2.5 rounded-full bg-blue-500 mr-1.5"></span>
+                <span>Puskesmas</span>
+                <template x-if="!isTypeUnlocked('puskesmas')">
+                    <svg class="w-3 h-3 ml-1 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                </template>
             </span>
-            <span class="inline-flex items-center px-2 xl:px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 font-medium border border-emerald-200">
-                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 mr-1.5"></span> Klinik
+            <span class="inline-flex items-center px-2 xl:px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 font-medium border border-emerald-200 transition-all duration-200"
+                  :class="isTypeUnlocked('klinik_pratama') || isTypeUnlocked('klinik_utama') ? 'opacity-100 shadow-xs' : 'opacity-40 grayscale-[40%] border-dashed'"
+                  :title="getTypeZoomStatusTooltip('klinik_pratama')">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 mr-1.5"></span>
+                <span>Klinik</span>
+                <template x-if="!isTypeUnlocked('klinik_pratama') && !isTypeUnlocked('klinik_utama')">
+                    <svg class="w-3 h-3 ml-1 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                </template>
             </span>
-            <span class="inline-flex items-center px-2 xl:px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 font-medium border border-purple-200">
-                <span class="w-2.5 h-2.5 rounded-full bg-purple-500 mr-1.5"></span> Lab
+            <span class="inline-flex items-center px-2 xl:px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 font-medium border border-purple-200 transition-all duration-200"
+                  :class="isTypeUnlocked('laboratorium') ? 'opacity-100 shadow-xs' : 'opacity-40 grayscale-[40%] border-dashed'"
+                  :title="getTypeZoomStatusTooltip('laboratorium')">
+                <span class="w-2.5 h-2.5 rounded-full bg-purple-500 mr-1.5"></span>
+                <span>Lab</span>
+                <template x-if="!isTypeUnlocked('laboratorium')">
+                    <svg class="w-3 h-3 ml-1 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                </template>
             </span>
-            <span class="inline-flex items-center px-2 xl:px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 font-medium border border-amber-200">
-                <span class="w-2.5 h-2.5 rounded-full bg-amber-500 mr-1.5"></span> UPKDK
+            <span class="inline-flex items-center px-2 xl:px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 font-medium border border-amber-200 transition-all duration-200"
+                  :class="isTypeUnlocked('upkdk') ? 'opacity-100 shadow-xs' : 'opacity-40 grayscale-[40%] border-dashed'"
+                  :title="getTypeZoomStatusTooltip('upkdk')">
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-500 mr-1.5"></span>
+                <span>UPKDK</span>
+                <template x-if="!isTypeUnlocked('upkdk')">
+                    <svg class="w-3 h-3 ml-1 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                </template>
             </span>
-            <span class="inline-flex items-center px-2 xl:px-2.5 py-1 rounded-full bg-cyan-50 text-cyan-700 font-medium border border-cyan-200">
-                <span class="w-2.5 h-2.5 rounded-full bg-cyan-500 mr-1.5"></span> Griya Sehat
+            <span class="inline-flex items-center px-2 xl:px-2.5 py-1 rounded-full bg-cyan-50 text-cyan-700 font-medium border border-cyan-200 transition-all duration-200"
+                  :class="isTypeUnlocked('griya_sehat') ? 'opacity-100 shadow-xs' : 'opacity-40 grayscale-[40%] border-dashed'"
+                  :title="getTypeZoomStatusTooltip('griya_sehat')">
+                <span class="w-2.5 h-2.5 rounded-full bg-cyan-500 mr-1.5"></span>
+                <span>Griya Sehat</span>
+                <template x-if="!isTypeUnlocked('griya_sehat')">
+                    <svg class="w-3 h-3 ml-1 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                </template>
             </span>
-            <span class="inline-flex items-center px-2 xl:px-2.5 py-1 rounded-full bg-sky-50 text-sky-700 font-medium border border-sky-200">
-                <span class="w-2.5 h-2.5 rounded-full bg-sky-500 mr-1.5"></span> TPM
+            <span class="inline-flex items-center px-2 xl:px-2.5 py-1 rounded-full bg-sky-50 text-sky-700 font-medium border border-sky-200 transition-all duration-200"
+                  :class="isTypeUnlocked('tpmd') || isTypeUnlocked('tpmdg') || isTypeUnlocked('tpmb') || isTypeUnlocked('tpmp') ? 'opacity-100 shadow-xs' : 'opacity-40 grayscale-[40%] border-dashed'"
+                  :title="getTypeZoomStatusTooltip('tpmd')">
+                <span class="w-2.5 h-2.5 rounded-full bg-sky-500 mr-1.5"></span>
+                <span>TPM</span>
+                <template x-if="!isTypeUnlocked('tpmd') && !isTypeUnlocked('tpmdg') && !isTypeUnlocked('tpmb') && !isTypeUnlocked('tpmp')">
+                    <svg class="w-3 h-3 ml-1 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                </template>
             </span>
         </div>
 
@@ -277,7 +319,44 @@
     <div class="flex-1 relative flex overflow-hidden">
 
         <!-- Leaflet Map Container (Fullscreen Clean Canvas) -->
-        <div id="map" class="flex-1 h-full w-full z-0 cursor-crosshair"></div>
+        <div id="map" class="flex-1 h-full w-full z-0 cursor-crosshair relative">
+            <!-- Floating Notice: Zoom in untuk menampilkan jenis berikutnya (Tugas 9) -->
+            <div x-cloak x-show="getPendingTypesText() && !showAllTypesAtAllZooms"
+                 x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="opacity-0 -translate-y-2"
+                 x-transition:enter-end="opacity-100 translate-y-0"
+                 x-transition:leave="transition ease-in duration-150"
+                 x-transition:leave-start="opacity-100 translate-y-0"
+                 x-transition:leave-end="opacity-0 -translate-y-2"
+                 class="absolute top-3 left-1/2 -translate-x-1/2 z-[400] pointer-events-auto max-w-[90%] sm:max-w-md">
+                <div class="bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-full shadow-lg border border-slate-200/80 flex items-center gap-2 text-xs text-slate-700">
+                    <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse flex-shrink-0"></span>
+                    <span class="truncate">
+                        Perbesar peta (<span class="font-semibold text-blue-600">Zoom In</span>) untuk melihat:
+                        <b class="text-slate-900 font-semibold" x-text="getPendingTypesText()"></b>
+                    </span>
+                    <button type="button" @click="zoomInStep()" title="Zoom In"
+                            class="ml-1 px-2 py-0.5 rounded bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold text-[11px] transition">
+                        +
+                    </button>
+                </div>
+            </div>
+
+            <!-- Toast Titik Event Terkunci -->
+            <div x-cloak x-show="mapLockedNotice"
+                 x-transition:enter="transition ease-out duration-150"
+                 x-transition:enter-start="opacity-0 scale-95"
+                 x-transition:enter-end="opacity-100 scale-100"
+                 x-transition:leave="transition ease-in duration-150"
+                 x-transition:leave-start="opacity-100 scale-100"
+                 x-transition:leave-end="opacity-0 scale-95"
+                 class="absolute top-14 left-1/2 -translate-x-1/2 z-[400] pointer-events-none">
+                <div class="bg-slate-900/90 backdrop-blur-sm text-white px-3 py-1.5 rounded-full shadow-lg text-xs flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    <span>Titik event sudah terkunci. Klik &lsquo;Hapus Titik&rsquo; di panel untuk memindahkannya.</span>
+                </div>
+            </div>
+        </div>
 
         <!-- Sidebar Kontrol: Filter Atribut & Analisis Lokasi Event -->
         <aside class="absolute lg:relative top-0 right-0 h-full w-full sm:w-[400px] lg:w-[440px] bg-white border-l border-slate-200 shadow-2xl z-20 flex flex-col transition-transform duration-300 ease-in-out"
@@ -329,28 +408,41 @@
             <!-- TAB 1: FILTER ATRIBUT DINAMIS (LIVE UPDATE MARKER) -->
             <div x-show="activeTab === 'filter'" class="flex-1 overflow-y-auto p-3 sm:p-4 space-y-4 custom-scrollbar">
 
-                <!-- Header Status Filter -->
-                <div class="bg-blue-50/70 border border-blue-200 rounded-xl p-3 flex flex-wrap items-center justify-between gap-2 text-xs">
-                    <div>
-                        <span class="font-bold text-blue-900">Marker Faskes Aktif</span>
-                        <p class="text-blue-700 text-[11px]">
-                            Menampilkan <b x-text="faskesList.length"></b> dari <span x-text="totalFaskes"></span> faskes
-                        </p>
+                <!-- Header Status Filter & Count Marker -->
+                <div class="bg-blue-50/70 border border-blue-200 rounded-xl p-3 flex flex-col gap-2 text-xs">
+                    <div class="flex items-center justify-between gap-2">
+                        <div>
+                            <span class="font-bold text-blue-900">Marker Faskes di Layar</span>
+                            <p class="text-blue-700 text-[11px]">
+                                Menampilkan <b x-text="mountedCount"></b> dari <span x-text="totalFilteredCount"></span> faskes
+                                <span class="text-slate-400 font-normal" x-text="`(Zoom: ${currentZoom})`"></span>
+                            </p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <template x-if="isFiltering || isFetchingType">
+                                <div class="flex items-center gap-1 text-blue-600 font-semibold text-[11px]">
+                                    <svg class="animate-spin h-3.5 w-3.5" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                                    </svg>
+                                    <span x-text="loadingStatusText || 'Menyaring...'"></span>
+                                </div>
+                            </template>
+                            <button type="button" @click="resetDynamicFilters()"
+                                    class="text-[11px] px-2 py-1 rounded bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 font-medium transition focus:outline-none focus:ring-2 focus:ring-blue-300">
+                                Reset Filter
+                            </button>
+                        </div>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <template x-if="isFiltering">
-                            <div class="flex items-center gap-1 text-blue-600 font-semibold text-[11px]">
-                                <svg class="animate-spin h-3.5 w-3.5" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-                                </svg>
-                                <span>Menyaring...</span>
-                            </div>
-                        </template>
-                        <button type="button" @click="resetDynamicFilters()"
-                                class="text-[11px] px-2 py-1 rounded bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 font-medium transition focus:outline-none focus:ring-2 focus:ring-blue-300">
-                            Reset Filter
-                        </button>
+
+                    <!-- Toggle: Tampilkan semua jenis di semua zoom (Tugas 9) -->
+                    <div class="pt-2 border-t border-blue-200/60 flex items-center justify-between">
+                        <label class="text-[11px] text-slate-700 font-medium cursor-pointer flex items-center gap-1.5 select-none" for="toggle-all-zooms">
+                            <span>Tampilkan semua jenis di semua zoom</span>
+                            <span class="text-[10px] text-slate-400" x-show="!showAllTypesAtAllZooms">(Hemat DOM: LOD aktif)</span>
+                        </label>
+                        <input type="checkbox" id="toggle-all-zooms" x-model="showAllTypesAtAllZooms" @change="onToggleAllZooms()"
+                               class="rounded text-blue-600 focus:ring-blue-500 h-4 w-4 cursor-pointer">
                     </div>
                 </div>
 
@@ -1206,6 +1298,28 @@
 
     <!-- Alpine.js Application Logic -->
     <script>
+        // Konfigurasi Level of Detail (LOD) Berbasis Zoom (Tugas 9)
+        const BASE_ZOOM = 12; // Zoom default Kabupaten Banyumas di peta utama
+        const SHOW_SINGLE_TYPE_ALWAYS = true; // Jika user memilih TEPAT SATU jenis, tampilkan tanpa batas zoom
+        const ZOOM_THRESHOLDS = {
+            'rumah_sakit':    BASE_ZOOM,     // 12 - Hanya Rumah Sakit di zoom awal
+            'puskesmas':      BASE_ZOOM + 1, // 13
+            'klinik_utama':   BASE_ZOOM + 2, // 14
+            'klinik_pratama': BASE_ZOOM + 3, // 15
+            'laboratorium':   BASE_ZOOM + 3, // 15
+            'griya_sehat':    BASE_ZOOM + 4, // 16
+            'upkdk':          BASE_ZOOM + 4, // 16
+            'tpmd':           BASE_ZOOM + 5, // 17
+            'tpmdg':          BASE_ZOOM + 5, // 17
+            'tpmb':           BASE_ZOOM + 5, // 17
+            'tpmp':           BASE_ZOOM + 5  // 17
+        };
+
+        const ALL_FASKES_TYPES = [
+            'rumah_sakit', 'puskesmas', 'klinik_pratama', 'klinik_utama',
+            'laboratorium', 'upkdk', 'griya_sehat', 'tpmd', 'tpmdg', 'tpmb', 'tpmp'
+        ];
+
         function petaFaskesApp() {
             return {
                 map: null,
@@ -1277,25 +1391,32 @@
                 // Layer Groups Leaflet
                 kabupatenLayerGroup: null,
                 kabupatenGeoJsonLayer: null,
-                clusterGroup: null,
-                fallbackLayerGroup: null,
+                faskesLayerGroup: null, // L.layerGroup standar (Tugas 9: menggantikan L.markerClusterGroup)
                 eventLayerGroup: null,
                 routeLayerGroup: null,
                 radiusCircle: null,
                 eventMarker: null,
-                markerMap: {},
+                markerMap: {}, // id -> L.marker
                 iconCache: {},
-                faskesDetailCache: new Map(),
-                isRenderingClusters: false,
-                clusterProgressProcessed: 0,
-                clusterProgressTotal: 0,
+                faskesDetailCache: new Map(), // id -> full detail data
+
+                // State Level of Detail (LOD) & Culling (Tugas 9)
+                currentZoom: BASE_ZOOM,
+                showAllTypesAtAllZooms: false,
+                typeCounts: {}, // jenis -> count
+                totalFilteredCount: 0,
+                mountedCount: 0,
+                typeDataCache: new Map(), // key `${filterSignature}__${jenis}` -> Array<item>
+                activeFetchControllers: new Map(), // jenis -> AbortController
+                isFetchingType: false,
+                loadingStatusText: '',
+                cullDebounceTimer: null,
+                mountBatchId: 0, // Batalkan batch mounting rAF sebelumnya jika view berubah
+
                 invalidCoordinateCount: 0,
                 currentRequestId: 0,
                 basemapHelper: null,
                 currentBasemapName: 'Peta Jalan',
-
-                // Flag internal untuk mencegah render marker bertumpuk saat animasi peta masih berjalan
-                _pendingRender: null,
 
                 // Data Hasil
                 faskesList: [],
@@ -1307,7 +1428,9 @@
                         zoomControl: false,
                         markerZoomAnimation: true,
                         fadeAnimation: true
-                    }).setView([-7.424364, 109.230345], 12);
+                    }).setView([-7.424364, 109.230345], BASE_ZOOM);
+
+                    this.currentZoom = this.map.getZoom();
 
                     // Posisi Zoom Control di pojok kiri bawah
                     L.control.zoom({ position: 'bottomleft' }).addTo(this.map);
@@ -1326,36 +1449,13 @@
 
                     // Layer Groups Leaflet:
                     // 1. Batas Kabupaten (Garis pembatas non-interaktif)
-                    // 2. Faskes Markers (MarkerClusterGroup atau fallback LayerGroup)
+                    // 2. Faskes Markers (LayerGroup standar tanpa cluster - Tugas 9)
                     // 3. Rute OSRM
                     // 4. Titik Event & Radius Circle
                     this.kabupatenLayerGroup = L.layerGroup().addTo(this.map);
+                    this.faskesLayerGroup = L.layerGroup().addTo(this.map);
                     this.routeLayerGroup = L.layerGroup().addTo(this.map);
                     this.eventLayerGroup = L.layerGroup().addTo(this.map);
-
-                    // Inisialisasi Marker Cluster Group dengan chunkedLoading (Tugas 8B)
-                    if (typeof L.markerClusterGroup === 'function') {
-                        this.clusterGroup = L.markerClusterGroup({
-                            chunkedLoading: true,
-                            chunkInterval: 100,
-                            chunkDelay: 20,
-                            removeOutsideVisibleBounds: true,
-                            spiderfyOnMaxZoom: true,
-                            showCoverageOnHover: false,
-                            maxClusterRadius: 50,
-                            disableClusteringAtZoom: 17,
-                            chunkProgress: (processed, total, elapsed) => {
-                                this.clusterProgressProcessed = processed;
-                                this.clusterProgressTotal = total;
-                                this.isRenderingClusters = (processed < total);
-                            }
-                        });
-                        this.map.addLayer(this.clusterGroup);
-                    } else {
-                        console.warn('Leaflet.markercluster tidak terdeteksi, menggunakan fallback L.layerGroup');
-                        this.clusterGroup = null;
-                        this.fallbackLayerGroup = L.layerGroup().addTo(this.map);
-                    }
 
                     // Inisialisasi cache icon satu kali untuk 11 jenis faskes (Tugas 8B)
                     this.initIconCache();
@@ -1363,13 +1463,17 @@
                     // Muat Batas Luar Kabupaten Banyumas (Non-Interaktif)
                     this.loadKabupatenBoundary();
 
-                    // Listener Klik Peta untuk menentukan Titik Event.
-                    // FIX BUG: sebelumnya blok ini terdaftar DUA KALI (duplicate listener) sehingga
-                    // setiap klik memicu kedua handler sekaligus (setEventPoint bisa terpanggil 2x,
-                    // dan notifikasi kunci bisa tidak konsisten muncul). Digabung jadi satu di sini.
-                    // Perilaku "kunci titik sampai dihapus manual" tetap dipertahankan sesuai maksud awal.
-                    // PENTING: klik di peta HANYA dipakai untuk set titik event — tidak pernah
-                    // mengubah sidebarOpen. Penutupan panel tetap murni lewat tombol panel/X.
+                    // Viewport Culling & LOD Synchronizer pada event moveend / zoomend (Tugas 9)
+                    // Debounce 150 ms agar tidak membebani browser saat scrolling/panning cepat
+                    this.map.on('moveend', () => {
+                        this.currentZoom = this.map.getZoom();
+                        clearTimeout(this.cullDebounceTimer);
+                        this.cullDebounceTimer = setTimeout(() => {
+                            this.syncMarkersForCurrentView(false);
+                        }, 150);
+                    });
+
+                    // Listener Klik Peta untuk menentukan Titik Event
                     this.map.on('click', (e) => {
                         if (this.eventLat !== null && this.eventLng !== null) {
                             this.mapLockedNotice = true;
@@ -1382,141 +1486,125 @@
                         this.setEventPoint(e.latlng.lat, e.latlng.lng);
                     });
 
-                    // Muat Semua Data Faskes ke Peta
+                    // Muat Data Awal Faskes (LOD zoom: hanya jenis yang aktif di BASE_ZOOM)
                     this.loadInitialFaskes();
 
                     // Listener Kustom untuk 'Jadikan Titik Event' dari Popup Faskes
                     window.addEventListener('set-event-here', (e) => {
-                        if (this.eventLat !== null && this.eventLng !== null) return; // konsisten dengan aturan kunci di atas
+                        if (this.eventLat !== null && this.eventLng !== null) return;
                         this.setEventPoint(e.detail.lat, e.detail.lng);
                         this.activeTab = 'event';
                     });
 
-                    // Bersihkan floating overlay/badge liar yang mungkin tertinggal di atas
-                    // kanvas peta dari inisialisasi sebelumnya. Hanya elemen di luar 4 pojok leaflet yang dihapus.
+                    // Bersihkan floating overlay/badge liar di kanvas peta
                     this.cleanupStrayMapOverlays();
 
-                    // FIX: Peta "full screen" saat panel ditutup.
-                    // Saat sidebarOpen berubah (HANYA dipicu tombol panel/X di atas — bukan hover/klik peta),
-                    // lebar div#map ikut berubah karena aside lg:relative keluar-masuk flex layout.
-                    // Leaflet menyimpan ukuran kanvas secara internal dan TIDAK otomatis tahu kalau
-                    // kontainernya baru saja berubah ukuran akibat transisi CSS, sehingga peta bisa
-                    // terlihat "gepeng"/tidak penuh atau menyisakan area abu-abu sampai ada resize manual.
-                    // this.$watch di sini menunggu transisi (duration-300 di elemen <aside>) selesai,
-                    // lalu memaksa Leaflet menghitung ulang ukuran kontainernya via invalidateSize().
+                    // Invalidate size saat sidebar ditutup/dibuka
                     this.$watch('sidebarOpen', () => {
                         setTimeout(() => {
                             if (this.map) {
                                 this.map.invalidateSize({ animate: true });
                             }
-                        }, 320); // sedikit lebih lama dari durasi transisi (300ms) di kelas Tailwind aside
+                        }, 320);
                     });
                 },
 
-                // Hapus elemen apapun yang menempel langsung di #map tapi bukan bagian dari
-                // struktur resmi Leaflet (leaflet-pane, leaflet-control-container, dsb).
-                cleanupStrayMapOverlays() {
-                    const mapEl = document.getElementById('map');
-                    if (!mapEl) return;
-                    const allowedClasses = ['leaflet-pane', 'leaflet-control-container', 'leaflet-zoom-box', 'leaflet-tile-container'];
-                    Array.from(mapEl.children).forEach((child) => {
-                        const isAllowed = allowedClasses.some(cls => child.classList.contains(cls));
-                        if (!isAllowed) {
-                            child.remove();
-                        }
-                    });
+                // Helper: Tombol Zoom In satu tingkat dari floating notice
+                zoomInStep() {
+                    if (this.map) {
+                        this.map.zoomIn();
+                    }
                 },
 
-                // Helper Jenis Faskes & Penghitung Badge Filter (Tugas 4)
-                isJenisSelected(jenis) {
-                    return this.selectedJenis.includes(jenis);
+                // Helper LOD: Apakah suatu jenis faskes sudah boleh tampil di zoom saat ini? (Tugas 9)
+                isTypeUnlocked(jenis) {
+                    if (this.showAllTypesAtAllZooms) return true;
+                    if (SHOW_SINGLE_TYPE_ALWAYS && this.selectedJenis.length === 1 && this.selectedJenis.includes(jenis)) {
+                        return true;
+                    }
+                    const minZoom = ZOOM_THRESHOLDS[jenis] !== undefined ? ZOOM_THRESHOLDS[jenis] : BASE_ZOOM;
+                    return (this.currentZoom || BASE_ZOOM) >= minZoom;
                 },
-                hasAnyJenis(arr) {
-                    return arr.some(j => this.selectedJenis.includes(j));
+
+                // Tooltip info ambang zoom untuk legend chips header
+                getTypeZoomStatusTooltip(jenis) {
+                    const minZoom = ZOOM_THRESHOLDS[jenis] !== undefined ? ZOOM_THRESHOLDS[jenis] : BASE_ZOOM;
+                    if (this.isTypeUnlocked(jenis)) {
+                        return `${this.formatJenis(jenis)}: Aktif (Zoom ${this.currentZoom} >= ${minZoom})`;
+                    }
+                    return `${this.formatJenis(jenis)}: Terkunci (Perbesar peta hingga Zoom >= ${minZoom})`;
                 },
-                countFilterAmbulansKapasitas() {
-                    let c = 0;
-                    if (this.minTotalAmbulans > 0) c++;
-                    if (this.minAmbulansGadar > 0) c++;
-                    if (this.minAmbulansRodaDua > 0) c++;
-                    if (this.minBed > 0) c++;
-                    if (this.minSdm > 0) c++;
-                    return c;
-                },
-                countFilterKategori() {
-                    let c = 0;
-                    if (this.kepemilikan) c++;
-                    if (this.tipeRs) c++;
-                    if (this.kategoriPuskesmas) c++;
-                    if (this.wilayahPuskesmas) c++;
-                    if (this.persalinanPuskesmas) c++;
-                    if (this.ponekRs) c++;
-                    if (this.kategoriLayananKlinik) c++;
-                    if (this.bpjsKlinik) c++;
-                    if (this.statusOperasional && this.statusOperasional !== 'aktif') c++;
-                    return c;
-                },
-                countFilterCustom() {
-                    let c = 0;
-                    if (this.customFilter) {
-                        for (const k in this.customFilter) {
-                            if (this.customFilter[k]) c++;
+
+                // Floating Notice Text: Jenis faskes yang dipilih user namun belum tampil karena zoom level
+                getPendingTypesText() {
+                    if (this.showAllTypesAtAllZooms) return '';
+                    if (SHOW_SINGLE_TYPE_ALWAYS && this.selectedJenis.length === 1) return '';
+
+                    const lockedLabels = [];
+                    const typesToCheck = [
+                        { key: 'puskesmas', label: 'Puskesmas' },
+                        { key: 'klinik_utama', label: 'Klinik Utama' },
+                        { key: 'klinik_pratama', label: 'Klinik Pratama' },
+                        { key: 'laboratorium', label: 'Lab' },
+                        { key: 'upkdk', label: 'UPKDK' },
+                        { key: 'griya_sehat', label: 'Griya Sehat' },
+                        { key: 'tpmd', label: 'TPM' }
+                    ];
+
+                    for (const item of typesToCheck) {
+                        if (this.selectedJenis.includes(item.key) && !this.isTypeUnlocked(item.key)) {
+                            lockedLabels.push(item.label);
                         }
                     }
-                    return c;
-                },
-                onNumberFilterChange() {
-                    clearTimeout(this.filterDebounceTimer);
-                    this.filterDebounceTimer = setTimeout(() => {
-                        this.applyDynamicFilters(false);
-                    }, 350);
-                },
 
-                // Menghitung jumlah filter aktif
-                activeFilterCount() {
-                    let count = 0;
-                    if (this.selectedJenis.length < 11) count++;
-                    if (this.filterAmbulans) count++;
-                    if (this.filterBpjs) count++;
-                    if (this.filterRawatInap) count++;
-                    if (this.filterPoned) count++;
-                    if (this.selectedKecamatan) count++;
-                    if (this.filterSearch.trim()) count++;
-
-                    count += this.countFilterAmbulansKapasitas();
-                    count += this.countFilterKategori();
-                    if (this.statusIzin) count++;
-                    count += this.countFilterCustom();
-                    return count;
+                    if (lockedLabels.length === 0) return '';
+                    if (lockedLabels.length <= 3) {
+                        return lockedLabels.join(', ');
+                    }
+                    return `${lockedLabels.slice(0, 3).join(', ')}, +${lockedLabels.length - 3} lainnya`;
                 },
 
-                // Muat Data Pertama Kali (Endpoint Ringan /api/faskes/markers - Tugas 8A)
+                // Handler toggle switch "Tampilkan semua jenis di semua zoom"
+                onToggleAllZooms() {
+                    this.syncMarkersForCurrentView(false);
+                },
+
+                // Tandatangan filter untuk pengelompokan cache (mengecualikan jenis_faskes)
+                getFilterSignature() {
+                    const obj = {
+                        amb: this.filterAmbulans ? 1 : 0,
+                        bpjs: this.filterBpjs ? 1 : 0,
+                        rinap: this.filterRawatInap ? 1 : 0,
+                        poned: this.filterPoned ? 1 : 0,
+                        kec: this.selectedKecamatan || '',
+                        q: this.filterSearch.trim(),
+                        totamb: this.minTotalAmbulans,
+                        gadar: this.minAmbulansGadar,
+                        r2: this.minAmbulansRodaDua,
+                        bed: this.minBed,
+                        sdm: this.minSdm,
+                        milik: this.kepemilikan,
+                        trs: this.tipeRs,
+                        katpkm: this.kategoriPuskesmas,
+                        wilpkm: this.wilayahPuskesmas,
+                        salinpkm: this.persalinanPuskesmas,
+                        ponek: this.ponekRs,
+                        katkln: this.kategoriLayananKlinik,
+                        bpjskln: this.bpjsKlinik,
+                        izin: this.statusIzin,
+                        ops: this.statusOperasional,
+                        cust: JSON.stringify(this.customFilter || {})
+                    };
+                    return JSON.stringify(obj);
+                },
+
+                // Muat Data Pertama Kali dengan LOD Zoom (Tugas 9)
                 loadInitialFaskes() {
-                    this.isFiltering = true;
-                    this.currentRequestId = (this.currentRequestId || 0) + 1;
-                    const reqId = this.currentRequestId;
-
-                    fetch('{{ url("/api/faskes/markers") }}')
-                        .then(res => res.json())
-                        .then(res => {
-                            if (reqId !== this.currentRequestId) return;
-                            this.isFiltering = false;
-                            if (!res.success) return;
-
-                            this.faskesList = res.data;
-                            this.totalFaskes = res.total;
-                            this.renderMarkers(this.faskesList, true);
-                        })
-                        .catch(err => {
-                            if (reqId === this.currentRequestId) {
-                                this.isFiltering = false;
-                            }
-                            console.error('Error load initial faskes markers:', err);
-                        });
+                    this.loadFilterCountsAndSync(false);
                 },
 
-                // AJAX: Ambil data faskes tersaring dari endpoint ringan /api/faskes/markers (Tugas 8A)
-                applyDynamicFilters(fitBounds = false) {
+                // Ambil hitungan per jenis faskes lalu sinkronkan marker view saat ini (Tugas 9)
+                loadFilterCountsAndSync(fitBounds = false) {
                     if (this.filterAbortController) {
                         this.filterAbortController.abort();
                     }
@@ -1525,15 +1613,277 @@
                     const reqId = this.currentRequestId;
 
                     this.isFiltering = true;
+                    this.loadingStatusText = 'Menghitung data...';
 
-                    // Jika semua checkbox jenis tidak dicentang, kosongkan marker langsung
+                    // Batalkan request per-jenis yang sedang berjalan sebelumnya
+                    this.activeFetchControllers.forEach(ctrl => ctrl.abort());
+                    this.activeFetchControllers.clear();
+
                     if (this.selectedJenis.length === 0) {
                         this.safeClearFaskesLayer();
                         this.faskesList = [];
+                        this.totalFilteredCount = 0;
+                        this.mountedCount = 0;
                         this.isFiltering = false;
+                        this.loadingStatusText = '';
                         return;
                     }
 
+                    const params = this.buildFilterQueryParams();
+
+                    fetch(`{{ url("/api/faskes/markers-count") }}?${params.toString()}`, {
+                        signal: this.filterAbortController.signal
+                    })
+                        .then(res => res.json())
+                        .then(res => {
+                            if (reqId !== this.currentRequestId) return;
+                            this.isFiltering = false;
+                            this.loadingStatusText = '';
+                            if (!res.success) return;
+
+                            this.typeCounts = res.counts || {};
+                            this.totalFilteredCount = res.total || 0;
+                            this.totalFaskes = res.total || 0;
+
+                            // Sinkronkan marker untuk jenis faskes yang aktif di zoom saat ini
+                            this.syncMarkersForCurrentView(fitBounds);
+                        })
+                        .catch(err => {
+                            if (err.name === 'AbortError') return;
+                            if (reqId === this.currentRequestId) {
+                                this.isFiltering = false;
+                                this.loadingStatusText = '';
+                            }
+                            console.error('Error fetching markers count:', err);
+                        });
+                },
+
+                // Sinkronkan data dan DOM marker sesuai viewport & LOD zoom saat ini (Tugas 9)
+                async syncMarkersForCurrentView(fitBounds = false) {
+                    if (!this.map) return;
+                    this.currentZoom = this.map.getZoom();
+
+                    // Tentukan jenis faskes yang aktif / unlocked di zoom saat ini
+                    const typesToDisplay = this.selectedJenis.filter(j => this.isTypeUnlocked(j));
+
+                    if (typesToDisplay.length === 0) {
+                        // Bersihkan marker kecuali jika ada activeFaskesId dari Analisis Event
+                        this.cullMountedMarkers([], fitBounds);
+                        this.faskesList = [];
+                        return;
+                    }
+
+                    // Muat data untuk semua jenis yang unlocked (memakai cache jika sudah ada)
+                    const fetchPromises = typesToDisplay.map(jenis => this.fetchTypeData(jenis));
+                    const results = await Promise.all(fetchPromises);
+
+                    // Gabungkan seluruh data faskes yang eligible di zoom saat ini
+                    let allEligibleItems = [];
+                    results.forEach(arr => {
+                        if (Array.isArray(arr)) {
+                            allEligibleItems = allEligibleItems.concat(arr);
+                        }
+                    });
+
+                    // Simpan ke faskesList untuk tampilan sidebar "Daftar Faskes Terpilih"
+                    this.faskesList = allEligibleItems;
+
+                    // Lakukan Viewport Culling (+ buffer 20%) terhadap data yang eligible
+                    this.cullMountedMarkers(allEligibleItems, fitBounds);
+
+                    // Prefetch 1 tingkat zoom berikutnya di background saat idle
+                    this.prefetchNextZoomLevel();
+                },
+
+                // Ambil data satu jenis faskes dengan caching dan abort handling (Tugas 9)
+                fetchTypeData(jenis) {
+                    const sig = this.getFilterSignature();
+                    const cacheKey = `${sig}__${jenis}`;
+
+                    if (this.typeDataCache.has(cacheKey)) {
+                        return Promise.resolve(this.typeDataCache.get(cacheKey));
+                    }
+
+                    // Jika jumlah jenis ini 0 berdasarkan markers-count, langsung kembalikan array kosong
+                    if (this.typeCounts[jenis] !== undefined && this.typeCounts[jenis] === 0) {
+                        this.typeDataCache.set(cacheKey, []);
+                        return Promise.resolve([]);
+                    }
+
+                    const ctrl = new AbortController();
+                    this.activeFetchControllers.set(jenis, ctrl);
+                    this.isFetchingType = true;
+                    this.loadingStatusText = `Memuat ${this.formatJenis(jenis)}...`;
+
+                    const params = this.buildFilterQueryParams();
+                    params.delete('jenis_faskes[]');
+                    params.append('jenis_faskes[]', jenis);
+
+                    return fetch(`{{ url("/api/faskes/markers") }}?${params.toString()}`, {
+                        signal: ctrl.signal
+                    })
+                        .then(res => res.json())
+                        .then(res => {
+                            this.activeFetchControllers.delete(jenis);
+                            if (this.activeFetchControllers.size === 0) {
+                                this.isFetchingType = false;
+                                this.loadingStatusText = '';
+                            }
+                            if (res.success && Array.isArray(res.data)) {
+                                this.typeDataCache.set(cacheKey, res.data);
+                                return res.data;
+                            }
+                            return [];
+                        })
+                        .catch(err => {
+                            this.activeFetchControllers.delete(jenis);
+                            if (this.activeFetchControllers.size === 0) {
+                                this.isFetchingType = false;
+                                this.loadingStatusText = '';
+                            }
+                            if (err.name === 'AbortError') return [];
+                            console.error(`Error fetching markers for ${jenis}:`, err);
+                            return [];
+                        });
+                },
+
+                // Prefetch data jenis faskes untuk level zoom berikutnya saat idle
+                prefetchNextZoomLevel() {
+                    const nextZoom = (this.currentZoom || BASE_ZOOM) + 1;
+                    const nextTypes = this.selectedJenis.filter(j => {
+                        const minZ = ZOOM_THRESHOLDS[j] !== undefined ? ZOOM_THRESHOLDS[j] : BASE_ZOOM;
+                        return minZ === nextZoom && !this.typeDataCache.has(`${this.getFilterSignature()}__${j}`);
+                    });
+
+                    if (nextTypes.length === 0) return;
+
+                    const idleRunner = window.requestIdleCallback || ((cb) => setTimeout(cb, 500));
+                    idleRunner(() => {
+                        nextTypes.forEach(j => this.fetchTypeData(j));
+                    });
+                },
+
+                // Viewport Culling dengan buffer 20% dan batch mounting via requestAnimationFrame (Tugas 9)
+                cullMountedMarkers(eligibleItems, fitBounds = false) {
+                    if (!this.map || !this.faskesLayerGroup) return;
+
+                    // Bounds viewport peta dengan buffer 20% (pad 0.20)
+                    const paddedBounds = this.map.getBounds().pad(0.20);
+                    const visibleItemsMap = new Map();
+                    this.invalidCoordinateCount = 0;
+
+                    eligibleItems.forEach(item => {
+                        const rawLat = item.lat !== undefined ? item.lat : item.latitude;
+                        const rawLng = item.lng !== undefined ? item.lng : item.longitude;
+
+                        if (rawLat === null || rawLng === null || rawLat === undefined || rawLng === undefined) {
+                            this.invalidCoordinateCount++;
+                            return;
+                        }
+
+                        const lat = parseFloat(rawLat);
+                        const lng = parseFloat(rawLng);
+
+                        // Pagar Sanitasi Banyumas
+                        if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -7.80 || lat > -7.10 || lng < 108.85 || lng > 109.60) {
+                            this.invalidCoordinateCount++;
+                            return;
+                        }
+
+                        // Titik masuk dalam buffer viewport ATAU merupakan titik aktif dari Analisis Event
+                        const isInside = paddedBounds.contains([lat, lng]);
+                        const isActiveEventFaskes = (this.activeFaskesId && this.activeFaskesId === item.id);
+
+                        if (isInside || isActiveEventFaskes) {
+                            visibleItemsMap.set(item.id, { item, lat, lng });
+                        }
+                    });
+
+                    // 1. UNMOUNT (Hapus marker yang sudah keluar dari viewport)
+                    // ATURAN KRUSIAL: Marker dengan popup TERBUKA TIDAK BOLEH dihapus!
+                    const toRemoveIds = [];
+                    for (const [idStr, marker] of Object.entries(this.markerMap)) {
+                        const id = parseInt(idStr) || idStr;
+                        if (!visibleItemsMap.has(id)) {
+                            // Jangan unmount jika popup sedang terbuka atau ini adalah faskes aktif event
+                            if (marker.isPopupOpen && marker.isPopupOpen()) {
+                                continue;
+                            }
+                            if (this.activeFaskesId && this.activeFaskesId === id) {
+                                continue;
+                            }
+                            this.faskesLayerGroup.removeLayer(marker);
+                            toRemoveIds.push(id);
+                        }
+                    }
+                    toRemoveIds.forEach(id => delete this.markerMap[id]);
+
+                    // 2. MOUNT (Pasang marker yang baru masuk viewport secara bertahap via rAF)
+                    const toMountList = [];
+                    visibleItemsMap.forEach(({ item, lat, lng }, id) => {
+                        if (!this.markerMap[id]) {
+                            toMountList.push({ item, lat, lng, id });
+                        }
+                    });
+
+                    // Batalkan batch rAF sebelumnya jika ada
+                    this.mountBatchId++;
+                    const thisBatchId = this.mountBatchId;
+
+                    if (toMountList.length === 0) {
+                        this.mountedCount = Object.keys(this.markerMap).length;
+                        return;
+                    }
+
+                    let index = 0;
+                    const chunkSize = 150; // Max 150 marker per frame agar 60fps tetap halus
+
+                    const mountChunk = () => {
+                        if (thisBatchId !== this.mountBatchId) return; // Viewport berubah, hentikan chunk usang
+
+                        const slice = toMountList.slice(index, index + chunkSize);
+                        slice.forEach(({ item, lat, lng, id }) => {
+                            const markerIcon = this.iconCache[item.jenis_faskes] || this.iconCache['default'];
+                            const marker = L.marker([lat, lng], { icon: markerIcon });
+
+                            // Bind lazy popup
+                            marker.bindPopup(() => this.getFaskesPopupPlaceholder(item), {
+                                maxWidth: 280,
+                                minWidth: 220,
+                                autoPanPadding: [20, 20]
+                            });
+
+                            marker.on('popupopen', () => {
+                                this.fetchFaskesDetailAndPopulatePopup(marker, item.id);
+                            });
+
+                            this.faskesLayerGroup.addLayer(marker);
+                            this.markerMap[id] = marker;
+                        });
+
+                        index += chunkSize;
+                        this.mountedCount = Object.keys(this.markerMap).length;
+
+                        if (index < toMountList.length) {
+                            requestAnimationFrame(mountChunk);
+                        } else {
+                            if (fitBounds && eligibleItems.length > 0) {
+                                const b = eligibleItems.map(it => [
+                                    parseFloat(it.lat !== undefined ? it.lat : it.latitude),
+                                    parseFloat(it.lng !== undefined ? it.lng : it.longitude)
+                                ]).filter(([la, lo]) => Number.isFinite(la) && Number.isFinite(lo));
+                                if (b.length > 0) {
+                                    this.map.fitBounds(b, { padding: [40, 40], animate: false });
+                                }
+                            }
+                        }
+                    };
+
+                    requestAnimationFrame(mountChunk);
+                },
+
+                // Helper: Bangun URL query string dari seluruh filter aktif
+                buildFilterQueryParams() {
                     const params = new URLSearchParams();
 
                     // Array jenis faskes
@@ -1569,132 +1919,28 @@
                         }
                     }
 
-                    fetch(`{{ url("/api/faskes/markers") }}?${params.toString()}`, {
-                        signal: this.filterAbortController.signal
-                    })
-                        .then(res => res.json())
-                        .then(res => {
-                            if (reqId !== this.currentRequestId) return;
-                            this.isFiltering = false;
-                            if (!res.success) return;
-
-                            this.faskesList = res.data;
-                            this.renderMarkers(this.faskesList, fitBounds);
-                        })
-                        .catch(err => {
-                            if (err.name === 'AbortError') return;
-                            if (reqId === this.currentRequestId) {
-                                this.isFiltering = false;
-                            }
-                            console.error('Error filtering faskes markers:', err);
-                        });
+                    return params;
                 },
 
-                // Tutup semua popup & bersihkan layer group / cluster DULU secara aman (Tugas 8B)
+                // AJAX: Ambil data saat filter diubah user
+                applyDynamicFilters(fitBounds = false) {
+                    this.loadFilterCountsAndSync(fitBounds);
+                },
+
+                // Tutup semua popup & bersihkan faskes layer group
                 safeClearFaskesLayer() {
                     if (!this.map) return;
                     try {
                         this.map.closePopup();
                     } catch (e) { /* no-op */ }
-                    if (this.clusterGroup) {
-                        this.clusterGroup.clearLayers();
-                    } else if (this.fallbackLayerGroup) {
-                        this.fallbackLayerGroup.clearLayers();
+                    if (this.faskesLayerGroup) {
+                        this.faskesLayerGroup.clearLayers();
                     }
                     this.markerMap = {};
+                    this.mountedCount = 0;
                 },
 
-                // Render marker dengan lifecycle aman, clustering bertahap, dan pagar sanitasi (Tugas 8B & 8C)
-                renderMarkers(list, fitBounds = false) {
-                    if (!this.map) return;
-
-                    const doRender = () => {
-                        this.safeClearFaskesLayer();
-                        const bounds = [];
-                        const markers = [];
-                        this.invalidCoordinateCount = 0;
-
-                        list.forEach(item => {
-                            const rawLat = item.lat !== undefined ? item.lat : item.latitude;
-                            const rawLng = item.lng !== undefined ? item.lng : item.longitude;
-
-                            if (rawLat === null || rawLng === null || rawLat === undefined || rawLng === undefined) {
-                                this.invalidCoordinateCount++;
-                                return;
-                            }
-
-                            const lat = parseFloat(rawLat);
-                            const lng = parseFloat(rawLng);
-
-                            // Pagar Sanitasi 1: Validitas angka & rentang koordinat global
-                            if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
-                                this.invalidCoordinateCount++;
-                                return;
-                            }
-
-                            // Pagar Sanitasi 2: Bounding Box Kabupaten Banyumas (+ buffer aman perbatasan)
-                            // Lat: -7.80 .. -7.10, Lon: 108.85 .. 109.60
-                            if (lat < -7.80 || lat > -7.10 || lng < 108.85 || lng > 109.60) {
-                                this.invalidCoordinateCount++;
-                                return;
-                            }
-
-                            bounds.push([lat, lng]);
-
-                            const markerIcon = this.iconCache[item.jenis_faskes] || this.iconCache['default'];
-                            const marker = L.marker([lat, lng], { icon: markerIcon });
-
-                            // Lazy Popup: Bind placeholder ringan, fetch detail spesifikasi saat dibuka (Tugas 8B)
-                            marker.bindPopup(() => this.getFaskesPopupPlaceholder(item), {
-                                maxWidth: 280,
-                                minWidth: 220,
-                                autoPanPadding: [20, 20]
-                            });
-
-                            marker.on('popupopen', () => {
-                                this.fetchFaskesDetailAndPopulatePopup(marker, item.id);
-                            });
-
-                            markers.push(marker);
-                            this.markerMap[item.id] = marker;
-                        });
-
-                        // Tambahkan ke cluster group atau fallback layer group
-                        if (this.clusterGroup) {
-                            this.clusterGroup.addLayers(markers);
-                        } else if (this.fallbackLayerGroup) {
-                            // Fallback bertahap jika CDN markercluster tidak aktif (~200 per frame)
-                            let chunkIndex = 0;
-                            const chunkSize = 200;
-                            const addChunk = () => {
-                                const chunk = markers.slice(chunkIndex, chunkIndex + chunkSize);
-                                chunk.forEach(m => this.fallbackLayerGroup.addLayer(m));
-                                chunkIndex += chunkSize;
-                                this.clusterProgressProcessed = Math.min(chunkIndex, markers.length);
-                                this.clusterProgressTotal = markers.length;
-                                this.isRenderingClusters = chunkIndex < markers.length;
-                                if (chunkIndex < markers.length) {
-                                    requestAnimationFrame(addChunk);
-                                }
-                            };
-                            this.isRenderingClusters = true;
-                            requestAnimationFrame(addChunk);
-                        }
-
-                        if (fitBounds && bounds.length > 0) {
-                            this.map.fitBounds(bounds, { padding: [40, 40], animate: false });
-                        }
-                    };
-
-                    // Jika peta sedang dalam animasi zoom/pan, tunda render ke zoomend
-                    if (this.map._animatingZoom) {
-                        this.map.once('zoomend', doRender);
-                    } else {
-                        doRender();
-                    }
-                },
-
-                // Tutup popup sebelum memindahkan viewport, dan uncluster marker saat difokuskan
+                // Tutup popup sebelum memindahkan viewport ke faskes terpilih (Tugas 9)
                 zoomToFaskes(faskes) {
                     if (!this.map) return;
                     const lat = parseFloat(faskes.lat !== undefined ? faskes.lat : faskes.latitude);
@@ -1703,14 +1949,30 @@
 
                     this.map.closePopup();
 
+                    // Pastikan marker faskes ter-mount
+                    const targetZoom = Math.max(this.map.getZoom(), 16);
+                    this.map.setView([lat, lng], targetZoom, { animate: false });
+
+                    // Jika marker sudah mounted, buka popup langsung
                     const marker = this.markerMap[faskes.id];
-                    if (marker && this.clusterGroup && typeof this.clusterGroup.zoomToShowLayer === 'function') {
-                        this.clusterGroup.zoomToShowLayer(marker, () => {
-                            marker.openPopup();
-                        });
+                    if (marker) {
+                        marker.openPopup();
                     } else {
-                        this.map.setView([lat, lng], 16, { animate: false });
-                        if (marker) marker.openPopup();
+                        // Jika belum mounted (misal di luar view sebelum zoom), buat dan mount marker langsung
+                        const markerIcon = this.iconCache[faskes.jenis_faskes] || this.iconCache['default'];
+                        const newMarker = L.marker([lat, lng], { icon: markerIcon });
+                        newMarker.bindPopup(() => this.getFaskesPopupPlaceholder(faskes), {
+                            maxWidth: 280,
+                            minWidth: 220,
+                            autoPanPadding: [20, 20]
+                        });
+                        newMarker.on('popupopen', () => {
+                            this.fetchFaskesDetailAndPopulatePopup(newMarker, faskes.id);
+                        });
+                        this.faskesLayerGroup.addLayer(newMarker);
+                        this.markerMap[faskes.id] = newMarker;
+                        this.mountedCount = Object.keys(this.markerMap).length;
+                        newMarker.openPopup();
                     }
                 },
 
@@ -2009,7 +2271,7 @@
                         });
                 },
 
-                // Fokus ke Salah Satu Rute Faskes (Tugas 8B)
+                // Fokus ke Salah Satu Rute Faskes (Tugas 8B & 9)
                 fokusKeRute(item, index) {
                     if (!this.map) return;
                     this.map.closePopup();
@@ -2027,12 +2289,29 @@
                         }
                     }
 
-                    const marker = this.markerMap[faskes.id];
-                    if (marker && this.clusterGroup && typeof this.clusterGroup.zoomToShowLayer === 'function') {
-                        this.clusterGroup.zoomToShowLayer(marker, () => {
-                            marker.openPopup();
-                        });
-                    } else if (marker) {
+                    // Pastikan marker faskes ini ter-mount (pengecualian LOD Analisis Event)
+                    let marker = this.markerMap[faskes.id];
+                    if (!marker) {
+                        const lat = parseFloat(faskes.lat !== undefined ? faskes.lat : faskes.latitude);
+                        const lng = parseFloat(faskes.lng !== undefined ? faskes.lng : faskes.longitude);
+                        if (Number.isFinite(lat) && Number.isFinite(lng)) {
+                            const markerIcon = this.iconCache[faskes.jenis_faskes] || this.iconCache['default'];
+                            marker = L.marker([lat, lng], { icon: markerIcon });
+                            marker.bindPopup(() => this.getFaskesPopupPlaceholder(faskes), {
+                                maxWidth: 280,
+                                minWidth: 220,
+                                autoPanPadding: [20, 20]
+                            });
+                            marker.on('popupopen', () => {
+                                this.fetchFaskesDetailAndPopulatePopup(marker, faskes.id);
+                            });
+                            this.faskesLayerGroup.addLayer(marker);
+                            this.markerMap[faskes.id] = marker;
+                            this.mountedCount = Object.keys(this.markerMap).length;
+                        }
+                    }
+
+                    if (marker) {
                         marker.openPopup();
                     }
                 },

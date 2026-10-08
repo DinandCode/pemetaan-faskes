@@ -21,6 +21,7 @@ Route::match(['get', 'post'], '/analisis-event', [AnalisisEventController::class
 // Endpoint Faskes
 Route::get('/faskes/terdekat', [FaskesController::class, 'terdekat']);
 Route::match(['get', 'post'], '/faskes/markers', [FaskesController::class, 'markers']);
+Route::match(['get', 'post'], '/faskes/markers-count', [FaskesController::class, 'markersCount']);
 Route::match(['get', 'post'], '/faskes/filter', [FaskesController::class, 'filter']);
 Route::get('/faskes', [FaskesController::class, 'index']);
 Route::get('/faskes/{id}', [FaskesController::class, 'show']);
