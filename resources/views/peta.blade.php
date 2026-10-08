@@ -18,6 +18,7 @@
 
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="{{ url('/js/faskes-basemaps.js') }}"></script>
 
     <style>
         html, body {
@@ -1215,6 +1216,8 @@
                 radiusCircle: null,
                 eventMarker: null,
                 markerMap: {},
+                basemapHelper: null,
+                currentBasemapName: 'Peta Jalan',
 
                 // Flag internal untuk mencegah render marker bertumpuk saat animasi peta masih berjalan
                 _pendingRender: null,
@@ -1234,11 +1237,17 @@
                     // Posisi Zoom Control di pojok kiri bawah
                     L.control.zoom({ position: 'bottomleft' }).addTo(this.map);
 
-                    // Base Layer OpenStreetMap
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                        maxZoom: 19,
-                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                    }).addTo(this.map);
+                    // Basemaps (Peta Jalan, Satelit, Satelit + Label) dengan persistensi localStorage
+                    this.basemapHelper = FaskesBasemaps.add(this.map, { position: 'topleft' });
+                    if (this.basemapHelper && this.basemapHelper.activeName) {
+                        this.currentBasemapName = this.basemapHelper.activeName;
+                    }
+
+                    this.map.on('baselayerchange', (e) => {
+                        if (e && e.name) {
+                            this.updateBoundaryContrast(e.name);
+                        }
+                    });
 
                     // Layer Groups Leaflet:
                     // 1. Batas Kabupaten (Garis pembatas non-interaktif)
@@ -1581,6 +1590,19 @@
                     this.applyDynamicFilters(true);
                 },
 
+                // Update kontras warna garis batas wilayah sesuai mode basemap (Tugas 7B)
+                updateBoundaryContrast(layerName) {
+                    this.currentBasemapName = layerName;
+                    if (!this.kabupatenGeoJsonLayer) return;
+                    const isSatellite = (layerName === 'Satelit' || layerName === 'Satelit + Label');
+                    this.kabupatenGeoJsonLayer.setStyle({
+                        color: isSatellite ? '#facc15' : '#1d4ed8',
+                        weight: isSatellite ? 3 : 2.5,
+                        fill: false,
+                        interactive: false
+                    });
+                },
+
                 // Muat Batas Luar Kabupaten Banyumas (Outer Boundary Only & Non-Interaktif)
                 loadKabupatenBoundary() {
                     fetch('{{ asset("geojson/banyumas-kabupaten-outer.json") }}')
@@ -1589,12 +1611,13 @@
                             return res.json();
                         })
                         .then(geojsonData => {
+                            const isSatellite = (this.currentBasemapName === 'Satelit' || this.currentBasemapName === 'Satelit + Label');
                             this.kabupatenGeoJsonLayer = L.geoJSON(geojsonData, {
                                 interactive: false,
                                 bubblingMouseEvents: false,
                                 style: {
-                                    color: '#1d4ed8',
-                                    weight: 2.5,
+                                    color: isSatellite ? '#facc15' : '#1d4ed8',
+                                    weight: isSatellite ? 3 : 2.5,
                                     fill: false,
                                     interactive: false
                                 }

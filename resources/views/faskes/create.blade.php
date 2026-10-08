@@ -19,10 +19,20 @@
     <link rel="stylesheet"
           href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="{{ url('/js/faskes-basemaps.js') }}"></script>
 
     <style>
         [x-cloak] {
             display: none !important;
+        }
+
+        #mini-map {
+            position: relative;
+            z-index: 0;
+        }
+
+        header.sticky {
+            z-index: 1000 !important;
         }
 
         body {
@@ -601,7 +611,7 @@
                     <!-- Mini Map Container -->
                     <div class="relative flex-1 min-h-[220px]
                                 rounded-xl overflow-hidden
-                                border border-slate-200 shadow-inner">
+                                border border-slate-200 shadow-inner isolate">
 
                         <div id="mini-map" class="h-full w-full"></div>
 
@@ -1712,7 +1722,7 @@
 
     <!-- Modal Tambah Kolom Tambahan (Alpine) -->
     <div x-show="customModalOpen" x-cloak
-         class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+         class="fixed inset-0 z-[2000] overflow-y-auto bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-100 relative"
              @click.away="if(!isSavingCustomField) customModalOpen = false">
             <div class="flex items-center justify-between pb-3 border-b border-slate-100">
@@ -1959,13 +1969,7 @@
                         position: 'bottomright'
                     }).addTo(this.map);
 
-                    L.tileLayer(
-                        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                        {
-                            maxZoom: 19,
-                            attribution: '&copy; OpenStreetMap'
-                        }
-                    ).addTo(this.map);
+                    FaskesBasemaps.add(this.map, { position: 'topleft' });
 
                     this.marker = L.marker(
                         [this.lat, this.lng],
