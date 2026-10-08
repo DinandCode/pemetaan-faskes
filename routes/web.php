@@ -15,8 +15,10 @@ Route::get('/peta', function () {
     return view('peta', compact('activeFieldDefinitions'));
 });
 
-// Halaman Dashboard Analitik & Statistik
+// Halaman Dashboard Analitik & Statistik (Tugas 10A)
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+Route::get('/dashboard/charts', [DashboardController::class, 'getChartsData'])->name('dashboard.charts');
+Route::get('/dashboard/top-izin', [DashboardController::class, 'getTopIzinData'])->name('dashboard.top-izin');
 Route::get('/dashboard/izin-operasional', [DashboardController::class, 'getIzinOperasional'])->name('dashboard.izin-operasional');
 
 // Import & Export Faskes (ditempatkan sebelum Route::resource agar tidak tertimpa faskes/{faske})

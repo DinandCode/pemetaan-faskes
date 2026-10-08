@@ -26,13 +26,35 @@
         }
     </script>
 
-    <!-- Chart.js CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chart.js CDN (Diberi defer agar tidak memblokir render HTML awal - Tugas 10A) -->
+    <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Web Audio API Sound Synthesizer (Tugas 10B) -->
+    <script defer src="{{ asset('js/dashboard-notif-sound.js') }}"></script>
 
     <!-- Alpine.js CDN -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
     <style>
         [x-cloak] { display: none !important; }
+
+        /* Animasi goyang lonceng (Tugas 10B) */
+        @keyframes bell-shake {
+            0% { transform: rotate(0); }
+            15% { transform: rotate(14deg); }
+            30% { transform: rotate(-14deg); }
+            45% { transform: rotate(10deg); }
+            60% { transform: rotate(-10deg); }
+            75% { transform: rotate(4deg); }
+            85% { transform: rotate(-4deg); }
+            100% { transform: rotate(0); }
+        }
+        .animate-bell-shake {
+            animation: bell-shake 0.8s ease-in-out;
+            transform-origin: top center;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .animate-bell-shake { animation: none !important; }
+        }
     </style>
 </head>
 <body class="bg-slate-50/80 text-slate-800 antialiased min-h-screen flex flex-col font-sans">
@@ -54,10 +76,32 @@
 
             <!-- Navigation Links -->
             <div class="flex flex-wrap items-center gap-2">
-                <!-- Notifikasi Lonceng Izin Operasional (Tugas 6) -->
-                <div class="relative" x-data="{ notifOpen: false }">
+                <!-- Sound Controller & Notifikasi Lonceng Izin Operasional (Tugas 6 & 10B) -->
+                <div class="relative flex items-center gap-1.5" x-data="dashboardSoundNotif()">
+                    <!-- Tombol Bisukan / Aktifkan Suara Notifikasi -->
+                    <button type="button"
+                            @click="toggleSound()"
+                            class="p-2 rounded-lg bg-white hover:bg-slate-100 text-slate-600 border border-slate-200/80 transition shadow-2xs flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-blue-400"
+                            :title="soundEnabled ? 'Suara notifikasi aktif (Klik untuk membisukan)' : 'Suara notifikasi dibisukan (Klik untuk mengaktifkan)'">
+                        <!-- Icon Speaker ON -->
+                        <template x-if="soundEnabled">
+                            <svg class="w-4 h-4 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                            </svg>
+                        </template>
+                        <!-- Icon Speaker OFF / Mute -->
+                        <template x-if="!soundEnabled">
+                            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+                            </svg>
+                        </template>
+                    </button>
+
+                    <!-- Tombol Lonceng Notifikasi -->
                     <button type="button"
                             @click="notifOpen = !notifOpen"
+                            :class="shouldShakeBell ? 'animate-bell-shake' : ''"
                             class="relative p-2 rounded-lg bg-white hover:bg-slate-100 text-slate-600 border border-slate-200/80 transition shadow-2xs flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-rose-400"
                             title="Peringatan Masa Izin Operasional">
                         <svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -69,6 +113,17 @@
                             </span>
                         @endif
                     </button>
+
+                    <!-- Toast Kecil Aktifkan Suara bila Autoplay Terblokir -->
+                    <div x-show="showSoundUnlockPrompt"
+                         x-cloak
+                         x-transition
+                         class="absolute top-12 right-0 z-50 bg-slate-900/95 text-white text-[11px] px-3 py-1.5 rounded-xl shadow-lg border border-slate-700 flex items-center gap-2 whitespace-nowrap">
+                        <span>🔔 Klik untuk mengaktifkan suara notifikasi</span>
+                        <button type="button" @click="unlockAudio()" class="px-2 py-0.5 bg-blue-600 hover:bg-blue-500 rounded font-bold text-white text-[10px]">
+                            Aktifkan
+                        </button>
+                    </div>
 
                     <!-- Dropdown Panel Notifikasi -->
                     <div x-show="notifOpen"
@@ -249,8 +304,8 @@
 
         </div>
 
-        <!-- 2. GRAFIK STATISTIK (CHART.JS) -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- 2. GRAFIK STATISTIK (CHART.JS - Async Loaded via Alpine.js - Tugas 10A) -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6" x-data="dashboardCharts()">
 
             <!-- Grafik 1: Faskes per Kecamatan (Bar Chart) - 2 Kolom -->
             <div class="lg:col-span-2 bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs flex flex-col">
@@ -259,11 +314,30 @@
                         <h2 class="text-sm font-bold text-slate-900 tracking-tight">Jumlah Faskes per Kecamatan</h2>
                         <p class="text-xs text-slate-500 mt-0.5">Sebaran fasilitas kesehatan di wilayah Kabupaten Banyumas</p>
                     </div>
-                    <span class="px-2.5 py-1 bg-slate-100/80 text-slate-600 rounded-full text-xs font-semibold border border-slate-200/50">
-                        {{ count($chartKecamatanLabels) }} Kecamatan
+                    <span class="px-2.5 py-1 bg-slate-100/80 text-slate-600 rounded-full text-xs font-semibold border border-slate-200/50"
+                          x-text="labelsKecamatan.length > 0 ? `${labelsKecamatan.length} Kecamatan` : 'Memuat...'">
                     </span>
                 </div>
                 <div class="relative flex-1 min-h-[280px]">
+                    <!-- Placeholder / Loading Skeleton -->
+                    <template x-if="isLoading">
+                        <div class="absolute inset-0 flex flex-col items-center justify-center bg-white/80 z-10 space-y-2">
+                            <svg class="animate-spin h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                            </svg>
+                            <span class="text-xs font-medium text-slate-400">Memuat grafik kecamatan...</span>
+                        </div>
+                    </template>
+                    <!-- Error State -->
+                    <template x-if="hasError">
+                        <div class="absolute inset-0 flex flex-col items-center justify-center bg-rose-50/50 rounded-xl z-10 text-center p-4">
+                            <span class="text-xs font-bold text-rose-600">Gagal memuat grafik kecamatan</span>
+                            <button type="button" @click="fetchChartsData()" class="mt-2 text-[11px] font-bold text-blue-600 hover:underline">
+                                Coba lagi
+                            </button>
+                        </div>
+                    </template>
                     <canvas id="chartKecamatan"></canvas>
                 </div>
             </div>
@@ -280,14 +354,33 @@
                     </span>
                 </div>
                 <div class="relative flex-1 min-h-[280px] flex items-center justify-center">
+                    <!-- Placeholder / Loading Skeleton -->
+                    <template x-if="isLoading">
+                        <div class="absolute inset-0 flex flex-col items-center justify-center bg-white/80 z-10 space-y-2">
+                            <svg class="animate-spin h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                            </svg>
+                            <span class="text-xs font-medium text-slate-400">Memuat grafik proporsi...</span>
+                        </div>
+                    </template>
+                    <!-- Error State -->
+                    <template x-if="hasError">
+                        <div class="absolute inset-0 flex flex-col items-center justify-center bg-rose-50/50 rounded-xl z-10 text-center p-4">
+                            <span class="text-xs font-bold text-rose-600">Gagal memuat grafik proporsi</span>
+                            <button type="button" @click="fetchChartsData()" class="mt-2 text-[11px] font-bold text-blue-600 hover:underline">
+                                Coba lagi
+                            </button>
+                        </div>
+                    </template>
                     <canvas id="chartKategori"></canvas>
                 </div>
             </div>
 
         </div>
 
-        <!-- 3. TABEL RINGKASAN: 5 FASKES DENGAN IZIN MENDEKATI KADALUARSA -->
-        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+        <!-- 3. TABEL RINGKASAN: 5 FASKES DENGAN IZIN MENDEKATI KADALUARSA (Async Loaded via Alpine.js - Tugas 10A) -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden" x-data="dashboardTopIzin()">
             <div class="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-slate-50/50">
                 <div class="flex items-center space-x-3">
                     <div class="w-9 h-9 rounded-xl bg-amber-100/70 text-amber-700 flex items-center justify-center font-bold">
@@ -308,8 +401,29 @@
                 </a>
             </div>
 
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-xs">
+            <div class="overflow-x-auto relative">
+                <!-- Loading State Skeleton -->
+                <template x-if="isLoading">
+                    <div class="p-8 text-center text-slate-400 space-y-2">
+                        <svg class="animate-spin h-5 w-5 text-amber-600 mx-auto" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                        </svg>
+                        <span class="text-xs font-medium">Memuat 5 faskes dengan izin terdekat...</span>
+                    </div>
+                </template>
+
+                <!-- Error State Fallback -->
+                <template x-if="hasError">
+                    <div class="p-8 text-center text-rose-600 space-y-2">
+                        <p class="text-xs font-bold">Gagal memuat data izin terdekat</p>
+                        <button type="button" @click="fetchTopIzin()" class="text-xs font-bold text-blue-600 hover:underline">
+                            Coba lagi
+                        </button>
+                    </div>
+                </template>
+
+                <table class="w-full text-left text-xs" x-show="!isLoading && !hasError">
                     <thead class="bg-slate-50/80 border-b border-slate-200/80 text-slate-500 uppercase tracking-wider font-bold">
                         <tr>
                             <th class="py-3.5 px-4 w-12 text-center">No</th>
@@ -317,70 +431,43 @@
                             <th class="py-3.5 px-4">Jenis Faskes</th>
                             <th class="py-3.5 px-4">Kecamatan / Wilayah</th>
                             <th class="py-3.5 px-4">Tanggal Masa Izin</th>
-                            <th class="py-3.5 px-4">Status & Sisa Waktu</th>
+                            <th class="py-3.5 px-4">Status &amp; Sisa Waktu</th>
                             <th class="py-3.5 px-4 text-center w-28">Aksi</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
-                        @forelse($allWithIzin as $idx =>$item)
-                            @php
-                                $faskes =$item['faskes'];
-                                $badgeClasses = [
-                                    'rumah_sakit'    => 'bg-rose-50 text-rose-700 border-rose-200/60',
-                                    'puskesmas'      => 'bg-blue-50 text-blue-700 border-blue-200/60',
-                                    'klinik_pratama' => 'bg-emerald-50 text-emerald-700 border-emerald-200/60',
-                                    'klinik_utama'   => 'bg-teal-50 text-teal-700 border-teal-200/60',
-                                    'laboratorium'   => 'bg-purple-50 text-purple-700 border-purple-200/60',
-                                    'upkdk'          => 'bg-amber-50 text-amber-800 border-amber-200/60',
-                                ];$labels = [
-                                    'rumah_sakit'    => 'Rumah Sakit',
-                                    'puskesmas'      => 'Puskesmas',
-                                    'klinik_pratama' => 'Klinik Pratama',
-                                    'klinik_utama'   => 'Klinik Utama',
-                                    'laboratorium'   => 'Laboratorium',
-                                    'upkdk'          => 'UPKDK',
-                                ];
-
-                                $statusPillClass = match($item['status_badge']) {
-                                    'expired'  => 'bg-red-50 text-red-700 border-red-200 font-semibold',
-                                    'critical' => 'bg-rose-100/80 text-rose-800 border-rose-200 font-bold animate-pulse',
-                                    'warning'  => 'bg-amber-50 text-amber-800 border-amber-200 font-semibold',
-                                    default    => 'bg-emerald-50 text-emerald-700 border-emerald-200 font-semibold',
-                                };
-                            @endphp
+                        <template x-for="(item, idx) in items" :key="item.id">
                             <tr class="hover:bg-slate-50/80 transition-colors">
-                                <td class="py-3.5 px-4 text-center font-bold text-slate-400">{{ $idx + 1 }}</td>
+                                <td class="py-3.5 px-4 text-center font-bold text-slate-400" x-text="idx + 1"></td>
                                 <td class="py-3.5 px-4">
-                                    <div class="font-bold text-slate-900 text-sm leading-snug">{{ $faskes->nama }}</div>
-                                    @if($faskes->nomor_telepon)
+                                    <div class="font-bold text-slate-900 text-sm leading-snug" x-text="item.nama"></div>
+                                    <template x-if="item.nomor_telepon">
                                         <div class="text-[11px] text-slate-400 font-medium flex items-center space-x-1 mt-0.5">
                                             <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h32a2 2 0 012 2v2a2 2 0 01-2 2H5a2 2 0 01-2-2V5zm0 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H5a2 2 0 01-2-2v-2zm0 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H5a2 2 0 01-2-2v-2z"/>
                                             </svg>
-                                            <span>{{ $faskes->nomor_telepon }}</span>
+                                            <span x-text="item.nomor_telepon"></span>
                                         </div>
-                                    @endif
+                                    </template>
                                 </td>
                                 <td class="py-3.5 px-4">
-                                    <span class="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold border {{ $badgeClasses[$faskes->jenis_faskes] ?? 'bg-slate-100 text-slate-700 border-slate-200' }}">
-                                        {{ $labels[$faskes->jenis_faskes] ?? $faskes->jenis_faskes }}
-                                    </span>
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold border"
+                                          :class="item.badge_class"
+                                          x-text="item.jenis_label"></span>
                                 </td>
                                 <td class="py-3.5 px-4 text-slate-600">
-                                    <div class="font-semibold text-slate-800">Kec. {{ $faskes->kecamatan ?: '-' }}</div>
-                                    <div class="text-[11px] text-slate-400">Desa {{ $faskes->desa ?: '-' }}</div>
+                                    <div class="font-semibold text-slate-800" x-text="`Kec. ${item.kecamatan || '-'}`"></div>
+                                    <div class="text-[11px] text-slate-400" x-text="`Desa ${item.desa || '-'}`"></div>
                                 </td>
-                                <td class="py-3.5 px-4 font-mono font-semibold text-slate-700">
-                                    {{ $item['masa_izin']->format('d M Y') }}
-                                </td>
+                                <td class="py-3.5 px-4 font-mono font-semibold text-slate-700" x-text="item.masa_izin_formatted"></td>
                                 <td class="py-3.5 px-4">
-                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] border {{ $statusPillClass }}">
-                                        {{ $item['status_text'] }}
-                                    </span>
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] border"
+                                          :class="item.status_pill_class"
+                                          x-text="item.status_text"></span>
                                 </td>
                                 <td class="py-3.5 px-4 text-center">
                                     <div class="flex items-center justify-center space-x-1.5">
-                                        <a href="{{ route('faskes.edit', $faskes->id) }}"
+                                        <a :href="item.edit_url"
                                            class="px-2.5 py-1.5 bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-600 font-bold rounded-lg text-[11px] transition-all flex items-center space-x-1 border border-slate-200/60 hover:border-blue-200"
                                            title="Perbarui Izin">
                                             <svg class="w-3.5 h-3.5 text-slate-500 group-hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -391,7 +478,9 @@
                                     </div>
                                 </td>
                             </tr>
-                        @empty
+                        </template>
+
+                        <template x-if="items.length === 0">
                             <tr>
                                 <td colspan="7" class="py-12 text-center text-slate-400">
                                     <svg class="w-10 h-10 mx-auto mb-2 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -400,9 +489,8 @@
                                     <span class="font-medium text-slate-500 block text-xs">Tidak ada data faskes dengan tanggal masa izin yang tercatat.</span>
                                 </td>
                             </tr>
-                        @endforelse
+                        </template>
                     </tbody>
-                </table>
             </div>
         </div>
 
@@ -710,122 +798,346 @@
         &copy; {{ date('Y') }} Sistem Informasi Geografis Faskes &bull; Dinas Kesehatan Kabupaten Banyumas
     </footer>
 
-    <!-- Chart.js Scripts Initialization -->
+    <!-- Alpine.js & Dashboard Controller Logic (Tugas 10A & 10B) -->
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            // 1. Inisialisasi Bar Chart: Faskes per Kecamatan
-            const ctxKecamatan = document.getElementById('chartKecamatan').getContext('2d');
-            const labelsKecamatan = @json($chartKecamatanLabels);
-            const dataKecamatan = @json($chartKecamatanData);
-
-            new Chart(ctxKecamatan, {
-                type: 'bar',
-                data: {
-                    labels: labelsKecamatan,
-                    datasets: [{
-                        label: 'Jumlah Faskes',
-                        data: dataKecamatan,
-                        backgroundColor: '#3b82f6',
-                        borderRadius: 6,
-                        borderSkipped: false,
-                    }]
+        // 1. Alpine.js Component: Sound Controller & Notifikasi Lonceng (Tugas 10B)
+        function dashboardSoundNotif() {
+            return {
+                notifOpen: false,
+                soundEnabled: true,
+                shouldShakeBell: false,
+                showSoundUnlockPrompt: false,
+                prevUrgentCounts: {
+                    kedaluwarsa: {{ (int) ($ringkasanIzin['kedaluwarsa'] ?? 0) }},
+                    h_1_bulan:   {{ (int) ($ringkasanIzin['h_1_bulan'] ?? 0) }},
+                    h_3_bulan:   {{ (int) ($ringkasanIzin['h_3_bulan'] ?? 0) }},
+                    h_6_bulan:   {{ (int) ($ringkasanIzin['h_6_bulan'] ?? 0) }}
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            backgroundColor: '#0f172a',
-                            padding: 10,
-                            cornerRadius: 8,
-                            titleFont: { family: 'Plus Jakarta Sans', size: 12, weight: 'bold' },
-                            bodyFont: { family: 'Plus Jakarta Sans', size: 11 },
-                            callbacks: {
-                                label: function(context) {
-                                    return ` ${context.parsed.y} Fasilitas Kesehatan`;
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                stepSize: 1,
-                                font: { family: 'Plus Jakarta Sans', size: 10, weight: '500' },
-                                color: '#64748b'
-                            },
-                            grid: {
-                                color: '#f1f5f9'
-                            }
-                        },
-                        x: {
-                            ticks: {
-                                font: { family: 'Plus Jakarta Sans', size: 10, weight: '500' },
-                                color: '#64748b'
-                            },
-                            grid: { display: false }
+                pollTimer: null,
+
+                init() {
+                    if (window.dashboardNotifSound) {
+                        this.soundEnabled = window.dashboardNotifSound.isEnabled();
+                    }
+
+                    // Dengarkan sinyal audio context blocked oleh browser
+                    window.addEventListener('dashboard-sound-blocked', () => {
+                        this.showSoundUnlockPrompt = true;
+                    });
+
+                    // Putar bunyi peringatan sekali saat halaman dimuat (level tertinggi yang ada)
+                    this.playHighestAvailableAlert();
+
+                    // Pasang polling ringan setiap 5 menit hanya saat tab terlihat
+                    this.setupPolling();
+                },
+
+                toggleSound() {
+                    this.soundEnabled = !this.soundEnabled;
+                    if (window.dashboardNotifSound) {
+                        window.dashboardNotifSound.setEnabled(this.soundEnabled);
+                        if (this.soundEnabled) {
+                            window.dashboardNotifSound.unlock();
                         }
                     }
-                }
-            });
-
-            // 2. Inisialisasi Donut Chart: Persentase Kategori Faskes
-            const ctxKategori = document.getElementById('chartKategori').getContext('2d');
-            const labelsKategori = @json($chartKategoriLabels);
-            const dataKategori = @json($chartKategoriData);
-            const colorsKategori = @json($chartKategoriColors);
-
-            new Chart(ctxKategori, {
-                type: 'doughnut',
-                data: {
-                    labels: labelsKategori,
-                    datasets: [{
-                        data: dataKategori,
-                        backgroundColor: colorsKategori,
-                        borderWidth: 2,
-                        borderColor: '#ffffff',
-                        hoverOffset: 6
-                    }]
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '68%',
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                boxWidth: 10,
-                                boxHeight: 10,
-                                padding: 14,
-                                usePointStyle: true,
-                                font: { family: 'Plus Jakarta Sans', size: 10, weight: '600' },
-                                color: '#475569'
-                            }
-                        },
-                        tooltip: {
-                            backgroundColor: '#0f172a',
-                            padding: 10,
-                            cornerRadius: 8,
-                            titleFont: { family: 'Plus Jakarta Sans', size: 12, weight: 'bold' },
-                            bodyFont: { family: 'Plus Jakarta Sans', size: 11 },
-                            callbacks: {
-                                label: function(context) {
-                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                    const value = context.raw;
-                                    const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-                                    return ` ${context.label}: ${value} (${percentage}%)`;
-                                }
-                            }
+
+                unlockAudio() {
+                    this.showSoundUnlockPrompt = false;
+                    if (window.dashboardNotifSound) {
+                        window.dashboardNotifSound.unlock();
+                    }
+                },
+
+                triggerBellAnimation() {
+                    this.shouldShakeBell = true;
+                    setTimeout(() => {
+                        this.shouldShakeBell = false;
+                    }, 1000);
+                },
+
+                playHighestAvailableAlert() {
+                    const c = this.prevUrgentCounts;
+                    let targetLevel = null;
+
+                    if (c.kedaluwarsa > 0 || c.h_1_bulan > 0) {
+                        targetLevel = 'urgent';
+                    } else if (c.h_3_bulan > 0) {
+                        targetLevel = 'warning';
+                    } else if (c.h_6_bulan > 0) {
+                        targetLevel = 'info';
+                    }
+
+                    if (targetLevel) {
+                        this.triggerBellAnimation();
+                        if (window.dashboardNotifSound) {
+                            window.dashboardNotifSound.play(targetLevel);
                         }
                     }
-                }
-            });
-        });
+                },
 
-        // Alpine.js Component untuk Pemantauan Izin Operasional (Tugas 6)
+                setupPolling() {
+                    // Polling ringan setiap 5 menit (300.000 ms)
+                    this.pollTimer = setInterval(() => {
+                        if (document.visibilityState !== 'visible' || !this.soundEnabled) {
+                            return;
+                        }
+                        this.checkIzinUpdates();
+                    }, 300000);
+                },
+
+                checkIzinUpdates() {
+                    fetch("{{ route('dashboard.izin-operasional') }}?per_page=1", {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
+                        }
+                    })
+                    .then(res => res.json())
+                    .then(res => {
+                        if (!res || !res.ringkasan) return;
+                        const r = res.ringkasan;
+                        const old = this.prevUrgentCounts;
+
+                        // Bunyi hanya jika jumlah pada suatu level BERTAMBAH dibanding sebelumnya
+                        let shouldPlayLevel = null;
+                        if ((r.kedaluwarsa > old.kedaluwarsa) || (r.h_1_bulan > old.h_1_bulan)) {
+                            shouldPlayLevel = 'urgent';
+                        } else if (r.h_3_bulan > old.h_3_bulan) {
+                            shouldPlayLevel = 'warning';
+                        } else if (r.h_6_bulan > old.h_6_bulan) {
+                            shouldPlayLevel = 'info';
+                        }
+
+                        // Update snapshot jumlah
+                        this.prevUrgentCounts = {
+                            kedaluwarsa: r.kedaluwarsa || 0,
+                            h_1_bulan:   r.h_1_bulan || 0,
+                            h_3_bulan:   r.h_3_bulan || 0,
+                            h_6_bulan:   r.h_6_bulan || 0
+                        };
+
+                        if (shouldPlayLevel && this.soundEnabled && document.visibilityState === 'visible') {
+                            this.triggerBellAnimation();
+                            if (window.dashboardNotifSound) {
+                                window.dashboardNotifSound.play(shouldPlayLevel);
+                            }
+                        }
+                    })
+                    .catch(err => {
+                        console.warn('Gagal polling ringkasan izin:', err);
+                    });
+                }
+            };
+        }
+
+        // 2. Alpine.js Component: Asynchronous Charts (Tugas 10A)
+        function dashboardCharts() {
+            return {
+                isLoading: true,
+                hasError: false,
+                labelsKecamatan: [],
+                chartKecamatanInstance: null,
+                chartKategoriInstance: null,
+
+                init() {
+                    this.fetchChartsData();
+                },
+
+                fetchChartsData() {
+                    this.isLoading = true;
+                    this.hasError = false;
+
+                    fetch("{{ route('dashboard.charts') }}", {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
+                        }
+                    })
+                    .then(res => {
+                        if (!res.ok) throw new Error('Gagal memuat charts');
+                        return res.json();
+                    })
+                    .then(res => {
+                        if (!res.success || !res.data) throw new Error('Format data tidak valid');
+                        const data = res.data;
+                        this.labelsKecamatan = data.kecamatan.labels || [];
+                        this.renderCharts(data);
+                    })
+                    .catch(err => {
+                        console.error('Error fetching dashboard charts:', err);
+                        this.hasError = true;
+                    })
+                    .finally(() => {
+                        this.isLoading = false;
+                    });
+                },
+
+                renderCharts(data) {
+                    if (typeof Chart === 'undefined') {
+                        setTimeout(() => this.renderCharts(data), 100);
+                        return;
+                    }
+
+                    // 1. Bar Chart Kecamatan
+                    const canvasKec = document.getElementById('chartKecamatan');
+                    if (canvasKec) {
+                        const ctxKec = canvasKec.getContext('2d');
+                        if (this.chartKecamatanInstance) {
+                            this.chartKecamatanInstance.destroy();
+                        }
+                        this.chartKecamatanInstance = new Chart(ctxKec, {
+                            type: 'bar',
+                            data: {
+                                labels: data.kecamatan.labels,
+                                datasets: [{
+                                    label: 'Jumlah Faskes',
+                                    data: data.kecamatan.data,
+                                    backgroundColor: '#3b82f6',
+                                    borderRadius: 6,
+                                    borderSkipped: false,
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: { display: false },
+                                    tooltip: {
+                                        backgroundColor: '#0f172a',
+                                        padding: 10,
+                                        cornerRadius: 8,
+                                        titleFont: { family: 'Plus Jakarta Sans', size: 12, weight: 'bold' },
+                                        bodyFont: { family: 'Plus Jakarta Sans', size: 11 },
+                                        callbacks: {
+                                            label: function(context) {
+                                                return ` ${context.parsed.y} Fasilitas Kesehatan`;
+                                            }
+                                        }
+                                    }
+                                },
+                                scales: {
+                                    y: {
+                                        beginAtZero: true,
+                                        ticks: {
+                                            stepSize: 1,
+                                            font: { family: 'Plus Jakarta Sans', size: 10, weight: '500' },
+                                            color: '#64748b'
+                                        },
+                                        grid: { color: '#f1f5f9' }
+                                    },
+                                    x: {
+                                        ticks: {
+                                            font: { family: 'Plus Jakarta Sans', size: 10, weight: '500' },
+                                            color: '#64748b'
+                                        },
+                                        grid: { display: false }
+                                    }
+                                }
+                            }
+                        });
+                    }
+
+                    // 2. Donut Chart Kategori
+                    const canvasKat = document.getElementById('chartKategori');
+                    if (canvasKat) {
+                        const ctxKat = canvasKat.getContext('2d');
+                        if (this.chartKategoriInstance) {
+                            this.chartKategoriInstance.destroy();
+                        }
+                        this.chartKategoriInstance = new Chart(ctxKat, {
+                            type: 'doughnut',
+                            data: {
+                                labels: data.kategori.labels,
+                                datasets: [{
+                                    data: data.kategori.data,
+                                    backgroundColor: data.kategori.colors,
+                                    borderWidth: 2,
+                                    borderColor: '#ffffff',
+                                    hoverOffset: 6
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                cutout: '68%',
+                                plugins: {
+                                    legend: {
+                                        position: 'bottom',
+                                        labels: {
+                                            boxWidth: 10,
+                                            boxHeight: 10,
+                                            padding: 14,
+                                            usePointStyle: true,
+                                            font: { family: 'Plus Jakarta Sans', size: 10, weight: '600' },
+                                            color: '#475569'
+                                        }
+                                    },
+                                    tooltip: {
+                                        backgroundColor: '#0f172a',
+                                        padding: 10,
+                                        cornerRadius: 8,
+                                        titleFont: { family: 'Plus Jakarta Sans', size: 12, weight: 'bold' },
+                                        bodyFont: { family: 'Plus Jakarta Sans', size: 11 },
+                                        callbacks: {
+                                            label: function(context) {
+                                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                                const value = context.raw;
+                                                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                                return ` ${context.label}: ${value} (${percentage}%)`;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }
+            };
+        }
+
+        // 3. Alpine.js Component: Asynchronous Top 5 Izin Table (Tugas 10A)
+        function dashboardTopIzin() {
+            return {
+                isLoading: true,
+                hasError: false,
+                items: [],
+
+                init() {
+                    this.fetchTopIzin();
+                },
+
+                fetchTopIzin() {
+                    this.isLoading = true;
+                    this.hasError = false;
+
+                    fetch("{{ route('dashboard.top-izin') }}", {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
+                        }
+                    })
+                    .then(res => {
+                        if (!res.ok) throw new Error('Gagal memuat data');
+                        return res.json();
+                    })
+                    .then(res => {
+                        if (res.success && Array.isArray(res.data)) {
+                            this.items = res.data;
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Error fetching top izin:', err);
+                        this.hasError = true;
+                    })
+                    .finally(() => {
+                        this.isLoading = false;
+                    });
+                }
+            };
+        }
+
+        // 4. Alpine.js Component: Pemantauan Izin Operasional Table (Tugas 6)
         function izinOperasionalTable() {
             return {
                 activeLevel: 'all',
