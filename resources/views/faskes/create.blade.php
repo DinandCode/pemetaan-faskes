@@ -1843,10 +1843,10 @@
 
     </main>
 
-    <!-- Modal Tambah Kolom Tambahan (Alpine) -->
+    <!-- Modal Tambah Kolom Tambahan (Alpine) - Mendukung 10 Tipe Data -->
     <div x-show="customModalOpen" x-cloak
          class="fixed inset-0 z-[2000] overflow-y-auto bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-100 relative"
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-100 relative my-8"
              @click.away="if(!isSavingCustomField) customModalOpen = false">
             <div class="flex items-center justify-between pb-3 border-b border-slate-100">
                 <div class="flex items-center gap-2">
@@ -1854,8 +1854,8 @@
                         <i class="fa-solid fa-plus text-xs"></i>
                     </div>
                     <div>
-                        <h3 class="font-bold text-slate-800 text-sm">Tambah Kolom Tambahan</h3>
-                        <p class="text-[11px] text-slate-400">Dropdown kustom baru langsung aktif di form</p>
+                        <h3 class="font-bold text-slate-800 text-sm">Tambah Kolom Tambahan Baru</h3>
+                        <p class="text-[11px] text-slate-400">Pilih salah satu dari 10 tipe data input fleksibel</p>
                     </div>
                 </div>
                 <button type="button" @click="customModalOpen = false" class="text-slate-400 hover:text-slate-600">
@@ -1869,9 +1869,27 @@
             </template>
 
             <form @submit.prevent="submitNewCustomField()" class="mt-4 space-y-3.5">
+                <!-- Tipe Data Input -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Tipe Data Input <span class="text-rose-500">*</span></label>
+                    <select x-model="newField.type" required
+                            class="input-modern w-full text-xs px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 font-semibold text-indigo-700">
+                        <option value="text">Teks Pendek (text)</option>
+                        <option value="textarea">Teks Panjang / Catatan (textarea)</option>
+                        <option value="number">Angka / Jumlah (number)</option>
+                        <option value="date">Tanggal (date)</option>
+                        <option value="boolean">Ya / Tidak (boolean)</option>
+                        <option value="select">Dropdown Satu Pilihan (select)</option>
+                        <option value="multiselect">Pilihan Ganda / Multi-Select (multiselect)</option>
+                        <option value="url">Tautan Website (url)</option>
+                        <option value="email">Alamat Email (email)</option>
+                        <option value="phone">Nomor Telepon (phone)</option>
+                    </select>
+                </div>
+
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Label Kolom <span class="text-rose-500">*</span></label>
-                    <input type="text" x-model="newField.label" required placeholder="Contoh: Layanan 24 Jam, Akreditasi..."
+                    <input type="text" x-model="newField.label" required placeholder="Contoh: Kapasitas Ruang Isolasi, Akreditasi..."
                            class="input-modern w-full text-xs px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500">
                 </div>
 
@@ -1902,20 +1920,89 @@
                     </div>
                 </div>
 
-                <div>
-                    <div class="flex items-center justify-between mb-1">
+                <!-- Konfigurasi Teks Pendek -->
+                <div x-show="newField.type === 'text'" class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-[11px] text-slate-600 mb-0.5">Maks. Karakter (1-255)</label>
+                            <input type="number" x-model.number="newField.config.max_length" min="1" max="255"
+                                   class="input-modern w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] text-slate-600 mb-0.5">Placeholder</label>
+                            <input type="text" x-model="newField.config.placeholder" placeholder="Petunjuk input..."
+                                   class="input-modern w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] text-slate-600 mb-0.5">Teks Bantuan (Help Text)</label>
+                        <input type="text" x-model="newField.config.help_text" placeholder="Keterangan cara pengisian..."
+                               class="input-modern w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white">
+                    </div>
+                </div>
+
+                <!-- Konfigurasi Teks Panjang -->
+                <div x-show="newField.type === 'textarea'" class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-[11px] text-slate-600 mb-0.5">Maks. Karakter</label>
+                            <input type="number" x-model.number="newField.config.max_length" min="1" max="5000"
+                                   class="input-modern w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] text-slate-600 mb-0.5">Tinggi Baris (Rows: 2-10)</label>
+                            <input type="number" x-model.number="newField.config.rows" min="2" max="10"
+                                   class="input-modern w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] text-slate-600 mb-0.5">Teks Bantuan</label>
+                        <input type="text" x-model="newField.config.help_text" placeholder="Keterangan catatan..."
+                               class="input-modern w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white">
+                    </div>
+                </div>
+
+                <!-- Konfigurasi Angka -->
+                <div x-show="newField.type === 'number'" class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                    <div class="grid grid-cols-3 gap-2">
+                        <div>
+                            <label class="block text-[11px] text-slate-600 mb-0.5">Desimal (0-4)</label>
+                            <input type="number" x-model.number="newField.config.decimals" min="0" max="4"
+                                   class="input-modern w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] text-slate-600 mb-0.5">Nilai Min</label>
+                            <input type="number" step="any" x-model.number="newField.config.min" placeholder="Bebas"
+                                   class="input-modern w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] text-slate-600 mb-0.5">Nilai Max</label>
+                            <input type="number" step="any" x-model.number="newField.config.max" placeholder="Bebas"
+                                   class="input-modern w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] text-slate-600 mb-0.5">Satuan Akhiran (Unit)</label>
+                        <input type="text" x-model="newField.config.unit" placeholder="Misal: unit, m², orang, tempat tidur..."
+                               class="input-modern w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white">
+                    </div>
+                </div>
+
+                <!-- Konfigurasi Opsi Select / Multiselect -->
+                <div x-show="newField.type === 'select' || newField.type === 'multiselect'" class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5">
+                    <div class="flex items-center justify-between">
                         <label class="text-xs font-semibold text-slate-700">Daftar Pilihan Opsi <span class="text-rose-500">*</span></label>
                         <button type="button" @click="addModalOption()"
                                 class="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800">
                             + Tambah Opsi
                         </button>
                     </div>
-                    <div class="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                    <div class="space-y-1.5 max-h-36 overflow-y-auto pr-1">
                         <template x-for="(opt, idx) in newField.options" :key="idx">
                             <div class="flex items-center gap-1.5">
-                                <input type="text" x-model="newField.options[idx]" required
+                                <input type="text" x-model="newField.options[idx]"
                                        :placeholder="'Opsi ' + (idx + 1)"
-                                       class="input-modern flex-1 text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                       class="input-modern flex-1 text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500">
                                 <button type="button" @click="removeModalOption(idx)"
                                         x-show="newField.options.length > 1"
                                         class="p-1.5 text-slate-400 hover:text-rose-600 transition">
@@ -1924,29 +2011,61 @@
                             </div>
                         </template>
                     </div>
-                    <p class="text-[10px] text-slate-400 mt-1">Maksimal 30 opsi per dropdown.</p>
+
+                    <div x-show="newField.type === 'multiselect'" class="pt-2 border-t border-slate-200">
+                        <label class="block text-[11px] text-slate-600 mb-0.5">Batas Maks. Pilihan yang Dapat Dipilih (Opsional)</label>
+                        <input type="number" x-model.number="newField.config.max_select" min="1" max="30" placeholder="Kosong = tidak dibatasi"
+                               class="input-modern w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white">
+                    </div>
                 </div>
 
-                <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
-                    <label class="inline-flex items-center gap-2 cursor-pointer">
+                <!-- Konfigurasi Teks Bantuan Umum -->
+                <div x-show="['url', 'email', 'phone', 'date', 'boolean'].includes(newField.type)" class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                    <div x-show="['url', 'email', 'phone'].includes(newField.type)">
+                        <label class="block text-[11px] text-slate-600 mb-0.5">Placeholder</label>
+                        <input type="text" x-model="newField.config.placeholder" placeholder="Petunjuk format..."
+                               class="input-modern w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] text-slate-600 mb-0.5">Teks Bantuan (Help Text)</label>
+                        <input type="text" x-model="newField.config.help_text" placeholder="Petunjuk pengisian..."
+                               class="input-modern w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white">
+                    </div>
+                </div>
+
+                <!-- Checkbox Pengaturan -->
+                <div class="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100">
+                    <label class="inline-flex items-center gap-1.5 cursor-pointer">
                         <input type="checkbox" x-model="newField.is_required"
                                class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
                         <span class="text-xs text-slate-700 font-medium">Wajib diisi</span>
                     </label>
 
-                    <div class="flex items-center gap-2">
-                        <button type="button" @click="customModalOpen = false" :disabled="isSavingCustomField"
-                                class="px-3.5 py-2 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition">
-                            Batal
-                        </button>
-                        <button type="submit" :disabled="isSavingCustomField"
-                                class="px-4 py-2 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition inline-flex items-center gap-1.5">
-                            <template x-if="isSavingCustomField">
-                                <i class="fa-solid fa-spinner fa-spin text-xs"></i>
-                            </template>
-                            <span>Simpan</span>
-                        </button>
-                    </div>
+                    <label class="inline-flex items-center gap-1.5 cursor-pointer">
+                        <input type="checkbox" x-model="newField.is_filterable"
+                               class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                        <span class="text-xs text-slate-700 font-medium">Bisa difilter</span>
+                    </label>
+
+                    <label class="inline-flex items-center gap-1.5 cursor-pointer">
+                        <input type="checkbox" x-model="newField.show_in_list"
+                               class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                        <span class="text-xs text-slate-700 font-medium">Tampil di tabel</span>
+                    </label>
+                </div>
+
+                <div class="pt-2 border-t border-slate-100 flex items-center justify-end gap-2">
+                    <button type="button" @click="customModalOpen = false" :disabled="isSavingCustomField"
+                            class="px-3.5 py-2 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition">
+                        Batal
+                    </button>
+                    <button type="submit" :disabled="isSavingCustomField"
+                            class="px-4 py-2 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition inline-flex items-center gap-1.5">
+                        <template x-if="isSavingCustomField">
+                            <i class="fa-solid fa-spinner fa-spin text-xs"></i>
+                        </template>
+                        <span>Simpan Kolom</span>
+                    </button>
                 </div>
             </form>
         </div>
@@ -1971,8 +2090,22 @@
                 newField: {
                     label: '',
                     jenis_faskes: '',
+                    type: 'text',
                     options: ['Opsi 1', 'Opsi 2'],
+                    config: {
+                        max_length: 255,
+                        rows: 3,
+                        decimals: 0,
+                        min: null,
+                        max: null,
+                        unit: '',
+                        max_select: null,
+                        placeholder: '',
+                        help_text: ''
+                    },
                     is_required: false,
+                    is_filterable: true,
+                    show_in_list: true,
                     sort_order: 0
                 },
 
@@ -2024,8 +2157,22 @@
                     this.newField = {
                         label: '',
                         jenis_faskes: this.jenisFaskes || '',
+                        type: 'text',
                         options: ['Opsi 1', 'Opsi 2'],
+                        config: {
+                            max_length: 255,
+                            rows: 3,
+                            decimals: 0,
+                            min: null,
+                            max: null,
+                            unit: '',
+                            max_select: null,
+                            placeholder: '',
+                            help_text: ''
+                        },
                         is_required: false,
+                        is_filterable: true,
+                        show_in_list: true,
                         sort_order: 0
                     };
                     this.customModalError = null;
@@ -2049,14 +2196,32 @@
                         this.customModalError = 'Label kolom wajib diisi.';
                         return;
                     }
-                    const cleanOpts = this.newField.options.map(o => o.trim()).filter(o => o !== '');
-                    if (cleanOpts.length === 0) {
-                        this.customModalError = 'Minimal harus ada 1 opsi pilihan.';
-                        return;
+
+                    if (['select', 'multiselect'].includes(this.newField.type)) {
+                        const cleanOpts = this.newField.options.map(o => o.trim()).filter(o => o !== '');
+                        if (cleanOpts.length === 0) {
+                            this.customModalError = 'Minimal harus ada 1 opsi pilihan.';
+                            return;
+                        }
                     }
 
                     this.isSavingCustomField = true;
                     this.customModalError = null;
+
+                    const payload = {
+                        label: this.newField.label.trim(),
+                        jenis_faskes: this.newField.jenis_faskes || null,
+                        type: this.newField.type,
+                        is_required: this.newField.is_required ? 1 : 0,
+                        is_filterable: this.newField.is_filterable ? 1 : 0,
+                        show_in_list: this.newField.show_in_list ? 1 : 0,
+                        sort_order: this.newField.sort_order || 0,
+                        config: this.newField.config
+                    };
+
+                    if (['select', 'multiselect'].includes(this.newField.type)) {
+                        payload.options = this.newField.options.map(o => o.trim()).filter(o => o !== '');
+                    }
 
                     try {
                         const response = await fetch('{{ url("/faskes-fields") }}', {
@@ -2066,13 +2231,7 @@
                                 'Accept': 'application/json',
                                 'X-CSRF-TOKEN': '{{ csrf_token() }}'
                             },
-                            body: JSON.stringify({
-                                label: this.newField.label,
-                                jenis_faskes: this.newField.jenis_faskes || null,
-                                options: cleanOpts,
-                                is_required: this.newField.is_required ? 1 : 0,
-                                sort_order: this.newField.sort_order || 0
-                            })
+                            body: JSON.stringify(payload)
                         });
 
                         const resData = await response.json();
