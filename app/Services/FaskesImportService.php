@@ -17,6 +17,7 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use App\Support\CustomFieldHelper;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class FaskesImportService
@@ -431,19 +432,48 @@ class FaskesImportService
             $key = "custom_{$def->id}";
             $reqMark = $def->is_required ? '*' : '';
             $desc = "Kolom tambahan: {$def->label} (Tipe: {$def->type})." . ($def->is_required ? ' (Wajib)' : ' (Opsional)');
-            if (in_array($def->type, ['select', 'multiselect']) && ! empty($def->options)) {
-                $desc .= ' Pilihan: ' . implode(', ', (array) $def->options);
+            
+            $colType = 'string';
+            $options = [];
+            if ($def->type === FaskesFieldDefinition::TYPE_SELECT) {
+                $colType = 'list';
+                $options = (array) ($def->options ?? []);
+                if (! empty($options)) {
+                    $desc .= ' Pilihan: ' . implode(', ', $options);
+                }
+            } elseif ($def->type === FaskesFieldDefinition::TYPE_MULTISELECT) {
+                $colType = 'multiselect';
+                $options = (array) ($def->options ?? []);
+                if (! empty($options)) {
+                    $desc .= ' Pilihan (pisahkan dengan titik koma ;): ' . implode('; ', $options);
+                }
+            } elseif ($def->type === FaskesFieldDefinition::TYPE_BOOLEAN) {
+                $colType = 'boolean';
+                $options = ['Ya', 'Tidak'];
+                $desc .= ' Nilai: Ya / Tidak.';
+            } elseif ($def->type === FaskesFieldDefinition::TYPE_NUMBER) {
+                $cfg = $def->config ?? [];
+                $isDecimal = !empty($cfg['decimals']) && (int)$cfg['decimals'] > 0;
+                $colType = $isDecimal ? 'decimal' : 'integer';
+                $desc .= ' Angka ' . ($isDecimal ? 'desimal' : 'bulat') . (!empty($cfg['unit']) ? ' (' . $cfg['unit'] . ')' : '');
+            } elseif ($def->type === FaskesFieldDefinition::TYPE_DATE) {
+                $colType = 'date';
+                $desc .= ' Format tanggal: YYYY-MM-DD.';
+            } elseif ($def->type === FaskesFieldDefinition::TYPE_TEXTAREA) {
+                $colType = 'text';
             }
+
             $columns[$key] = [
                 'header'        => "{$def->label}{$reqMark}",
                 'required'      => (bool) $def->is_required,
-                'type'          => in_array($def->type, ['select', 'multiselect']) ? 'list' : 'text',
-                'options'       => (array) ($def->options ?? []),
+                'type'          => $colType,
+                'options'       => $options,
                 'desc'          => $desc,
                 'is_custom'     => true,
                 'definition_id' => $def->id,
                 'field_key'     => $def->field_key,
                 'field_type'    => $def->type,
+                'field_config'  => $def->config ?? [],
             ];
         }
 
@@ -514,6 +544,21 @@ class FaskesImportService
                     $validation->setPrompt('Pilih dari dropdown.');
                     $validation->setFormula1($optionsStr);
                 }
+            } elseif ($col['type'] === 'boolean') {
+                for ($row = 2; $row <= 1001; $row++) {
+                    $validation = $sheetData->getCell("{$colLetter}{$row}")->getDataValidation();
+                    $validation->setType(DataValidation::TYPE_LIST);
+                    $validation->setErrorStyle(DataValidation::STYLE_INFORMATION);
+                    $validation->setAllowBlank(true);
+                    $validation->setShowInputMessage(true);
+                    $validation->setShowErrorMessage(true);
+                    $validation->setShowDropDown(true);
+                    $validation->setErrorTitle('Pilihan Tidak Valid');
+                    $validation->setError("Pilih 'Ya' atau 'Tidak'.");
+                    $validation->setPromptTitle("Pilihan {$col['header']}");
+                    $validation->setPrompt("Pilih 'Ya' atau 'Tidak'.");
+                    $validation->setFormula1('"Ya,Tidak"');
+                }
             } elseif ($col['type'] === 'integer') {
                 for ($row = 2; $row <= 1001; $row++) {
                     $validation = $sheetData->getCell("{$colLetter}{$row}")->getDataValidation();
@@ -525,6 +570,29 @@ class FaskesImportService
                     $validation->setShowErrorMessage(true);
                     $validation->setErrorTitle('Harus Angka Bulat');
                     $validation->setError('Nilai harus berupa angka bulat lebih besar atau sama dengan 0.');
+                }
+            } elseif ($col['type'] === 'decimal') {
+                for ($row = 2; $row <= 1001; $row++) {
+                    $validation = $sheetData->getCell("{$colLetter}{$row}")->getDataValidation();
+                    $validation->setType(DataValidation::TYPE_DECIMAL);
+                    $validation->setAllowBlank(true);
+                    $validation->setShowInputMessage(true);
+                    $validation->setPromptTitle("Format {$col['header']}");
+                    $validation->setPrompt('Isi dengan angka desimal (gunakan titik atau koma).');
+                }
+            } elseif ($col['type'] === 'date') {
+                for ($row = 2; $row <= 1001; $row++) {
+                    $validation = $sheetData->getCell("{$colLetter}{$row}")->getDataValidation();
+                    $validation->setShowInputMessage(true);
+                    $validation->setPromptTitle("Format {$col['header']}");
+                    $validation->setPrompt('Format tanggal: YYYY-MM-DD (Contoh: 2028-12-31).');
+                }
+            } elseif ($col['type'] === 'multiselect') {
+                for ($row = 2; $row <= 1001; $row++) {
+                    $validation = $sheetData->getCell("{$colLetter}{$row}")->getDataValidation();
+                    $validation->setShowInputMessage(true);
+                    $validation->setPromptTitle("Pilihan Ganda {$col['header']}");
+                    $validation->setPrompt('Tulis beberapa pilihan dipisahkan dengan tanda titik koma (;).');
                 }
             }
 
@@ -836,6 +904,26 @@ class FaskesImportService
 
                 $valStr = trim((string) $val);
 
+                if (! empty($colDef['is_custom'])) {
+                    $defModel = FaskesFieldDefinition::find($colDef['definition_id']);
+                    if ($defModel) {
+                        $processed = \App\Support\CustomFieldHelper::processValue($defModel, $val);
+                        if ($processed['error']) {
+                            $rowErrors[] = [
+                                'row'     => $rowNum,
+                                'column'  => $colDef['header'],
+                                'message' => $processed['error'],
+                            ];
+                        } else {
+                            $rowRecord[$key] = $processed['value'];
+                            $rowRecord[$key . '_typed'] = $processed;
+                        }
+                    } else {
+                        $rowRecord[$key] = $valStr;
+                    }
+                    continue;
+                }
+
                 // Tipe Integer
                 if ($colDef['type'] === 'integer') {
                     if (! is_numeric($valStr) || (int) $valStr < 0) {
@@ -999,27 +1087,41 @@ class FaskesImportService
                         $skipped++;
                         continue;
                     }
-                    // Mode update
+                    // Mode update: hanya perbarui kolom jika di Excel memiliki isi (tidak menimpa nilai database dengan null secara tidak sengaja)
                     $faskes = $existingFaskes;
-                    $faskes->update([
-                        'status'        => $row['status'],
-                        'alamat'        => $row['alamat'],
-                        'desa'          => $row['desa'],
-                        'nomor_telepon' => $row['nomor_telepon'],
-                        'latitude'      => $row['latitude'],
-                        'longitude'     => $row['longitude'],
-                    ]);
+                    $updateData = [];
+                    if (! empty($row['status'])) {
+                        $updateData['status'] = $row['status'];
+                    }
+                    if (isset($row['alamat']) && trim((string) $row['alamat']) !== '') {
+                        $updateData['alamat'] = $row['alamat'];
+                    }
+                    if (isset($row['desa']) && trim((string) $row['desa']) !== '') {
+                        $updateData['desa'] = $row['desa'];
+                    }
+                    if (isset($row['nomor_telepon']) && trim((string) $row['nomor_telepon']) !== '') {
+                        $updateData['nomor_telepon'] = $row['nomor_telepon'];
+                    }
+                    if (isset($row['latitude']) && $row['latitude'] !== null) {
+                        $updateData['latitude'] = $row['latitude'];
+                    }
+                    if (isset($row['longitude']) && $row['longitude'] !== null) {
+                        $updateData['longitude'] = $row['longitude'];
+                    }
+                    if (! empty($updateData)) {
+                        $faskes->update($updateData);
+                    }
                     $updated++;
                 } else {
                     // Mode insert faskes baru
                     $faskes = Faskes::create([
                         'nama'          => $nama,
                         'jenis_faskes'  => $jenisFaskes,
-                        'status'        => $row['status'],
-                        'alamat'        => $row['alamat'],
+                        'status'        => $row['status'] ?? 'aktif',
+                        'alamat'        => $row['alamat'] ?? null,
                         'kecamatan'     => $kecamatan,
-                        'desa'          => $row['desa'],
-                        'nomor_telepon' => $row['nomor_telepon'],
+                        'desa'          => $row['desa'] ?? null,
+                        'nomor_telepon' => $row['nomor_telepon'] ?? null,
                         'latitude'      => $row['latitude'],
                         'longitude'     => $row['longitude'],
                     ]);
@@ -1037,24 +1139,20 @@ class FaskesImportService
                             continue;
                         }
 
-                        $fType = $colDef['field_type'] ?? 'select';
-                        $valNum = null;
-                        $valDate = null;
-                        $valBool = null;
-                        $valJson = null;
-
-                        if ($fType === FaskesFieldDefinition::TYPE_NUMBER && is_numeric(str_replace(',', '.', $rawVal))) {
-                            $valNum = (float) str_replace(',', '.', $rawVal);
-                        } elseif ($fType === FaskesFieldDefinition::TYPE_DATE) {
-                            try {
-                                $valDate = Carbon::parse($rawVal)->format('Y-m-d');
-                            } catch (\Throwable $e) {}
-                        } elseif ($fType === FaskesFieldDefinition::TYPE_BOOLEAN) {
-                            $valBool = in_array(strtolower($rawVal), ['1', 'true', 'ya', 'yes'], true);
-                            $rawVal = $valBool ? 'Ya' : 'Tidak';
-                        } elseif ($fType === FaskesFieldDefinition::TYPE_MULTISELECT) {
-                            $valJson = array_values(array_filter(array_map('trim', explode(';', $rawVal))));
+                        // Jika baris sudah diparsing dengan typed info
+                        $typed = $row[$key . '_typed'] ?? null;
+                        if (! $typed) {
+                            $defModel = FaskesFieldDefinition::find($colDef['definition_id']);
+                            if ($defModel) {
+                                $typed = \App\Support\CustomFieldHelper::processValue($defModel, $rawVal, $faskes->id);
+                            }
                         }
+
+                        $valStr = $typed['value'] ?? $rawVal;
+                        $valNum = $typed['value_number'] ?? null;
+                        $valDate = $typed['value_date'] ?? null;
+                        $valBool = $typed['value_bool'] ?? null;
+                        $valJson = $typed['value_json'] ?? null;
 
                         FaskesFieldValue::updateOrCreate(
                             [
@@ -1062,7 +1160,7 @@ class FaskesImportService
                                 'field_definition_id' => $colDef['definition_id'],
                             ],
                             [
-                                'value'        => $rawVal,
+                                'value'        => $valStr,
                                 'value_number' => $valNum,
                                 'value_date'   => $valDate,
                                 'value_bool'   => $valBool,

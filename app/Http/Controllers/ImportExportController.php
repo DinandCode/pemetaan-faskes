@@ -6,15 +6,37 @@ use App\Exports\AnalisisEventExport;
 use App\Exports\FaskesPerKecamatanExport;
 use App\Imports\FaskesImport;
 use App\Models\Faskes;
-use App\Services\OsrmService;
-use Barryvdh\DomPDF\Facade\Pdf;
-use Illuminate\Http\Request;
-use Maatwebsite\Excel\Facades\Excel;
-
 use App\Services\FaskesImportService;
+use App\Services\OsrmService;
+use App\Support\FaskesExportQueryBuilder;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ImportExportController extends Controller
 {
+    /**
+     * Batas baris maksimal untuk export PDF agar tidak melebihi payload limit serverless Vercel (4.5 MB).
+     */
+    public const MAX_PDF_ROWS = 2500;
+
+    /**
+     * Pastikan direktori temporer DomPDF dan Excel siap di /tmp atau storage.
+     */
+    protected function prepareTempDirectory(): void
+    {
+        $tempPath = sys_get_temp_dir();
+        if ($tempPath && is_dir($tempPath)) {
+            File::ensureDirectoryExists($tempPath . '/dompdf');
+        }
+
+        $storageCache = storage_path('framework/cache');
+        File::ensureDirectoryExists($storageCache);
+    }
+
     /**
      * Unduh template file Excel import yang disesuaikan dengan jenis faskes.
      */
@@ -169,58 +191,67 @@ class ImportExportController extends Controller
 
             return redirect()->route('faskes.index')->with('success', $message);
         } catch (\Exception $e) {
+            Log::error('FaskesImport Legacy Error: ' . $e->getMessage());
             return redirect()->route('faskes.index')->with('error', 'Gagal mengimpor data: ' . $e->getMessage());
         }
     }
 
     /**
-     * Export rekapitulasi seluruh Faskes per Kecamatan ke Excel.
+     * Export rekapitulasi seluruh Faskes ke Excel dengan filter aktif konsisten.
      */
     public function exportFaskesExcel(Request $request)
     {
-        $kecamatan = $request->query('kecamatan');
-        $jenisFaskes = $request->query('jenis_faskes');
+        $this->prepareTempDirectory();
 
-        $filename = 'rekap_faskes_banyumas_' . date('Ymd_His') . '.xlsx';
-        return Excel::download(new FaskesPerKecamatanExport($kecamatan, $jenisFaskes), $filename);
+        $query = FaskesExportQueryBuilder::build($request);
+        $timestamp = Carbon::now('Asia/Jakarta')->format('Ymd_His');
+        $filename = 'rekap_faskes_banyumas_' . $timestamp . '.xlsx';
+
+        return Excel::download(new FaskesPerKecamatanExport($query), $filename);
     }
 
     /**
-     * Export rekapitulasi seluruh Faskes per Kecamatan ke PDF.
+     * Export rekapitulasi seluruh Faskes ke PDF dengan filter aktif konsisten & proteksi batas baris.
      */
     public function exportFaskesPdf(Request $request)
     {
-        $query = Faskes::query()->with([
-            'puskesmasDetail', 'rumahSakitDetail', 'klinikPratamaDetail',
-            'klinikUtamaDetail', 'laboratoriumDetail', 'upkdkDetail',
-        ]);
+        $this->prepareTempDirectory();
 
-        if ($request->filled('kecamatan')) {
-            $query->where('kecamatan', $request->query('kecamatan'));
-        }
-        if ($request->filled('jenis_faskes')) {
-            $query->where('jenis_faskes', $request->query('jenis_faskes'));
+        $query = FaskesExportQueryBuilder::build($request);
+        $count = $query->count();
+
+        if ($count > self::MAX_PDF_ROWS) {
+            return redirect()->back()->with('error', "Terlalu banyak data untuk di-export ke satu file PDF ({$count} data, batas maksimal " . self::MAX_PDF_ROWS . ' baris). Silakan persempit filter jenis atau kecamatan terlebih dahulu, atau gunakan export Excel.');
         }
 
         $faskesList = $query->orderBy('kecamatan')->orderBy('jenis_faskes')->orderBy('nama')->get();
+        $printedAt = Carbon::now('Asia/Jakarta')->translatedFormat('d F Y H:i');
 
-        $pdf = Pdf::loadView('exports.faskes-rekap-pdf', compact('faskesList'))
-            ->setPaper('a4', 'landscape');
+        $pdf = Pdf::loadView('exports.faskes-rekap-pdf', compact('faskesList', 'printedAt'))
+            ->setPaper('a4', 'landscape')
+            ->setOptions([
+                'isRemoteEnabled'      => false,
+                'defaultFont'          => 'DejaVu Sans',
+                'isHtml5ParserEnabled' => true,
+            ]);
 
-        return $pdf->download('rekap_faskes_banyumas_' . date('Ymd_His') . '.pdf');
+        $timestamp = Carbon::now('Asia/Jakarta')->format('Ymd_His');
+        return $pdf->download('rekap_faskes_banyumas_' . $timestamp . '.pdf');
     }
 
     /**
-     * Export hasil analisis event ke Excel.
+     * Export hasil analisis event ke Excel (mendukung GET dan POST).
      */
     public function exportAnalisisExcel(Request $request)
     {
+        $this->prepareTempDirectory();
+
         $request->validate([
-            'latitude'  => 'required|numeric|between:-90,90',
-            'longitude' => 'required|numeric|between:-180,180',
-            'radius_km' => 'nullable|numeric|min:0.1',
-            'jenis_faskes' => 'nullable|string|in:puskesmas,rumah_sakit,klinik_pratama,klinik_utama,laboratorium,upkdk',
-            'limit'     => 'nullable|integer|min:1|max:20',
+            'latitude'     => 'required|numeric|between:-90,90',
+            'longitude'    => 'required|numeric|between:-180,180',
+            'radius_km'    => 'nullable|numeric|min:0.1',
+            'jenis_faskes' => 'nullable',
+            'limit'        => 'nullable|integer|min:1|max:50',
         ]);
 
         $data = $this->runAnalisis($request);
@@ -232,21 +263,24 @@ class ImportExportController extends Controller
             'jenis_faskes' => $request->input('jenis_faskes', 'semua'),
         ];
 
-        $filename = 'analisis_event_' . date('Ymd_His') . '.xlsx';
+        $timestamp = Carbon::now('Asia/Jakarta')->format('Ymd_His');
+        $filename = 'analisis_event_' . $timestamp . '.xlsx';
         return Excel::download(new AnalisisEventExport($data, $parameter), $filename);
     }
 
     /**
-     * Export hasil analisis event ke PDF.
+     * Export hasil analisis event ke PDF (mendukung GET dan POST).
      */
     public function exportAnalisisPdf(Request $request)
     {
+        $this->prepareTempDirectory();
+
         $request->validate([
-            'latitude'  => 'required|numeric|between:-90,90',
-            'longitude' => 'required|numeric|between:-180,180',
-            'radius_km' => 'nullable|numeric|min:0.1',
-            'jenis_faskes' => 'nullable|string|in:puskesmas,rumah_sakit,klinik_pratama,klinik_utama,laboratorium,upkdk',
-            'limit'     => 'nullable|integer|min:1|max:20',
+            'latitude'     => 'required|numeric|between:-90,90',
+            'longitude'    => 'required|numeric|between:-180,180',
+            'radius_km'    => 'nullable|numeric|min:0.1',
+            'jenis_faskes' => 'nullable',
+            'limit'        => 'nullable|integer|min:1|max:50',
         ]);
 
         $data = $this->runAnalisis($request);
@@ -258,14 +292,23 @@ class ImportExportController extends Controller
             'jenis_faskes' => $request->input('jenis_faskes', 'semua'),
         ];
 
-        $pdf = Pdf::loadView('exports.analisis-event-pdf', compact('data', 'parameter'))
-            ->setPaper('a4', 'landscape');
+        $printedAt = Carbon::now('Asia/Jakarta')->translatedFormat('d F Y H:i');
 
-        return $pdf->download('analisis_event_' . date('Ymd_His') . '.pdf');
+        $pdf = Pdf::loadView('exports.analisis-event-pdf', compact('data', 'parameter', 'printedAt'))
+            ->setPaper('a4', 'landscape')
+            ->setOptions([
+                'isRemoteEnabled'      => false,
+                'defaultFont'          => 'DejaVu Sans',
+                'isHtml5ParserEnabled' => true,
+            ]);
+
+        $timestamp = Carbon::now('Asia/Jakarta')->format('Ymd_His');
+        return $pdf->download('analisis_event_' . $timestamp . '.pdf');
     }
 
     /**
-     * Menjalankan logika spasial & routing OSRM untuk analisis event.
+     * Menjalankan logika spasial & routing OSRM untuk analisis event,
+     * identik dengan perilaku di AnalisisEventController.
      */
     protected function runAnalisis(Request $request): array
     {
@@ -273,6 +316,7 @@ class ImportExportController extends Controller
         $eventLng  = (float) $request->input('longitude');
         $radiusKm  = (float) $request->input('radius_km', 5);
         $limit     = (int) $request->input('limit', 5);
+        $sortBy    = $request->input('sort_by', 'jarak_jalan');
 
         $query = Faskes::query()
             ->where('status', 'aktif')
@@ -281,19 +325,88 @@ class ImportExportController extends Controller
             ->withDistance($eventLat, $eventLng)
             ->withinRadius($eventLat, $eventLng, $radiusKm);
 
-        if ($request->filled('jenis_faskes') && $request->input('jenis_faskes') !== 'semua') {
-            $query->where('jenis_faskes', $request->input('jenis_faskes'));
+        // Filter Jenis Faskes (dukung string atau array)
+        if ($request->has('jenis_faskes')) {
+            $jf = $request->input('jenis_faskes');
+            if (is_array($jf)) {
+                $clean = array_filter($jf, fn ($v) => ! empty($v) && $v !== 'semua');
+                if (! empty($clean)) {
+                    $query->whereIn('jenis_faskes', $clean);
+                }
+            } elseif (is_string($jf) && $jf !== '' && $jf !== 'semua') {
+                $query->where('jenis_faskes', $jf);
+            }
         }
 
-        $kandidat = $query->orderBy('jarak_lurus_meter', 'asc')->limit($limit)->get();
+        // Filter Boolean Layanan & Fasilitas
+        if ($request->boolean('has_ambulans')) {
+            $query->where(function ($q) {
+                $q->whereHas('rumahSakitDetail', function ($sub) {
+                    $sub->where('ambulans_transport', '>', 0)->orWhere('ambulans_gadar', '>', 0);
+                })->orWhereHas('puskesmasDetail', function ($sub) {
+                    $sub->where('ambulans_transport', '>', 0)->orWhere('ambulans_roda_dua', '>', 0);
+                })->orWhereHas('klinikPratamaDetail', function ($sub) {
+                    $sub->where('ambulans_transport', '>', 0);
+                })->orWhereHas('klinikUtamaDetail', function ($sub) {
+                    $sub->where('ambulans', '>', 0);
+                });
+            });
+        }
+
+        if ($request->boolean('has_bpjs')) {
+            $query->where(function ($q) {
+                $q->whereHas('klinikPratamaDetail', function ($sub) {
+                    $sub->where('bpjs', true);
+                })->orWhereHas('klinikUtamaDetail', function ($sub) {
+                    $sub->where('bpjs', true);
+                })->orWhereIn('jenis_faskes', ['puskesmas', 'rumah_sakit']);
+            });
+        }
+
+        if ($request->boolean('has_rawat_inap')) {
+            $query->where(function ($q) {
+                $q->where('jenis_faskes', 'rumah_sakit')
+                    ->orWhereHas('puskesmasDetail', function ($sub) {
+                        $sub->where('kategori', 'rawat_inap')->orWhere('jumlah_tempat_tidur', '>', 0);
+                    })->orWhereHas('klinikPratamaDetail', function ($sub) {
+                        $sub->where('bed_rawat_inap', '>', 0)->orWhere('kategori_layanan', 'rawat_inap');
+                    })->orWhereHas('klinikUtamaDetail', function ($sub) {
+                        $sub->where('bed_rawat_inap', '>', 0)->orWhere('kategori_layanan', 'rawat_inap');
+                    });
+            });
+        }
+
+        if ($request->boolean('has_poned')) {
+            $query->whereHas('puskesmasDetail', function ($sub) {
+                $sub->where('poned', 'Ya PONED');
+            });
+        }
+
+        // Terapkan FaskesAttributeFilter
+        \App\Support\FaskesAttributeFilter::apply($query, $request);
+
+        // Ambil candidate pool
+        $candidatePool = min(max($limit * 3, 15), 30);
+        $kandidat = $query->orderBy('jarak_lurus_meter', 'asc')->limit($candidatePool)->get();
 
         $osrmService = app(OsrmService::class);
 
-        return $kandidat->map(function (Faskes $faskes) use ($eventLat, $eventLng, $osrmService) {
+        $hasilAnalisis = $kandidat->map(function (Faskes $faskes) use ($eventLat, $eventLng, $osrmService) {
             $jarakLurusMeter = round((float) $faskes->jarak_lurus_meter, 2);
             $jarakLurusKm = round($jarakLurusMeter / 1000, 2);
 
-            $osrmResult = $osrmService->getRoute($eventLat, $eventLng, (float) $faskes->latitude, (float) $faskes->longitude);
+            $osrmResult = $osrmService->getRoute(
+                $eventLat,
+                $eventLng,
+                (float) $faskes->latitude,
+                (float) $faskes->longitude
+            );
+
+            $ruteTersedia = (bool) $osrmResult['success'];
+            $jarakJalanMeter = $ruteTersedia ? $osrmResult['distance_meters'] : null;
+            $jarakJalanKm = $ruteTersedia ? $osrmResult['distance_km'] : null;
+            $estimasiDetik = $ruteTersedia ? $osrmResult['duration_seconds'] : null;
+            $estimasiMenit = $ruteTersedia ? $osrmResult['duration_minutes'] : null;
 
             return [
                 'detail_faskes' => [
@@ -313,15 +426,34 @@ class ImportExportController extends Controller
                     'km'    => $jarakLurusKm,
                 ],
                 'jarak_jalan' => [
-                    'meter' => $osrmResult['success'] ? $osrmResult['distance_meters'] : $jarakLurusMeter,
-                    'km'    => $osrmResult['success'] ? $osrmResult['distance_km'] : $jarakLurusKm,
+                    'meter' => $jarakJalanMeter,
+                    'km'    => $jarakJalanKm,
                 ],
                 'estimasi_waktu' => [
-                    'detik' => $osrmResult['success'] ? $osrmResult['duration_seconds'] : 0.0,
-                    'menit' => $osrmResult['success'] ? $osrmResult['duration_minutes'] : 0.0,
+                    'detik' => $estimasiDetik,
+                    'menit' => $estimasiMenit,
                 ],
-                'rute_tersedia' => $osrmResult['success'],
+                'rute_tersedia' => $ruteTersedia,
             ];
-        })->sortBy('jarak_jalan.meter')->values()->toArray();
+        });
+
+        // Sorting
+        $hasilSorted = match ($sortBy) {
+            'jarak_jalan' => $hasilAnalisis->sortBy([
+                fn ($a, $b) => ($a['rute_tersedia'] ? 0 : 1) <=> ($b['rute_tersedia'] ? 0 : 1),
+                fn ($a, $b) => ($a['jarak_jalan']['meter'] ?? PHP_FLOAT_MAX) <=> ($b['jarak_jalan']['meter'] ?? PHP_FLOAT_MAX),
+            ])->values(),
+
+            'estimasi_waktu' => $hasilAnalisis->sortBy([
+                fn ($a, $b) => ($a['rute_tersedia'] ? 0 : 1) <=> ($b['rute_tersedia'] ? 0 : 1),
+                fn ($a, $b) => ($a['estimasi_waktu']['detik'] ?? PHP_FLOAT_MAX) <=> ($b['estimasi_waktu']['detik'] ?? PHP_FLOAT_MAX),
+            ])->values(),
+
+            'jarak_lurus' => $hasilAnalisis->sortBy('jarak_lurus.meter')->values(),
+
+            default => $hasilAnalisis->values(),
+        };
+
+        return $hasilSorted->take($limit)->values()->toArray();
     }
 }

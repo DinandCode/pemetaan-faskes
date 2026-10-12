@@ -46,6 +46,12 @@ class FaskesImport implements ToCollection, WithHeadingRow
                     continue;
                 }
 
+                // Cek batas koordinat Kabupaten Banyumas (-7.75 s.d -7.15 dan 108.95 s.d 109.50)
+                if ($lat < -7.75 || $lat > -7.15 || $lng < 108.95 || $lng > 109.50) {
+                    $this->errors[] = "Baris {$rowNumber} ({$nama}): Koordinat ({$lat}, {$lng}) berada di luar wilayah Kabupaten Banyumas.";
+                    continue;
+                }
+
                 $alamat = $row['alamat'] ?? null;
                 $kecamatan = $row['kecamatan'] ?? null;
                 $desa = $row['desa'] ?? $row['kelurahan'] ?? null;

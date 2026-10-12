@@ -4,83 +4,199 @@
     <meta charset="UTF-8">
     <title>Rekapitulasi Faskes - Kab. Banyumas</title>
     <style>
-        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: #1e293b; margin: 0; padding: 15px; }
-        h1 { font-size: 16px; text-align: center; margin-bottom: 4px; color: #1e40af; }
-        .subtitle { text-align: center; font-size: 10px; color: #64748b; margin-bottom: 15px; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
-        th { background-color: #1e40af; color: #ffffff; padding: 6px 8px; text-align: left; font-size: 9px; text-transform: uppercase; }
-        td { padding: 5px 8px; border-bottom: 1px solid #e2e8f0; font-size: 9px; vertical-align: top; }
-        tr:nth-child(even) { background-color: #f8fafc; }
-        .footer { text-align: center; font-size: 8px; color: #94a3b8; margin-top: 20px; border-top: 1px solid #e2e8f0; padding-top: 8px; }
-        .badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 8px; font-weight: bold; }
-        .badge-rs { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
-        .badge-pkm { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
-        .badge-klinik { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
-        .badge-lab { background: #faf5ff; color: #7c3aed; border: 1px solid #e9d5ff; }
-        .badge-upkdk { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
-        .badge-griya { background: #ecfeff; color: #0891b2; border: 1px solid #a5f3fc; }
-        .badge-tpm { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
-        .badge-aktif { background: #ecfdf5; color: #059669; }
-        .badge-nonaktif { background: #f1f5f9; color: #64748b; }
-        .kecamatan-header { background-color: #f1f5f9; padding: 6px 10px; font-weight: bold; font-size: 11px; color: #1e40af; margin-top: 12px; margin-bottom: 4px; border-left: 4px solid #1e40af; }
+        @page {
+            margin: 25px 25px 35px 25px;
+        }
+        body {
+            font-family: 'DejaVu Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-size: 8px;
+            color: #1e293b;
+            margin: 0;
+            padding: 0;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 12px;
+        }
+        h1 {
+            font-size: 14px;
+            margin: 0 0 4px 0;
+            color: #1e40af;
+        }
+        .subtitle {
+            font-size: 8.5px;
+            color: #64748b;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+            page-break-inside: auto;
+        }
+        thead {
+            display: table-header-group;
+        }
+        tr {
+            page-break-inside: avoid;
+            page-break-after: auto;
+        }
+        th {
+            background-color: #1e40af;
+            color: #ffffff;
+            padding: 5px 6px;
+            text-align: left;
+            font-size: 7.5px;
+            text-transform: uppercase;
+            border: 1px solid #1e3a8a;
+        }
+        td {
+            padding: 4px 6px;
+            border: 1px solid #cbd5e1;
+            font-size: 7.5px;
+            vertical-align: top;
+        }
+        tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+        .kecamatan-header {
+            background-color: #e2e8f0;
+            padding: 5px 8px;
+            font-weight: bold;
+            font-size: 9px;
+            color: #1e40af;
+            margin-top: 10px;
+            margin-bottom: 4px;
+            border-left: 3px solid #1e40af;
+        }
+        .badge {
+            display: inline-block;
+            padding: 1.5px 4px;
+            border-radius: 3px;
+            font-size: 7px;
+            font-weight: bold;
+        }
+        .badge-rs { background: #fee2e2; color: #b91c1c; }
+        .badge-pkm { background: #dbeafe; color: #1d4ed8; }
+        .badge-klinik { background: #d1fae5; color: #047857; }
+        .badge-lab { background: #ede9fe; color: #6d28d9; }
+        .badge-upkdk { background: #fef3c7; color: #b45309; }
+        .badge-griya { background: #cffafe; color: #0e7490; }
+        .badge-tpm { background: #dcfce7; color: #15803d; }
+        .badge-aktif { background: #d1fae5; color: #047857; }
+        .badge-nonaktif { background: #f1f5f9; color: #475569; }
+        .empty-message {
+            text-align: center;
+            padding: 20px;
+            color: #64748b;
+            font-style: italic;
+        }
+        .footer {
+            position: fixed;
+            bottom: -20px;
+            left: 0;
+            right: 0;
+            height: 15px;
+            text-align: center;
+            font-size: 7px;
+            color: #94a3b8;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 3px;
+        }
+        .pagenum:before {
+            content: counter(page);
+        }
     </style>
 </head>
 <body>
-    <h1>Rekapitulasi Fasilitas Kesehatan</h1>
-    <div class="subtitle">Dinas Kesehatan Kabupaten Banyumas &bull; Dicetak: {{ date('d F Y H:i') }} WIB</div>
+    <div class="header">
+        <h1>Rekapitulasi Fasilitas Kesehatan</h1>
+        <div class="subtitle">Dinas Kesehatan Kabupaten Banyumas &bull; Dicetak: {{ $printedAt ?? now()->timezone('Asia/Jakarta')->translatedFormat('d F Y H:i') }} WIB</div>
+    </div>
 
-    @php
-        $grouped = $faskesList->groupBy('kecamatan');
-    @endphp
+    @if($faskesList->isEmpty())
+        <div class="empty-message">
+            Tidak ada data fasilitas kesehatan yang sesuai dengan kriteria filter.
+        </div>
+    @else
+        @php
+            $grouped = $faskesList->groupBy(fn ($item) => $item->kecamatan ?: 'Kecamatan Belum Terdata');
+        @endphp
 
-    @foreach($grouped as $kecamatan => $items)
-        <div class="kecamatan-header">Kecamatan {{ $kecamatan ?: 'Tidak Diketahui' }} ({{ $items->count() }} Faskes)</div>
-        <table>
-            <thead>
-                <tr>
-                    <th style="width:4%">No</th>
-                    <th style="width:24%">Nama Faskes</th>
-                    <th style="width:14%">Jenis</th>
-                    <th style="width:26%">Alamat / Desa</th>
-                    <th style="width:14%">Koordinat</th>
-                    <th style="width:11%">Telepon</th>
-                    <th style="width:7%">Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($items as $i => $faskes)
+        @foreach($grouped as $kecamatan => $items)
+            <div class="kecamatan-header">{{ $kecamatan }} ({{ $items->count() }} Faskes)</div>
+            <table>
+                <thead>
                     <tr>
-                        <td>{{ $i + 1 }}</td>
-                        <td style="font-weight:bold; color: #0f172a;">{{ $faskes->nama }}</td>
-                        <td>
-                            @php
-                                $badgeClass = match($faskes->jenis_faskes) {
-                                    'rumah_sakit' => 'badge-rs',
-                                    'puskesmas' => 'badge-pkm',
-                                    'klinik_pratama', 'klinik_utama' => 'badge-klinik',
-                                    'laboratorium' => 'badge-lab',
-                                    'upkdk' => 'badge-upkdk',
-                                    'griya_sehat' => 'badge-griya',
-                                    'tpmd', 'tpmdg', 'tpmb', 'tpmp' => 'badge-tpm',
-                                    default => '',
-                                };
-                            @endphp
-                            <span class="badge {{ $badgeClass }}">{{ ucwords(str_replace('_', ' ', $faskes->jenis_faskes)) }}</span>
-                        </td>
-                        <td>{{ $faskes->alamat ?: '-' }}<br><span style="color:#64748b; font-size:8px;">Desa {{ $faskes->desa ?: '-' }}</span></td>
-                        <td style="font-size:8px; font-family: monospace;">{{ number_format($faskes->latitude, 6) }},<br>{{ number_format($faskes->longitude, 6) }}</td>
-                        <td>{{ $faskes->nomor_telepon ?: '-' }}</td>
-                        <td>
-                            <span class="badge {{ $faskes->status === 'aktif' ? 'badge-aktif' : 'badge-nonaktif' }}">{{ ucfirst($faskes->status) }}</span>
-                        </td>
+                        <th style="width:3%">No</th>
+                        <th style="width:20%">Nama Faskes</th>
+                        <th style="width:12%">Jenis Faskes</th>
+                        <th style="width:23%">Alamat & Desa</th>
+                        <th style="width:12%">Koordinat</th>
+                        <th style="width:14%">Layanan / Kapasitas</th>
+                        <th style="width:10%">Kontak</th>
+                        <th style="width:6%">Status</th>
                     </tr>
-                @endforeach
-            </tbody>
-        </table>
-    @endforeach
+                </thead>
+                <tbody>
+                    @foreach($items as $i => $faskes)
+                        @php
+                            $badgeClass = match($faskes->jenis_faskes) {
+                                'rumah_sakit' => 'badge-rs',
+                                'puskesmas' => 'badge-pkm',
+                                'klinik_pratama', 'klinik_utama' => 'badge-klinik',
+                                'laboratorium' => 'badge-lab',
+                                'upkdk' => 'badge-upkdk',
+                                'griya_sehat' => 'badge-griya',
+                                'tpmd', 'tpmdg', 'tpmb', 'tpmp' => 'badge-tpm',
+                                default => '',
+                            };
+
+                            $layanan = '-';
+                            if ($faskes->jenis_faskes === 'puskesmas' && $faskes->puskesmasDetail) {
+                                $layanan = ucfirst(str_replace('_', ' ', $faskes->puskesmasDetail->kategori ?? ''));
+                                if ($faskes->puskesmasDetail->jumlah_tempat_tidur > 0) {
+                                    $layanan .= " (TT: {$faskes->puskesmasDetail->jumlah_tempat_tidur})";
+                                }
+                            } elseif ($faskes->jenis_faskes === 'rumah_sakit' && $faskes->rumahSakitDetail) {
+                                $layanan = ($faskes->rumahSakitDetail->tipe_rs ? 'Tipe ' . $faskes->rumahSakitDetail->tipe_rs . ' ' : '') . ($faskes->rumahSakitDetail->kemampuan_pelayanan ?: 'RS Umum');
+                            } elseif (($faskes->jenis_faskes === 'klinik_pratama' || $faskes->jenis_faskes === 'klinik_utama') && $faskes->detail) {
+                                $layanan = ($faskes->detail->kategori_layanan ? ucfirst(str_replace('_', ' ', $faskes->detail->kategori_layanan)) : 'Klinik');
+                                if (!empty($faskes->detail->bed_rawat_inap) && $faskes->detail->bed_rawat_inap > 0) {
+                                    $layanan .= " (TT: {$faskes->detail->bed_rawat_inap})";
+                                }
+                            }
+                        @endphp
+                        <tr>
+                            <td style="text-align: center;">{{ $i + 1 }}</td>
+                            <td><strong style="color: #0f172a;">{{ $faskes->nama }}</strong></td>
+                            <td><span class="badge {{ $badgeClass }}">{{ ucwords(str_replace('_', ' ', $faskes->jenis_faskes)) }}</span></td>
+                            <td>
+                                {{ $faskes->alamat ?: '-' }}
+                                @if(!empty($faskes->desa))
+                                    <br><span style="color:#64748b; font-size:7px;">Desa {{ $faskes->desa }}</span>
+                                @endif
+                            </td>
+                            <td style="font-family: monospace; font-size:7px;">
+                                @if($faskes->latitude && $faskes->longitude)
+                                    {{ number_format($faskes->latitude, 6) }},<br>{{ number_format($faskes->longitude, 6) }}
+                                @else
+                                    <span style="color:#94a3b8;">-</span>
+                                @endif
+                            </td>
+                            <td>{{ $layanan }}</td>
+                            <td>{{ $faskes->nomor_telepon ?: '-' }}</td>
+                            <td style="text-align: center;">
+                                <span class="badge {{ $faskes->status === 'aktif' ? 'badge-aktif' : 'badge-nonaktif' }}">{{ ucfirst($faskes->status) }}</span>
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        @endforeach
+    @endif
 
     <div class="footer">
-        &copy; {{ date('Y') }} Sistem Informasi Geografis Faskes &bull; Dinas Kesehatan Kabupaten Banyumas
+        Halaman <span class="pagenum"></span> &bull; Sistem Informasi Geografis Pemetaan Faskes Banyumas &bull; &copy; {{ date('Y') }}
     </div>
 </body>
 </html>
