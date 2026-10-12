@@ -149,10 +149,40 @@
             min-height: 0;
         }
 
+        /* Sidebar Panel Smooth Width & Margin Collapse (Tugas 12A) */
+        .sidebar-panel {
+            width: 88vw;
+            max-width: 420px;
+            transition: width 250ms cubic-bezier(0.4, 0, 0.2, 1),
+                        margin-right 250ms cubic-bezier(0.4, 0, 0.2, 1),
+                        transform 250ms cubic-bezier(0.4, 0, 0.2, 1),
+                        opacity 200ms ease;
+        }
+        @media (min-width: 768px) {
+            .sidebar-panel {
+                width: 400px;
+                max-width: none;
+            }
+            .sidebar-panel.is-collapsed {
+                width: 0 !important;
+                margin-right: 0 !important;
+                border-left-width: 0 !important;
+                opacity: 0 !important;
+                pointer-events: none !important;
+                overflow: hidden !important;
+            }
+        }
+        @media (min-width: 1024px) {
+            .sidebar-panel {
+                width: 440px;
+            }
+        }
+
         /* prefers-reduced-motion: Nonaktifkan animasi transisi bagi user yang sensitif gerak */
         @media (prefers-reduced-motion: reduce) {
             .accordion-grid-wrapper,
             aside,
+            .sidebar-panel,
             .transition-transform,
             .transition-all,
             .transition {
@@ -422,8 +452,8 @@
              class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-20 md:hidden pointer-events-auto"></div>
 
         <!-- Sidebar Kontrol: Filter Atribut & Analisis Lokasi Event (Tugas 12A & 12B) -->
-        <aside class="fixed md:relative top-0 right-0 h-full w-[88vw] max-w-[420px] md:w-[400px] lg:w-[440px] bg-white border-l border-slate-200 shadow-2xl z-30 md:z-20 flex flex-col transition-all duration-250 ease-in-out"
-               :class="sidebarOpen ? 'translate-x-0 opacity-100' : 'translate-x-full md:translate-x-0 md:w-0 md:overflow-hidden md:opacity-0 md:border-l-0'">
+        <aside class="sidebar-panel fixed md:relative top-0 right-0 h-full bg-white border-l border-slate-200 shadow-2xl z-30 md:z-20 flex flex-col"
+               :class="sidebarOpen ? 'translate-x-0 opacity-100' : 'translate-x-full md:translate-x-0 is-collapsed'">
 
             <!-- Sidebar Header & Tab Navigation -->
             <div class="p-3 border-b border-slate-200 bg-slate-50/90 flex-shrink-0 space-y-2">
