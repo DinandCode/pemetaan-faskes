@@ -446,31 +446,26 @@
                     </div>
                 </div>
 
-                <!-- Progress Rendering Marker Bertahap (Tugas 8B) -->
-                <template x-if="isRenderingClusters && clusterProgressTotal > 0">
-                    <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-2.5 space-y-1.5 transition">
-                        <div class="flex items-center justify-between text-[11px] text-indigo-800 font-medium">
-                            <span class="flex items-center gap-1.5">
-                                <svg class="animate-spin h-3 w-3 text-indigo-600" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-                                </svg>
-                                Memuat marker bertahap...
-                            </span>
-                            <span class="font-bold" x-text="`${clusterProgressProcessed} / ${clusterProgressTotal}`"></span>
-                        </div>
-                        <div class="w-full bg-indigo-200 rounded-full h-1.5 overflow-hidden">
-                            <div class="bg-indigo-600 h-1.5 rounded-full transition-all duration-100"
-                                 :style="`width: ${Math.round((clusterProgressProcessed / clusterProgressTotal) * 100)}%`"></div>
-                        </div>
-                    </div>
-                </template>
-
-                <!-- Pagar Sanitasi: Notifikasi Koordinat Tidak Valid (Tugas 8B) -->
+                <!-- Pagar Sanitasi: Notifikasi Koordinat Tidak Valid / Di Luar Batas Banyumas (Tugas 8B & Tugas 11) -->
                 <template x-if="invalidCoordinateCount > 0">
-                    <div class="bg-amber-50 border border-amber-200 rounded-xl p-2.5 flex items-start gap-2 text-[11px] text-amber-800">
-                        <svg class="icon w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5"><use href="#ic-warning"/></svg>
-                        <span><b x-text="invalidCoordinateCount"></b> titik dilewati karena koordinat tidak valid / di luar batas Kab. Banyumas.</span>
+                    <div class="bg-amber-50 border border-amber-200 rounded-xl p-2.5 space-y-2 text-[11px] text-amber-800">
+                        <div class="flex items-start gap-2">
+                            <svg class="icon w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5"><use href="#ic-warning"/></svg>
+                            <div class="flex-1">
+                                <span><b x-text="invalidCoordinateCount"></b> faskes dilewati (koordinat tidak valid / di luar batas Banyumas).</span>
+                                <button type="button" @click="openInvalidModal()"
+                                        class="ml-1 underline font-semibold text-amber-900 hover:text-amber-700">
+                                    Lihat daftar
+                                </button>
+                            </div>
+                        </div>
+                        <div class="pt-1.5 border-t border-amber-200/60 flex items-center justify-between">
+                            <label class="text-[10.5px] text-amber-900 font-medium cursor-pointer flex items-center gap-1.5 select-none" for="toggle-outside-markers">
+                                <span>Tampilkan titik di luar Banyumas di peta</span>
+                            </label>
+                            <input type="checkbox" id="toggle-outside-markers" x-model="showOutsideBanyumasMarkers" @change="toggleOutsideBanyumasMarkers()"
+                                   class="rounded text-amber-600 focus:ring-amber-500 h-3.5 w-3.5 cursor-pointer">
+                        </div>
                     </div>
                 </template>
 
@@ -1296,6 +1291,99 @@
 
     </div>
 
+    <!-- ============================================================ -->
+    <!-- MODAL DAFTAR FASKES DI LUAR WILAYAH BANYUMAS (Tugas 11)       -->
+    <!-- ============================================================ -->
+    <div x-show="showInvalidModal"
+         x-cloak
+         class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4"
+         @keydown.escape.window="showInvalidModal = false">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full border border-slate-200 overflow-hidden flex flex-col max-h-[85vh] animate-in fade-in zoom-in duration-200"
+             @click.outside="showInvalidModal = false">
+            <!-- Header Modal -->
+            <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-amber-50/50">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-sm sm:text-base">Daftar Faskes di Luar Wilayah / Koordinat Bermasalah</h3>
+                        <p class="text-xs text-slate-500">Koordinat tidak valid atau berada di luar batas kotak wilayah Kab. Banyumas</p>
+                    </div>
+                </div>
+                <button type="button" @click="showInvalidModal = false" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <!-- Body Modal -->
+            <div class="p-5 overflow-y-auto flex-1 space-y-3 custom-scrollbar">
+                <!-- Loading State -->
+                <template x-if="isLoadingInvalid">
+                    <div class="py-12 flex flex-col items-center justify-center gap-2 text-slate-500 text-xs">
+                        <svg class="animate-spin h-6 w-6 text-amber-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                        <span>Memuat data faskes tidak valid...</span>
+                    </div>
+                </template>
+
+                <!-- Empty State -->
+                <template x-if="!isLoadingInvalid && invalidMarkersList.length === 0">
+                    <div class="py-10 text-center text-slate-500 text-xs">
+                        Tidak ada faskes di luar wilayah yang sesuai dengan filter saat ini.
+                    </div>
+                </template>
+
+                <!-- Table Daftar Faskes -->
+                <template x-if="!isLoadingInvalid && invalidMarkersList.length > 0">
+                    <div class="border border-slate-200 rounded-xl overflow-hidden">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead class="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
+                                <tr>
+                                    <th class="py-2.5 px-3">Nama Faskes</th>
+                                    <th class="py-2.5 px-3">Jenis</th>
+                                    <th class="py-2.5 px-3">Kecamatan</th>
+                                    <th class="py-2.5 px-3">Koordinat (Lat, Lng)</th>
+                                    <th class="py-2.5 px-3 text-right">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                <template x-for="item in invalidMarkersList" :key="item.id">
+                                    <tr class="hover:bg-amber-50/40 transition">
+                                        <td class="py-2.5 px-3 font-semibold text-slate-800" x-text="item.nama"></td>
+                                        <td class="py-2.5 px-3">
+                                            <span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-700"
+                                                  x-text="formatJenis(item.jenis_faskes)"></span>
+                                        </td>
+                                        <td class="py-2.5 px-3 text-slate-600" x-text="item.kecamatan || '-'"></td>
+                                        <td class="py-2.5 px-3 font-mono text-[11px] text-slate-500">
+                                            <span x-text="item.lat !== null ? `${item.lat}, ${item.lng}` : 'Belum diisi (null)'"></span>
+                                        </td>
+                                        <td class="py-2.5 px-3 text-right">
+                                            <a :href="item.edit_url" target="_blank"
+                                               class="inline-flex items-center gap-1 px-2 py-1 rounded bg-blue-50 text-blue-600 hover:bg-blue-100 font-medium text-[11px] transition">
+                                                <span>Edit</span>
+                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Footer Modal -->
+            <div class="px-5 py-3 border-t border-slate-100 bg-slate-50 flex items-center justify-between text-xs text-slate-500">
+                <span x-text="`Menampilkan ${invalidMarkersList.length} faskes`"></span>
+                <button type="button" @click="showInvalidModal = false"
+                        class="px-4 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold rounded-lg transition">
+                    Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Alpine.js Application Logic -->
     <script>
         // Konfigurasi Level of Detail (LOD) Berbasis Zoom (Tugas 9)
@@ -1418,6 +1506,13 @@
                 basemapHelper: null,
                 currentBasemapName: 'Peta Jalan',
 
+                // State Modal & Layer Faskes di Luar Wilayah (Tugas 11)
+                showInvalidModal: false,
+                invalidMarkersList: [],
+                isLoadingInvalid: false,
+                showOutsideBanyumasMarkers: false,
+                outsideBanyumasLayerGroup: null,
+
                 // Data Hasil
                 faskesList: [],
                 hasilAnalisis: [],
@@ -1452,10 +1547,12 @@
                     // 2. Faskes Markers (LayerGroup standar tanpa cluster - Tugas 9)
                     // 3. Rute OSRM
                     // 4. Titik Event & Radius Circle
+                    // 5. Faskes di Luar Wilayah Banyumas (Tugas 11)
                     this.kabupatenLayerGroup = L.layerGroup().addTo(this.map);
                     this.faskesLayerGroup = L.layerGroup().addTo(this.map);
                     this.routeLayerGroup = L.layerGroup().addTo(this.map);
                     this.eventLayerGroup = L.layerGroup().addTo(this.map);
+                    this.outsideBanyumasLayerGroup = L.layerGroup().addTo(this.map);
 
                     // Inisialisasi cache icon satu kali untuk 11 jenis faskes (Tugas 8B)
                     this.initIconCache();
@@ -1596,6 +1693,181 @@
                         cust: JSON.stringify(this.customFilter || {})
                     };
                     return JSON.stringify(obj);
+                },
+
+                // ============================================================
+                // METODE HELPER FILTER & STATE IDENTIFIERS (Tugas 11)
+                // ============================================================
+
+                // Cek apakah ada jenis faskes dalam selectedJenis yang terdapat di array arr
+                hasAnyJenis(arr) {
+                    if (!Array.isArray(arr) || !Array.isArray(this.selectedJenis)) return false;
+                    return arr.some(j => this.selectedJenis.includes(j));
+                },
+
+                // Cek apakah suatu jenis faskes sedang dicentang di selectedJenis
+                isJenisSelected(jenis) {
+                    return Array.isArray(this.selectedJenis) && this.selectedJenis.includes(jenis);
+                },
+
+                // Hitung total filter atribut yang sedang aktif (untuk badge tab sidebar)
+                activeFilterCount() {
+                    let count = 0;
+                    if (this.filterAmbulans) count++;
+                    if (this.filterBpjs) count++;
+                    if (this.filterRawatInap) count++;
+                    if (this.filterPoned) count++;
+                    if (this.selectedKecamatan) count++;
+                    if (this.filterSearch && this.filterSearch.trim()) count++;
+                    count += this.countFilterAmbulansKapasitas();
+                    count += this.countFilterKategori();
+                    if (this.statusIzin) count++;
+                    count += this.countFilterCustom();
+                    return count;
+                },
+
+                // Hitung jumlah filter aktif pada sub-akordeon Ambulans & Kapasitas
+                countFilterAmbulansKapasitas() {
+                    let c = 0;
+                    if (this.minTotalAmbulans > 0) c++;
+                    if (this.minAmbulansGadar > 0) c++;
+                    if (this.minAmbulansRodaDua > 0) c++;
+                    if (this.minBed > 0) c++;
+                    if (this.minSdm > 0) c++;
+                    return c;
+                },
+
+                // Hitung jumlah filter aktif pada sub-akordeon Kategori & Klasifikasi
+                countFilterKategori() {
+                    let c = 0;
+                    if (this.kepemilikan) c++;
+                    if (this.tipeRs) c++;
+                    if (this.kategoriPuskesmas) c++;
+                    if (this.wilayahPuskesmas) c++;
+                    if (this.persalinanPuskesmas) c++;
+                    if (this.ponekRs) c++;
+                    if (this.kategoriLayananKlinik) c++;
+                    if (this.bpjsKlinik) c++;
+                    return c;
+                },
+
+                // Hitung jumlah filter aktif pada sub-akordeon Custom Filter Dinamis
+                countFilterCustom() {
+                    if (!this.customFilter) return 0;
+                    return Object.values(this.customFilter).filter(v => v !== null && v !== undefined && v !== '').length;
+                },
+
+                // Handler debounced saat nilai input angka/slider berubah
+                onNumberFilterChange() {
+                    clearTimeout(this.filterDebounceTimer);
+                    this.filterDebounceTimer = setTimeout(() => {
+                        this.typeDataCache.clear();
+                        this.applyDynamicFilters(false);
+                    }, 350);
+                },
+
+                // Pembersihan overlay Leaflet liar jika ada kontrol/layer yatim
+                cleanupStrayMapOverlays() {
+                    // Semua layer dikelola secara terstruktur via layer groups.
+                    // Fungsi ini dipanggil setelah inisialisasi agar tidak memicu TypeError.
+                },
+
+                // Buka modal daftar faskes di luar batas Banyumas / koordinat bermasalah
+                openInvalidModal() {
+                    this.showInvalidModal = true;
+                    this.loadInvalidMarkers();
+                },
+
+                // Muat data faskes tidak valid dari API /api/faskes/markers-invalid
+                loadInvalidMarkers() {
+                    this.isLoadingInvalid = true;
+                    const params = this.buildFilterQueryParams();
+                    fetch(`{{ url('/api/faskes/markers-invalid') }}?${params.toString()}`)
+                        .then(res => res.json())
+                        .then(res => {
+                            this.isLoadingInvalid = false;
+                            if (res.success && Array.isArray(res.data)) {
+                                this.invalidMarkersList = res.data;
+                            } else {
+                                this.invalidMarkersList = [];
+                            }
+                        })
+                        .catch(err => {
+                            this.isLoadingInvalid = false;
+                            console.error('Error fetching invalid markers:', err);
+                            this.invalidMarkersList = [];
+                        });
+                },
+
+                // Toggle tampilkan/sembunyikan titik di luar Banyumas pada peta
+                toggleOutsideBanyumasMarkers() {
+                    if (!this.outsideBanyumasLayerGroup || !this.map) return;
+
+                    if (!this.showOutsideBanyumasMarkers) {
+                        this.outsideBanyumasLayerGroup.clearLayers();
+                        return;
+                    }
+
+                    // Muat data titik invalid jika belum ada di list
+                    const renderOutsideMarkers = (list) => {
+                        this.outsideBanyumasLayerGroup.clearLayers();
+                        const outsideBounds = [];
+
+                        list.forEach(item => {
+                            if (item.lat === null || item.lng === null || !Number.isFinite(item.lat) || !Number.isFinite(item.lng)) return;
+
+                            // Gunakan icon peringatan amber khusus titik luar wilayah
+                            const warnIcon = L.divIcon({
+                                className: 'outside-banyumas-marker',
+                                html: `
+                                    <div style="background-color: #f59e0b; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.3); border: 2px solid #ffffff;">
+                                        <svg style="width: 14px; height: 14px; stroke: #ffffff; fill: none; stroke-width: 2;" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                                    </div>
+                                `,
+                                iconSize: [26, 26],
+                                iconAnchor: [13, 13],
+                                popupAnchor: [0, -14]
+                            });
+
+                            const marker = L.marker([item.lat, item.lng], { icon: warnIcon });
+                            marker.bindPopup(`
+                                <div class="text-xs p-1 max-w-[220px]">
+                                    <div class="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-800 mb-1">
+                                        Di Luar Wilayah Banyumas
+                                    </div>
+                                    <h4 class="font-bold text-slate-900 text-sm leading-tight">${item.nama}</h4>
+                                    <p class="text-slate-500 text-[11px] mt-1">${this.formatJenis(item.jenis_faskes)} &bull; ${item.kecamatan || '-'}</p>
+                                    <p class="text-slate-400 text-[10px] mt-0.5">Koordinat: ${item.lat}, ${item.lng}</p>
+                                    <div class="mt-2 pt-2 border-t border-slate-100">
+                                        <a href="${item.edit_url}" target="_blank" class="inline-block px-2 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded text-[11px] font-semibold text-center w-full">
+                                            Edit Koordinat
+                                        </a>
+                                    </div>
+                                </div>
+                            `);
+                            this.outsideBanyumasLayerGroup.addLayer(marker);
+                            outsideBounds.push([item.lat, item.lng]);
+                        });
+
+                        if (outsideBounds.length > 0) {
+                            this.map.fitBounds(outsideBounds, { padding: [50, 50], maxZoom: 14 });
+                        }
+                    };
+
+                    if (this.invalidMarkersList.length > 0) {
+                        renderOutsideMarkers(this.invalidMarkersList);
+                    } else {
+                        const params = this.buildFilterQueryParams();
+                        fetch(`{{ url('/api/faskes/markers-invalid') }}?${params.toString()}`)
+                            .then(res => res.json())
+                            .then(res => {
+                                if (res.success && Array.isArray(res.data)) {
+                                    this.invalidMarkersList = res.data;
+                                    renderOutsideMarkers(res.data);
+                                }
+                            })
+                            .catch(err => console.error('Error loading outside markers:', err));
+                    }
                 },
 
                 // Muat Data Pertama Kali dengan LOD Zoom (Tugas 9)
@@ -2446,7 +2718,7 @@
                 fetchFaskesDetailAndPopulatePopup(marker, id) {
                     if (this.faskesDetailCache.has(id)) {
                         const cached = this.faskesDetailCache.get(id);
-                        if (marker.isPopupOpen()) {
+                        if (marker && marker._map && typeof marker.isPopupOpen === 'function' && marker.isPopupOpen()) {
                             marker.setPopupContent(this.createFaskesPopupHtml(cached));
                         }
                         return;
@@ -2461,7 +2733,7 @@
                                 fullFaskes.detail = res.data.detail;
                             }
                             this.faskesDetailCache.set(id, fullFaskes);
-                            if (marker.isPopupOpen()) {
+                            if (marker && marker._map && typeof marker.isPopupOpen === 'function' && marker.isPopupOpen()) {
                                 marker.setPopupContent(this.createFaskesPopupHtml(fullFaskes));
                             }
                         })

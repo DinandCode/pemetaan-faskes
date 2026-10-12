@@ -185,6 +185,63 @@ class FaskesController extends Controller
     }
 
     /**
+     * Endpoint API aditif ringan untuk mengambil daftar faskes yang koordinatnya
+     * tidak valid atau berada di luar batas kotak wilayah Kab. Banyumas (-7.75..-7.15, 108.95..109.50) (Tugas 11).
+     * Maksimal 100 baris.
+     */
+    public function markersInvalid(Request $request): JsonResponse
+    {
+        $query = $this->buildFilterQuery($request);
+        $query->setEagerLoads([]);
+
+        $rawQuery = $query->toBase()
+            ->select([
+                'id',
+                'nama',
+                'jenis_faskes',
+                'latitude',
+                'longitude',
+                'status',
+                'kecamatan',
+                'alamat',
+            ]);
+
+        // Kondisi invalid: lat/lng null, atau di luar kotak Banyumas (-7.75..-7.15, 108.95..109.50)
+        $rawQuery->where(function ($q) {
+            $q->whereNull('latitude')
+              ->orWhereNull('longitude')
+              ->orWhere('latitude', '<', -7.75)
+              ->orWhere('latitude', '>', -7.15)
+              ->orWhere('longitude', '<', 108.95)
+              ->orWhere('longitude', '>', 109.50);
+        });
+
+        $total = (clone $rawQuery)->count();
+        $rows = $rawQuery->orderBy('nama', 'asc')->limit(100)->get();
+
+        $data = $rows->map(function ($row) {
+            return [
+                'id'           => (int) $row->id,
+                'nama'         => $row->nama,
+                'jenis_faskes' => $row->jenis_faskes,
+                'lat'          => $row->latitude !== null ? (float) $row->latitude : null,
+                'lng'          => $row->longitude !== null ? (float) $row->longitude : null,
+                'status'       => $row->status,
+                'kecamatan'    => $row->kecamatan,
+                'alamat'       => $row->alamat,
+                'edit_url'     => route('faskes.edit', $row->id),
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'total'   => $total,
+            'count'   => $data->count(),
+            'data'    => $data,
+        ]);
+    }
+
+    /**
      * Membangun Query Eloquent dengan filter relasi whereHas dinamis.
      */
     protected function buildFilterQuery(Request $request): Builder
