@@ -1142,6 +1142,7 @@
                             <div class="accordion-grid-inner">
                                 <div class="p-3 pt-0 border-t border-slate-100 space-y-2.5 text-xs bg-slate-50/50">
                                     @foreach($activeFieldDefinitions as $def)
+                                        @if($def->is_filterable ?? true)
                                         <div class="mt-2.5"
                                              @if($def->jenis_faskes) x-show="isJenisSelected('{{ $def->jenis_faskes }}')" @endif>
                                             <label class="block text-[11px] font-semibold text-slate-700 mb-1">
@@ -1150,14 +1151,41 @@
                                                     <span class="text-[10px] text-slate-400 font-normal">({{ $def->jenis_faskes }})</span>
                                                 @endif
                                             </label>
-                                            <select x-model="draftFilters.customFilter['{{ $def->field_key }}']" @keydown.enter.prevent="applyFilters(true)"
-                                                    class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
-                                                <option value="">Semua {{ $def->label }}</option>
-                                                @foreach($def->options as $opt)
-                                                    <option value="{{ $opt }}">{{ $opt }}</option>
-                                                @endforeach
-                                            </select>
+                                            @if(in_array($def->type, ['select', 'multiselect']))
+                                                <select x-model="draftFilters.customFilter['{{ $def->field_key }}']" @keydown.enter.prevent="applyFilters(true)"
+                                                        class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                                                    <option value="">Semua {{ $def->label }}</option>
+                                                    @foreach((array) $def->options as $opt)
+                                                        <option value="{{ $opt }}">{{ $opt }}</option>
+                                                    @endforeach
+                                                </select>
+                                            @elseif($def->type === 'boolean')
+                                                <select x-model="draftFilters.customFilter['{{ $def->field_key }}']" @keydown.enter.prevent="applyFilters(true)"
+                                                        class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                                                    <option value="">Semua {{ $def->label }}</option>
+                                                    <option value="Ya">Ya</option>
+                                                    <option value="Tidak">Tidak</option>
+                                                </select>
+                                            @elseif($def->type === 'number')
+                                                <input type="number" step="any"
+                                                       x-model="draftFilters.customFilter['{{ $def->field_key }}']"
+                                                       @keydown.enter.prevent="applyFilters(true)"
+                                                       placeholder="Nilai {{ $def->label }}..."
+                                                       class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                            @elseif($def->type === 'date')
+                                                <input type="date"
+                                                       x-model="draftFilters.customFilter['{{ $def->field_key }}']"
+                                                       @change="applyFilters(true)"
+                                                       class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                            @else
+                                                <input type="text"
+                                                       x-model="draftFilters.customFilter['{{ $def->field_key }}']"
+                                                       @keydown.enter.prevent="applyFilters(true)"
+                                                       placeholder="Cari {{ $def->label }}..."
+                                                       class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                            @endif
                                         </div>
+                                        @endif
                                     @endforeach
                                 </div>
                             </div>
@@ -3458,8 +3486,9 @@
 
                     if (Array.isArray(faskes.field_values) && faskes.field_values.length > 0) {
                         faskes.field_values.forEach(fv => {
-                            if (fv.definition && fv.value) {
-                                badgeHtml += `<span class="inline-block px-1.5 py-0.5 rounded text-[9px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-200 mr-1">${fv.definition.label}: ${fv.value}</span>`;
+                            if (fv.definition && (fv.formatted_value || fv.value)) {
+                                const displayVal = fv.formatted_value || fv.value;
+                                badgeHtml += `<span class="inline-block px-1.5 py-0.5 rounded text-[9px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-200 mr-1">${fv.definition.label}: ${displayVal}</span>`;
                             }
                         });
                     }

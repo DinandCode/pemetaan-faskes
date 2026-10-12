@@ -430,15 +430,20 @@ class FaskesImportService
         foreach ($definitions as $def) {
             $key = "custom_{$def->id}";
             $reqMark = $def->is_required ? '*' : '';
+            $desc = "Kolom tambahan: {$def->label} (Tipe: {$def->type})." . ($def->is_required ? ' (Wajib)' : ' (Opsional)');
+            if (in_array($def->type, ['select', 'multiselect']) && ! empty($def->options)) {
+                $desc .= ' Pilihan: ' . implode(', ', (array) $def->options);
+            }
             $columns[$key] = [
                 'header'        => "{$def->label}{$reqMark}",
                 'required'      => (bool) $def->is_required,
-                'type'          => 'list',
+                'type'          => in_array($def->type, ['select', 'multiselect']) ? 'list' : 'text',
                 'options'       => (array) ($def->options ?? []),
-                'desc'          => "Kolom tambahan: {$def->label}." . ($def->is_required ? ' (Wajib)' : ' (Opsional)') . ' Pilihan: ' . implode(', ', (array) ($def->options ?? [])),
+                'desc'          => $desc,
                 'is_custom'     => true,
                 'definition_id' => $def->id,
                 'field_key'     => $def->field_key,
+                'field_type'    => $def->type,
             ];
         }
 
@@ -1027,13 +1032,41 @@ class FaskesImportService
                 // Simpan kolom tambahan dinamis (custom fields)
                 foreach ($schema as $key => $colDef) {
                     if (! empty($colDef['is_custom']) && isset($row[$key]) && $row[$key] !== null) {
+                        $rawVal = trim((string) $row[$key]);
+                        if ($rawVal === '') {
+                            continue;
+                        }
+
+                        $fType = $colDef['field_type'] ?? 'select';
+                        $valNum = null;
+                        $valDate = null;
+                        $valBool = null;
+                        $valJson = null;
+
+                        if ($fType === FaskesFieldDefinition::TYPE_NUMBER && is_numeric(str_replace(',', '.', $rawVal))) {
+                            $valNum = (float) str_replace(',', '.', $rawVal);
+                        } elseif ($fType === FaskesFieldDefinition::TYPE_DATE) {
+                            try {
+                                $valDate = Carbon::parse($rawVal)->format('Y-m-d');
+                            } catch (\Throwable $e) {}
+                        } elseif ($fType === FaskesFieldDefinition::TYPE_BOOLEAN) {
+                            $valBool = in_array(strtolower($rawVal), ['1', 'true', 'ya', 'yes'], true);
+                            $rawVal = $valBool ? 'Ya' : 'Tidak';
+                        } elseif ($fType === FaskesFieldDefinition::TYPE_MULTISELECT) {
+                            $valJson = array_values(array_filter(array_map('trim', explode(';', $rawVal))));
+                        }
+
                         FaskesFieldValue::updateOrCreate(
                             [
                                 'faskes_id'           => $faskes->id,
                                 'field_definition_id' => $colDef['definition_id'],
                             ],
                             [
-                                'value' => $row[$key],
+                                'value'        => $rawVal,
+                                'value_number' => $valNum,
+                                'value_date'   => $valDate,
+                                'value_bool'   => $valBool,
+                                'value_json'   => $valJson,
                             ]
                         );
                     }

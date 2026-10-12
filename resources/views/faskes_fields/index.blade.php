@@ -17,27 +17,62 @@
               id: null,
               label: '',
               jenis_faskes: '',
+              type: 'select',
               options: [''],
+              config: {},
               is_required: false,
               is_active: true,
-              sort_order: 0
+              is_filterable: true,
+              show_in_list: true,
+              sort_order: 0,
+              values_count: 0
           },
           createField: {
               label: '',
               jenis_faskes: '',
+              type: 'text',
               options: ['Opsi 1', 'Opsi 2'],
+              config: {
+                  max_length: 255,
+                  rows: 3,
+                  decimals: 0,
+                  min: null,
+                  max: null,
+                  unit: '',
+                  max_select: null,
+                  placeholder: '',
+                  help_text: ''
+              },
               is_required: false,
+              is_filterable: true,
+              show_in_list: true,
               sort_order: 0
           },
           openEdit(field) {
+              const cfg = field.config || {};
               this.editField = {
                   id: field.id,
                   label: field.label,
                   jenis_faskes: field.jenis_faskes || '',
+                  type: field.type || 'select',
                   options: Array.isArray(field.options) ? [...field.options] : [],
+                  config: {
+                      max_length: cfg.max_length ?? (field.type === 'textarea' ? 2000 : 255),
+                      rows: cfg.rows ?? 3,
+                      decimals: cfg.decimals ?? 0,
+                      min: cfg.min ?? null,
+                      max: cfg.max ?? null,
+                      unit: cfg.unit ?? '',
+                      max_select: cfg.max_select ?? null,
+                      placeholder: cfg.placeholder ?? '',
+                      help_text: cfg.help_text ?? ''
+                  },
                   is_required: !!field.is_required,
                   is_active: !!field.is_active,
-                  sort_order: field.sort_order || 0
+                  is_filterable: field.is_filterable !== undefined ? !!field.is_filterable : true,
+                  show_in_list: field.show_in_list !== undefined ? !!field.show_in_list : true,
+                  sort_order: field.sort_order || 0,
+                  values_count: field.values_count || 0
               };
               if (this.editField.options.length === 0) {
                   this.editField.options = [''];
@@ -63,6 +98,17 @@
               if (this.editField.options.length > 1) {
                   this.editField.options.splice(index, 1);
               }
+          },
+          canChangeTypeTo(targetType) {
+              if (!this.editField.values_count || this.editField.values_count === 0) {
+                  return true;
+              }
+              const cur = this.editField.type;
+              if (cur === targetType) return true;
+              if ((cur === 'text' && targetType === 'textarea') || (cur === 'textarea' && targetType === 'text')) {
+                  return true;
+              }
+              return false;
           }
       }">
 
@@ -77,7 +123,7 @@
                 </div>
                 <div>
                     <h1 class="text-base font-bold text-slate-900 leading-tight tracking-tight">Kelola Kolom Tambahan (Custom Fields)</h1>
-                    <p class="text-xs text-slate-500 mt-0.5">Dinas Kesehatan Kabupaten Banyumas &bull; Input kustom dinamis untuk detail layanan</p>
+                    <p class="text-xs text-slate-500 mt-0.5">Dinas Kesehatan Kabupaten Banyumas &bull; Mendukung 10 Tipe Data Input Dinamis</p>
                 </div>
             </div>
 
@@ -103,7 +149,7 @@
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                     </svg>
-                    <span>+ Tambah Kolom Tambahan</span>
+                    <span>+ Tambah Kolom Baru</span>
                 </button>
             </div>
         </div>
@@ -114,7 +160,7 @@
 
         <!-- Flash Messages -->
         @if(session('success'))
-            <div class="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-xl text-xs flex items-center justify-between">
+            <div class="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-xl text-xs flex items-center justify-between shadow-sm">
                 <div class="flex items-center gap-2.5">
                     <svg class="w-4 h-4 flex-shrink-0 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -130,7 +176,7 @@
         @endif
 
         @if(session('error'))
-            <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-xl text-xs flex items-center justify-between">
+            <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-xl text-xs flex items-center justify-between shadow-sm">
                 <div class="flex items-center gap-2.5">
                     <svg class="w-4 h-4 flex-shrink-0 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0 3.75h.008M4.062 19.5h15.876c1.54 0 2.502-1.667 1.732-3L13.732 4.5c-.77-1.333-2.694-1.333-3.464 0L2.33 16.5c-.77 1.333.192 3 1.732 3z" />
@@ -146,7 +192,7 @@
         @endif
 
         @if($errors->any())
-            <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-xl text-xs space-y-1">
+            <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-xl text-xs space-y-1 shadow-sm">
                 <div class="font-semibold flex items-center gap-1.5">
                     <svg class="w-4 h-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0 3.75h.008M4.062 19.5h15.876c1.54 0 2.502-1.667 1.732-3L13.732 4.5c-.77-1.333-2.694-1.333-3.464 0L2.33 16.5c-.77 1.333.192 3 1.732 3z" />
@@ -165,7 +211,7 @@
         <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3">
             <form method="GET" action="{{ route('faskes-fields.index') }}" class="flex flex-wrap items-center gap-3 w-full md:w-auto">
                 <div class="flex items-center gap-2">
-                    <label class="text-xs font-semibold text-slate-600">Jenis Faskes:</label>
+                    <label class="text-xs font-semibold text-slate-600">Lingkup:</label>
                     <select name="jenis_faskes" onchange="this.form.submit()" class="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500">
                         <option value="">-- Semua Lingkup --</option>
                         <option value="all" {{ request('jenis_faskes') === 'all' ? 'selected' : '' }}>Semua Jenis (Global)</option>
@@ -173,6 +219,16 @@
                             <option value="{{ $jf }}" {{ request('jenis_faskes') === $jf ? 'selected' : '' }}>
                                 {{ ucwords(str_replace('_', ' ', $jf)) }}
                             </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <label class="text-xs font-semibold text-slate-600">Tipe:</label>
+                    <select name="type" onchange="this.form.submit()" class="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                        <option value="">-- Semua Tipe --</option>
+                        @foreach($validTypes as $vt)
+                            <option value="{{ $vt }}" {{ request('type') === $vt ? 'selected' : '' }}>{{ strtoupper($vt) }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -186,7 +242,7 @@
                     </select>
                 </div>
 
-                @if(request('jenis_faskes') || request('status'))
+                @if(request('jenis_faskes') || request('type') || request('status'))
                     <a href="{{ route('faskes-fields.index') }}" class="text-xs text-rose-600 hover:text-rose-700 font-medium">Reset Filter</a>
                 @endif
             </form>
@@ -205,7 +261,9 @@
                             <th class="py-3 px-4 w-12 text-center">No</th>
                             <th class="py-3 px-4">Label & Field Key</th>
                             <th class="py-3 px-4">Lingkup Faskes</th>
-                            <th class="py-3 px-4">Daftar Opsi Dropdown</th>
+                            <th class="py-3 px-4 text-center">Tipe Input</th>
+                            <th class="py-3 px-4">Konfigurasi / Opsi</th>
+                            <th class="py-3 px-4 text-center">Filter / List</th>
                             <th class="py-3 px-4 text-center">Wajib</th>
                             <th class="py-3 px-4 text-center">Urutan</th>
                             <th class="py-3 px-4 text-center">Data Terisi</th>
@@ -245,13 +303,71 @@
                                         </span>
                                     @endif
                                 </td>
+                                <td class="py-3 px-4 text-center align-top">
+                                    @php
+                                        $typeBadge = match($field->type) {
+                                            'text' => 'bg-blue-50 text-blue-700 border-blue-200',
+                                            'textarea' => 'bg-indigo-50 text-indigo-700 border-indigo-200',
+                                            'number' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                                            'date' => 'bg-amber-50 text-amber-700 border-amber-200',
+                                            'boolean' => 'bg-purple-50 text-purple-700 border-purple-200',
+                                            'select' => 'bg-slate-100 text-slate-700 border-slate-200',
+                                            'multiselect' => 'bg-teal-50 text-teal-700 border-teal-200',
+                                            'url' => 'bg-sky-50 text-sky-700 border-sky-200',
+                                            'email' => 'bg-pink-50 text-pink-700 border-pink-200',
+                                            'phone' => 'bg-lime-50 text-lime-700 border-lime-200',
+                                            default => 'bg-slate-50 text-slate-600 border-slate-200'
+                                        };
+                                    @endphp
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase border {{ $typeBadge }}">
+                                        {{ $field->type }}
+                                    </span>
+                                </td>
                                 <td class="py-3 px-4 align-top">
-                                    <div class="flex flex-wrap gap-1 max-w-xs">
-                                        @foreach((array) $field->options as $opt)
-                                            <span class="px-1.5 py-0.5 bg-slate-100 border border-slate-200 text-slate-700 rounded text-[10px]">
-                                                {{ $opt }}
-                                            </span>
-                                        @endforeach
+                                    @if(in_array($field->type, ['select', 'multiselect']))
+                                        <div class="flex flex-wrap gap-1 max-w-xs">
+                                            @foreach((array) $field->options as $opt)
+                                                <span class="px-1.5 py-0.5 bg-slate-100 border border-slate-200 text-slate-700 rounded text-[10px]">
+                                                    {{ $opt }}
+                                                </span>
+                                            @endforeach
+                                        </div>
+                                    @elseif($field->type === 'number')
+                                        @php $cfg = $field->getConfigArray(); @endphp
+                                        <div class="text-[11px] text-slate-600 space-y-0.5">
+                                            <div>Desimal: <span class="font-semibold">{{ $cfg['decimals'] ?? 0 }}</span></div>
+                                            @if(!empty($cfg['unit']))
+                                                <div>Satuan: <span class="font-semibold px-1 py-0.2 bg-slate-100 rounded">{{ $cfg['unit'] }}</span></div>
+                                            @endif
+                                            @if(isset($cfg['min']) || isset($cfg['max']))
+                                                <div class="text-[10px] text-slate-400">Rentang: {{ $cfg['min'] ?? '∞' }} s/d {{ $cfg['max'] ?? '∞' }}</div>
+                                            @endif
+                                        </div>
+                                    @elseif($field->type === 'text' || $field->type === 'textarea')
+                                        @php $cfg = $field->getConfigArray(); @endphp
+                                        <div class="text-[11px] text-slate-600">
+                                            Maks {{ $cfg['max_length'] ?? ($field->type === 'textarea' ? 2000 : 255) }} kar
+                                            @if($field->type === 'textarea') &bull; {{ $cfg['rows'] ?? 3 }} baris @endif
+                                        </div>
+                                    @elseif($field->type === 'boolean')
+                                        <span class="text-slate-500 text-[11px]">Ya / Tidak (Tri-state)</span>
+                                    @else
+                                        <span class="text-slate-400 text-[11px] italic">Standar format {{ $field->type }}</span>
+                                    @endif
+                                </td>
+                                <td class="py-3 px-4 text-center align-top">
+                                    <div class="inline-flex flex-col gap-1 items-center">
+                                        @if($field->is_filterable)
+                                            <span class="px-1.5 py-0.2 rounded text-[9.5px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">Filter: Aktif</span>
+                                        @else
+                                            <span class="px-1.5 py-0.2 rounded text-[9.5px] text-slate-400 border border-slate-200">Filter: Mati</span>
+                                        @endif
+
+                                        @if($field->show_in_list)
+                                            <span class="px-1.5 py-0.2 rounded text-[9.5px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">List: Tampil</span>
+                                        @else
+                                            <span class="px-1.5 py-0.2 rounded text-[9.5px] text-slate-400 border border-slate-200">List: Sembunyi</span>
+                                        @endif
                                     </div>
                                 </td>
                                 <td class="py-3 px-4 text-center align-top">
@@ -309,7 +425,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="9" class="py-8 text-center text-slate-400">
+                                <td colspan="11" class="py-8 text-center text-slate-400">
                                     <div class="flex flex-col items-center justify-center space-y-2">
                                         <svg class="w-8 h-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -338,7 +454,7 @@
     <!-- Modal Tambah Kolom Tambahan -->
     <div x-show="createModalOpen" x-cloak
          class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-100 relative"
+        <div class="bg-white rounded-2xl max-w-xl w-full p-6 shadow-xl border border-slate-100 relative my-8"
              @click.away="createModalOpen = false">
             <div class="flex items-center justify-between pb-3 border-b border-slate-100">
                 <div class="flex items-center gap-2">
@@ -349,7 +465,7 @@
                     </div>
                     <div>
                         <h3 class="font-bold text-slate-800 text-sm">Tambah Kolom Tambahan Baru</h3>
-                        <p class="text-[11px] text-slate-400">Admin dapat menambahkan dropdown dinamis</p>
+                        <p class="text-[11px] text-slate-400">Pilih salah satu dari 10 tipe data input fleksibel</p>
                     </div>
                 </div>
                 <button type="button" @click="createModalOpen = false" class="text-slate-400 hover:text-slate-600">
@@ -361,15 +477,34 @@
 
             <form action="{{ route('faskes-fields.store') }}" method="POST" class="mt-4 space-y-3.5">
                 @csrf
+
+                <!-- Pilihan Tipe Input -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Tipe Data Input <span class="text-rose-500">*</span></label>
+                    <select name="type" x-model="createField.type" required
+                            class="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 font-semibold text-indigo-700">
+                        <option value="text">Teks Pendek (text)</option>
+                        <option value="textarea">Teks Panjang / Catatan (textarea)</option>
+                        <option value="number">Angka / Jumlah (number)</option>
+                        <option value="date">Tanggal (date)</option>
+                        <option value="boolean">Ya / Tidak (boolean)</option>
+                        <option value="select">Dropdown Satu Pilihan (select)</option>
+                        <option value="multiselect">Pilihan Ganda / Multi-Select (multiselect)</option>
+                        <option value="url">Tautan Website (url)</option>
+                        <option value="email">Alamat Email (email)</option>
+                        <option value="phone">Nomor Telepon (phone)</option>
+                    </select>
+                </div>
+
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Label Kolom <span class="text-rose-500">*</span></label>
-                    <input type="text" name="label" x-model="createField.label" required placeholder="Contoh: Layanan 24 Jam, Akreditasi..."
+                    <input type="text" name="label" x-model="createField.label" required placeholder="Contoh: Kapasitas Ruang Isolasi, Akreditasi..."
                            class="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500">
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-700 mb-1">Berlaku Untuk</label>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Lingkup Jenis Faskes</label>
                         <select name="jenis_faskes" x-model="createField.jenis_faskes"
                                 class="w-full text-xs px-2.5 py-2 border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500">
                             <option value="">Semua Jenis (Global)</option>
@@ -386,20 +521,101 @@
                     </div>
                 </div>
 
-                <div>
-                    <div class="flex items-center justify-between mb-1">
+                <!-- Konfigurasi Khusus Teks Pendek (text) -->
+                <div x-show="createField.type === 'text'" class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5">
+                    <div class="font-semibold text-slate-700 text-xs flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                        <span>Konfigurasi Teks Pendek</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-[11px] text-slate-600 mb-0.5">Maks. Karakter (1-255)</label>
+                            <input type="number" name="config[max_length]" x-model="createField.config.max_length" min="1" max="255"
+                                   class="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] text-slate-600 mb-0.5">Placeholder</label>
+                            <input type="text" name="config[placeholder]" x-model="createField.config.placeholder" placeholder="Contoh teks petunjuk..."
+                                   class="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] text-slate-600 mb-0.5">Teks Bantuan (Help Text)</label>
+                        <input type="text" name="config[help_text]" x-model="createField.config.help_text" placeholder="Keterangan cara pengisian..."
+                               class="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white">
+                    </div>
+                </div>
+
+                <!-- Konfigurasi Khusus Teks Panjang (textarea) -->
+                <div x-show="createField.type === 'textarea'" class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5">
+                    <div class="font-semibold text-slate-700 text-xs flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+                        <span>Konfigurasi Teks Panjang</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-[11px] text-slate-600 mb-0.5">Maks. Karakter (1-5000)</label>
+                            <input type="number" name="config[max_length]" x-model="createField.config.max_length" min="1" max="5000"
+                                   class="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] text-slate-600 mb-0.5">Tinggi Baris (Rows: 2-10)</label>
+                            <input type="number" name="config[rows]" x-model="createField.config.rows" min="2" max="10"
+                                   class="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] text-slate-600 mb-0.5">Teks Bantuan (Help Text)</label>
+                        <input type="text" name="config[help_text]" x-model="createField.config.help_text" placeholder="Keterangan ringkasan catatan..."
+                               class="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white">
+                    </div>
+                </div>
+
+                <!-- Konfigurasi Khusus Angka (number) -->
+                <div x-show="createField.type === 'number'" class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5">
+                    <div class="font-semibold text-slate-700 text-xs flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        <span>Konfigurasi Angka & Satuan</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div>
+                            <label class="block text-[11px] text-slate-600 mb-0.5">Desimal (0-4)</label>
+                            <input type="number" name="config[decimals]" x-model="createField.config.decimals" min="0" max="4"
+                                   class="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] text-slate-600 mb-0.5">Nilai Min</label>
+                            <input type="number" step="any" name="config[min]" x-model="createField.config.min" placeholder="Kosong = bebas"
+                                   class="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] text-slate-600 mb-0.5">Nilai Max</label>
+                            <input type="number" step="any" name="config[max]" x-model="createField.config.max" placeholder="Kosong = bebas"
+                                   class="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] text-slate-600 mb-0.5">Satuan Akhiran (Unit)</label>
+                        <input type="text" name="config[unit]" x-model="createField.config.unit" placeholder="Misal: unit, m², orang, tempat tidur..."
+                               class="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white">
+                    </div>
+                </div>
+
+                <!-- Konfigurasi Opsi Dropdown / Multiselect -->
+                <div x-show="createField.type === 'select' || createField.type === 'multiselect'" class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5">
+                    <div class="flex items-center justify-between">
                         <label class="text-xs font-semibold text-slate-700">Daftar Pilihan Opsi <span class="text-rose-500">*</span></label>
                         <button type="button" @click="addCreateOption()"
                                 class="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800">
                             + Tambah Opsi
                         </button>
                     </div>
-                    <div class="space-y-1.5 max-h-44 overflow-y-auto pr-1">
+                    <div class="space-y-1.5 max-h-36 overflow-y-auto pr-1">
                         <template x-for="(opt, idx) in createField.options" :key="idx">
                             <div class="flex items-center gap-1.5">
-                                <input type="text" name="options[]" x-model="createField.options[idx]" required
+                                <input type="text" name="options[]" x-model="createField.options[idx]"
                                        :placeholder="'Opsi ' + (idx + 1)"
-                                       class="flex-1 text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                       class="flex-1 text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500">
                                 <button type="button" @click="removeCreateOption(idx)"
                                         x-show="createField.options.length > 1"
                                         class="p-1.5 text-slate-400 hover:text-rose-600 transition">
@@ -410,26 +626,51 @@
                             </div>
                         </template>
                     </div>
-                    <p class="text-[10.5px] text-slate-400 mt-1">Minimal 1 opsi, maksimal 30 opsi per dropdown.</p>
+
+                    <div x-show="createField.type === 'multiselect'" class="pt-2 border-t border-slate-200">
+                        <label class="block text-[11px] text-slate-600 mb-0.5">Batas Maks. Pilihan yang Dapat Dipilih (Opsional)</label>
+                        <input type="number" name="config[max_select]" x-model="createField.config.max_select" min="1" max="30" placeholder="Kosong = tidak dibatasi"
+                               class="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white">
+                    </div>
                 </div>
 
-                <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
-                    <label class="inline-flex items-center gap-2 cursor-pointer">
+                <!-- Teks Bantuan Umum untuk URL, Email, Phone, Date, Boolean -->
+                <div x-show="['url', 'email', 'phone', 'date', 'boolean'].includes(createField.type)" class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                    <label class="block text-[11px] text-slate-600 mb-0.5">Teks Bantuan Tambahan (Opsional)</label>
+                    <input type="text" name="config[help_text]" x-model="createField.config.help_text" placeholder="Petunjuk format pengisian..."
+                           class="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white">
+                </div>
+
+                <!-- Checkbox Opsi & Filter -->
+                <div class="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100">
+                    <label class="inline-flex items-center gap-1.5 cursor-pointer">
                         <input type="checkbox" name="is_required" value="1" x-model="createField.is_required"
                                class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
-                        <span class="text-xs text-slate-700 font-medium">Wajib diisi pada form faskes</span>
+                        <span class="text-xs text-slate-700 font-medium">Wajib diisi</span>
                     </label>
 
-                    <div class="flex items-center gap-2">
-                        <button type="button" @click="createModalOpen = false"
-                                class="px-3.5 py-2 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition">
-                            Batal
-                        </button>
-                        <button type="submit"
-                                class="px-4 py-2 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition">
-                            Simpan Kolom
-                        </button>
-                    </div>
+                    <label class="inline-flex items-center gap-1.5 cursor-pointer">
+                        <input type="checkbox" name="is_filterable" value="1" x-model="createField.is_filterable"
+                               class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                        <span class="text-xs text-slate-700 font-medium">Bisa difilter</span>
+                    </label>
+
+                    <label class="inline-flex items-center gap-1.5 cursor-pointer">
+                        <input type="checkbox" name="show_in_list" value="1" x-model="createField.show_in_list"
+                               class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                        <span class="text-xs text-slate-700 font-medium">Tampil di tabel</span>
+                    </label>
+                </div>
+
+                <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                    <button type="button" @click="createModalOpen = false"
+                            class="px-3.5 py-2 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition">
+                        Batal
+                    </button>
+                    <button type="submit"
+                            class="px-4 py-2 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition">
+                        Simpan Kolom
+                    </button>
                 </div>
             </form>
         </div>
@@ -438,7 +679,7 @@
     <!-- Modal Edit Kolom Tambahan -->
     <div x-show="editModalOpen" x-cloak
          class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-100 relative"
+        <div class="bg-white rounded-2xl max-w-xl w-full p-6 shadow-xl border border-slate-100 relative my-8"
              @click.away="editModalOpen = false">
             <div class="flex items-center justify-between pb-3 border-b border-slate-100">
                 <div class="flex items-center gap-2">
@@ -449,7 +690,7 @@
                     </div>
                     <div>
                         <h3 class="font-bold text-slate-800 text-sm">Edit Kolom Tambahan</h3>
-                        <p class="text-[11px] text-slate-400">Perbarui label, daftar opsi, atau status aktif</p>
+                        <p class="text-[11px] text-slate-400">Perbarui konfigurasi kolom dan tipe data</p>
                     </div>
                 </div>
                 <button type="button" @click="editModalOpen = false" class="text-slate-400 hover:text-slate-600">
@@ -459,9 +700,39 @@
                 </button>
             </div>
 
+            <!-- Peringatan Pembatasan Tipe jika sudah ada data tersimpan -->
+            <template x-if="editField.values_count > 0">
+                <div class="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs flex items-start gap-2">
+                    <svg class="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                    </svg>
+                    <div>
+                        <span class="font-bold">Perhatian:</span> Kolom ini memiliki <span class="font-bold" x-text="editField.values_count"></span> riwayat nilai tersimpan.
+                        Perubahan tipe data hanya diizinkan antara <span class="font-semibold underline">Teks Pendek (text)</span> dan <span class="font-semibold underline">Teks Panjang (textarea)</span>.
+                    </div>
+                </div>
+            </template>
+
             <form :action="'{{ url('/faskes-fields') }}/' + editField.id" method="POST" class="mt-4 space-y-3.5">
                 @csrf
                 @method('PUT')
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Tipe Data Input <span class="text-rose-500">*</span></label>
+                    <select name="type" x-model="editField.type" required
+                            class="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 font-semibold text-indigo-700">
+                        <option value="text" :disabled="!canChangeTypeTo('text')">Teks Pendek (text)</option>
+                        <option value="textarea" :disabled="!canChangeTypeTo('textarea')">Teks Panjang / Catatan (textarea)</option>
+                        <option value="number" :disabled="!canChangeTypeTo('number')">Angka / Jumlah (number)</option>
+                        <option value="date" :disabled="!canChangeTypeTo('date')">Tanggal (date)</option>
+                        <option value="boolean" :disabled="!canChangeTypeTo('boolean')">Ya / Tidak (boolean)</option>
+                        <option value="select" :disabled="!canChangeTypeTo('select')">Dropdown Satu Pilihan (select)</option>
+                        <option value="multiselect" :disabled="!canChangeTypeTo('multiselect')">Pilihan Ganda / Multi-Select (multiselect)</option>
+                        <option value="url" :disabled="!canChangeTypeTo('url')">Tautan Website (url)</option>
+                        <option value="email" :disabled="!canChangeTypeTo('email')">Alamat Email (email)</option>
+                        <option value="phone" :disabled="!canChangeTypeTo('phone')">Nomor Telepon (phone)</option>
+                    </select>
+                </div>
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Label Kolom <span class="text-rose-500">*</span></label>
@@ -471,7 +742,7 @@
 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-700 mb-1">Berlaku Untuk</label>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Lingkup Jenis Faskes</label>
                         <select name="jenis_faskes" x-model="editField.jenis_faskes"
                                 class="w-full text-xs px-2.5 py-2 border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500">
                             <option value="">Semua Jenis (Global)</option>
@@ -488,20 +759,89 @@
                     </div>
                 </div>
 
-                <div>
-                    <div class="flex items-center justify-between mb-1">
+                <!-- Konfigurasi Khusus Text (Edit) -->
+                <div x-show="editField.type === 'text'" class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5">
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-[11px] text-slate-600 mb-0.5">Maks. Karakter (1-255)</label>
+                            <input type="number" name="config[max_length]" x-model="editField.config.max_length" min="1" max="255"
+                                   class="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] text-slate-600 mb-0.5">Placeholder</label>
+                            <input type="text" name="config[placeholder]" x-model="editField.config.placeholder"
+                                   class="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] text-slate-600 mb-0.5">Teks Bantuan (Help Text)</label>
+                        <input type="text" name="config[help_text]" x-model="editField.config.help_text"
+                               class="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white">
+                    </div>
+                </div>
+
+                <!-- Konfigurasi Khusus Textarea (Edit) -->
+                <div x-show="editField.type === 'textarea'" class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5">
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-[11px] text-slate-600 mb-0.5">Maks. Karakter (1-5000)</label>
+                            <input type="number" name="config[max_length]" x-model="editField.config.max_length" min="1" max="5000"
+                                   class="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] text-slate-600 mb-0.5">Tinggi Baris (Rows: 2-10)</label>
+                            <input type="number" name="config[rows]" x-model="editField.config.rows" min="2" max="10"
+                                   class="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] text-slate-600 mb-0.5">Teks Bantuan (Help Text)</label>
+                        <input type="text" name="config[help_text]" x-model="editField.config.help_text"
+                               class="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white">
+                    </div>
+                </div>
+
+                <!-- Konfigurasi Khusus Number (Edit) -->
+                <div x-show="editField.type === 'number'" class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5">
+                    <div class="grid grid-cols-3 gap-2">
+                        <div>
+                            <label class="block text-[11px] text-slate-600 mb-0.5">Desimal (0-4)</label>
+                            <input type="number" name="config[decimals]" x-model="editField.config.decimals" min="0" max="4"
+                                   class="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] text-slate-600 mb-0.5">Nilai Min</label>
+                            <input type="number" step="any" name="config[min]" x-model="editField.config.min"
+                                   class="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] text-slate-600 mb-0.5">Nilai Max</label>
+                            <input type="number" step="any" name="config[max]" x-model="editField.config.max"
+                                   class="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] text-slate-600 mb-0.5">Satuan Akhiran (Unit)</label>
+                        <input type="text" name="config[unit]" x-model="editField.config.unit"
+                               class="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white">
+                    </div>
+                </div>
+
+                <!-- Konfigurasi Khusus Select / Multiselect (Edit) -->
+                <div x-show="editField.type === 'select' || editField.type === 'multiselect'" class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5">
+                    <div class="flex items-center justify-between">
                         <label class="text-xs font-semibold text-slate-700">Daftar Pilihan Opsi <span class="text-rose-500">*</span></label>
                         <button type="button" @click="addEditOption()"
                                 class="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800">
                             + Tambah Opsi
                         </button>
                     </div>
-                    <div class="space-y-1.5 max-h-44 overflow-y-auto pr-1">
+                    <div class="space-y-1.5 max-h-36 overflow-y-auto pr-1">
                         <template x-for="(opt, idx) in editField.options" :key="idx">
                             <div class="flex items-center gap-1.5">
-                                <input type="text" name="options[]" x-model="editField.options[idx]" required
+                                <input type="text" name="options[]" x-model="editField.options[idx]"
                                        :placeholder="'Opsi ' + (idx + 1)"
-                                       class="flex-1 text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                       class="flex-1 text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500">
                                 <button type="button" @click="removeEditOption(idx)"
                                         x-show="editField.options.length > 1"
                                         class="p-1.5 text-slate-400 hover:text-rose-600 transition">
@@ -512,19 +852,45 @@
                             </div>
                         </template>
                     </div>
+
+                    <div x-show="editField.type === 'multiselect'" class="pt-2 border-t border-slate-200">
+                        <label class="block text-[11px] text-slate-600 mb-0.5">Batas Maks. Pilihan (Opsional)</label>
+                        <input type="number" name="config[max_select]" x-model="editField.config.max_select" min="1" max="30"
+                               class="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white">
+                    </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-3 pt-2 border-t border-slate-100">
-                    <label class="inline-flex items-center gap-2 cursor-pointer">
+                <!-- Teks Bantuan Umum Edit -->
+                <div x-show="['url', 'email', 'phone', 'date', 'boolean'].includes(editField.type)" class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                    <label class="block text-[11px] text-slate-600 mb-0.5">Teks Bantuan Tambahan (Opsional)</label>
+                    <input type="text" name="config[help_text]" x-model="editField.config.help_text"
+                           class="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white">
+                </div>
+
+                <!-- Checkbox Opsi & Filter (Edit) -->
+                <div class="grid grid-cols-4 gap-2 pt-2 border-t border-slate-100">
+                    <label class="inline-flex items-center gap-1.5 cursor-pointer">
                         <input type="checkbox" name="is_required" value="1" x-model="editField.is_required"
                                class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
-                        <span class="text-xs text-slate-700 font-medium">Wajib diisi</span>
+                        <span class="text-xs text-slate-700 font-medium">Wajib</span>
                     </label>
 
-                    <label class="inline-flex items-center gap-2 cursor-pointer">
+                    <label class="inline-flex items-center gap-1.5 cursor-pointer">
                         <input type="checkbox" name="is_active" value="1" x-model="editField.is_active"
                                class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
                         <span class="text-xs text-slate-700 font-medium">Aktif</span>
+                    </label>
+
+                    <label class="inline-flex items-center gap-1.5 cursor-pointer">
+                        <input type="checkbox" name="is_filterable" value="1" x-model="editField.is_filterable"
+                               class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                        <span class="text-xs text-slate-700 font-medium">Filter</span>
+                    </label>
+
+                    <label class="inline-flex items-center gap-1.5 cursor-pointer">
+                        <input type="checkbox" name="show_in_list" value="1" x-model="editField.show_in_list"
+                               class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                        <span class="text-xs text-slate-700 font-medium">Di List</span>
                     </label>
                 </div>
 

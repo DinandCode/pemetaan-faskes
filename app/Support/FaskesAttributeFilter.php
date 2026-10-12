@@ -270,19 +270,84 @@ class FaskesAttributeFilter
         }
 
         // =========================================================================
-        // 3. FILTER KOLOM TAMBAHAN DINAMIS (Custom Fields dari Tugas 2)
+        // 3. FILTER KOLOM TAMBAHAN DINAMIS (Custom Fields Multi-Type Tugas 13)
         // =========================================================================
         if ($request->filled('custom_filter') && is_array($request->input('custom_filter'))) {
+            $fieldKeys = array_keys($request->input('custom_filter'));
+            $definitions = \App\Models\FaskesFieldDefinition::where('is_active', true)
+                ->whereIn('field_key', $fieldKeys)
+                ->get()
+                ->keyBy('field_key');
+
             foreach ($request->input('custom_filter') as $fieldKey => $filterVal) {
-                if ($filterVal !== null && $filterVal !== '') {
-                    $cleanVal = trim((string) $filterVal);
-                    $query->whereHas('fieldValues', function ($sub) use ($fieldKey, $cleanVal) {
-                        $sub->where('value', $cleanVal)
-                            ->whereHas('definition', function ($defSub) use ($fieldKey) {
-                                $defSub->where('field_key', $fieldKey);
-                            });
-                    });
+                if ($filterVal === null || $filterVal === '') {
+                    continue;
                 }
+
+                $def = $definitions->get($fieldKey);
+                // Jika definisi ditemukan dan memiliki atribut is_filterable bernilai false, abaikan
+                if ($def && isset($def->is_filterable) && ! $def->is_filterable) {
+                    continue;
+                }
+
+                $defType = $def ? $def->type : 'select';
+
+                $query->whereHas('fieldValues', function ($sub) use ($fieldKey, $filterVal, $defType) {
+                    $sub->whereHas('definition', function ($defSub) use ($fieldKey) {
+                        $defSub->where('field_key', $fieldKey);
+                    });
+
+                    if ($defType === \App\Models\FaskesFieldDefinition::TYPE_BOOLEAN) {
+                        $lower = strtolower(trim((string) $filterVal));
+                        if (in_array($lower, ['1', 'true', 'ya'], true)) {
+                            $sub->where(function ($q) {
+                                $q->where('value_bool', true)->orWhere('value', 'Ya');
+                            });
+                        } elseif (in_array($lower, ['0', 'false', 'tidak'], true)) {
+                            $sub->where(function ($q) {
+                                $q->where('value_bool', false)->orWhere('value', 'Tidak');
+                            });
+                        }
+                    } elseif ($defType === \App\Models\FaskesFieldDefinition::TYPE_NUMBER) {
+                        if (is_array($filterVal)) {
+                            if (isset($filterVal['min']) && $filterVal['min'] !== '') {
+                                $sub->where('value_number', '>=', (float) $filterVal['min']);
+                            }
+                            if (isset($filterVal['max']) && $filterVal['max'] !== '') {
+                                $sub->where('value_number', '<=', (float) $filterVal['max']);
+                            }
+                        } else {
+                            $numVal = (float) trim((string) $filterVal);
+                            $sub->where(function ($q) use ($numVal, $filterVal) {
+                                $q->where('value_number', $numVal)
+                                  ->orWhere('value', trim((string) $filterVal));
+                            });
+                        }
+                    } elseif ($defType === \App\Models\FaskesFieldDefinition::TYPE_MULTISELECT) {
+                        if (is_array($filterVal)) {
+                            $sub->where(function ($q) use ($filterVal) {
+                                foreach ($filterVal as $item) {
+                                    $cItem = trim((string) $item);
+                                    if ($cItem !== '') {
+                                        $q->orWhere('value', 'like', "%{$cItem}%");
+                                    }
+                                }
+                            });
+                        } else {
+                            $cleanVal = trim((string) $filterVal);
+                            $sub->where('value', 'like', "%{$cleanVal}%");
+                        }
+                    } elseif (in_array($defType, [\App\Models\FaskesFieldDefinition::TYPE_TEXT, \App\Models\FaskesFieldDefinition::TYPE_TEXTAREA], true)) {
+                        $cleanVal = trim((string) $filterVal);
+                        $driver = \Illuminate\Support\Facades\DB::getDriverName();
+                        $likeOp = $driver === 'pgsql' ? 'ilike' : 'like';
+                        $sub->where('value', $likeOp, "%{$cleanVal}%");
+                    } else {
+                        // Select, Date, Url, Email, Phone
+                        $cleanVal = trim((string) $filterVal);
+                        $sub->where('value', $cleanVal);
+                    }
+                });
             }
         }
 

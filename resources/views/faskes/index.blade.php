@@ -379,25 +379,54 @@
                         </select>
                     </div>
 
-                    <!-- 9. Kolom Tambahan Dinamis (dari Tugas 2) -->
+                    <!-- 9. Kolom Tambahan Dinamis (dari Tugas 13) -->
                     @if(isset($activeFieldDefinitions) && $activeFieldDefinitions->count() > 0)
                         @foreach($activeFieldDefinitions as $def)
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-600 mb-1.5">
-                                    {{ $def->label }}
-                                    @if($def->jenis_faskes)
-                                        <span class="text-[10px] text-slate-400 font-normal">({{ $def->jenis_faskes }})</span>
+                            @if($def->is_filterable ?? true)
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1.5">
+                                        {{ $def->label }}
+                                        @if($def->jenis_faskes)
+                                            <span class="text-[10px] text-slate-400 font-normal">({{ $def->jenis_faskes }})</span>
+                                        @endif
+                                    </label>
+                                    @if(in_array($def->type, ['select', 'multiselect']))
+                                        <select x-model="filters.custom_filter['{{ $def->field_key }}']"
+                                                @change="onDropdownChange()"
+                                                class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                                            <option value="">Semua {{ $def->label }}</option>
+                                            @foreach((array) $def->options as $opt)
+                                                <option value="{{ $opt }}">{{ $opt }}</option>
+                                            @endforeach
+                                        </select>
+                                    @elseif($def->type === 'boolean')
+                                        <select x-model="filters.custom_filter['{{ $def->field_key }}']"
+                                                @change="onDropdownChange()"
+                                                class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                                            <option value="">Semua {{ $def->label }}</option>
+                                            <option value="Ya">Ya</option>
+                                            <option value="Tidak">Tidak</option>
+                                        </select>
+                                    @elseif($def->type === 'number')
+                                        <input type="number" step="any"
+                                               x-model.debounce.400ms="filters.custom_filter['{{ $def->field_key }}']"
+                                               @input="onSearchInput()"
+                                               placeholder="Nilai {{ $def->label }}..."
+                                               class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                                    @elseif($def->type === 'date')
+                                        <input type="date"
+                                               x-model="filters.custom_filter['{{ $def->field_key }}']"
+                                               @change="onDropdownChange()"
+                                               class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                                    @else
+                                        <input type="text"
+                                               x-model.debounce.400ms="filters.custom_filter['{{ $def->field_key }}']"
+                                               @input="onSearchInput()"
+                                               placeholder="Cari {{ $def->label }}..."
+                                               class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
                                     @endif
-                                </label>
-                                <select x-model="filters.custom_filter['{{ $def->field_key }}']"
-                                        @change="onDropdownChange()"
-                                        class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
-                                    <option value="">Semua {{ $def->label }}</option>
-                                    @foreach($def->options as $opt)
-                                        <option value="{{ $opt }}">{{ $opt }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
+                                </div>
+                            @endif
                         @endforeach
                     @endif
 

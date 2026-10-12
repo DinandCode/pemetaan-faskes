@@ -231,14 +231,63 @@
                                 <span class="text-slate-400 italic">-</span>
                             @endif
 
-                            {{-- Kolom Tambahan (Custom Fields) Chips --}}
+                            {{-- Kolom Tambahan (Custom Fields) Chips (Tugas 13) --}}
                             @if($faskes->fieldValues && $faskes->fieldValues->isNotEmpty())
                                 <div class="flex flex-wrap gap-1 mt-1.5 pt-1 border-t border-slate-100">
                                     @foreach($faskes->fieldValues as $fv)
-                                        @if($fv->definition && $fv->value)
-                                            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-200" title="{{ $fv->definition->label }}: {{ $fv->value }}">
-                                                <span class="text-indigo-500 font-semibold">{{ $fv->definition->label }}:</span> {{ $fv->value }}
-                                            </span>
+                                        @php
+                                            $def = $fv->definition;
+                                        @endphp
+                                        @if($def && $def->is_active && ($def->show_in_list ?? true) && ($fv->value !== null && $fv->value !== ''))
+                                            @php
+                                                $type = $def->type ?? 'select';
+                                            @endphp
+                                            @if($type === 'boolean')
+                                                @php $isYa = in_array(strtolower($fv->value), ['ya', '1', 'true', 'yes'], true); @endphp
+                                                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium border {{ $isYa ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-600 border-slate-200' }}" title="{{ $def->label }}: {{ $isYa ? 'Ya' : 'Tidak' }}">
+                                                    <span class="font-semibold text-slate-500">{{ $def->label }}:</span>
+                                                    <span>{{ $isYa ? 'Ya' : 'Tidak' }}</span>
+                                                </span>
+                                            @elseif($type === 'number')
+                                                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200" title="{{ $def->label }}: {{ $fv->formatted_value }}">
+                                                    <span class="text-emerald-600 font-semibold">{{ $def->label }}:</span>
+                                                    <span>{{ $fv->formatted_value }}</span>
+                                                </span>
+                                            @elseif($type === 'date')
+                                                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-50 text-amber-800 border border-amber-200" title="{{ $def->label }}: {{ $fv->formatted_value }}">
+                                                    <span class="text-amber-700 font-semibold">{{ $def->label }}:</span>
+                                                    <span>{{ $fv->formatted_value }}</span>
+                                                </span>
+                                            @elseif($type === 'multiselect')
+                                                @php
+                                                    $items = is_array($fv->value_json) ? $fv->value_json : array_filter(array_map('trim', explode(';', $fv->value)));
+                                                @endphp
+                                                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-teal-50 text-teal-800 border border-teal-200" title="{{ $def->label }}: {{ implode(', ', $items) }}">
+                                                    <span class="text-teal-600 font-semibold">{{ $def->label }}:</span>
+                                                    <span>{{ implode(', ', $items) }}</span>
+                                                </span>
+                                            @elseif($type === 'url')
+                                                <a href="{{ $fv->value }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-sky-50 text-sky-700 hover:text-sky-800 hover:underline border border-sky-200" title="{{ $def->label }}: {{ $fv->value }}">
+                                                    <span class="text-sky-600 font-semibold">{{ $def->label }}:</span>
+                                                    <svg class="w-2.5 h-2.5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                                    <span>{{ \Illuminate\Support\Str::limit(parse_url($fv->value, PHP_URL_HOST) ?: $fv->value, 20) }}</span>
+                                                </a>
+                                            @elseif($type === 'email')
+                                                <a href="mailto:{{ $fv->value }}" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-pink-50 text-pink-700 hover:underline border border-pink-200" title="{{ $def->label }}: {{ $fv->value }}">
+                                                    <span class="text-pink-600 font-semibold">{{ $def->label }}:</span>
+                                                    <span>{{ $fv->value }}</span>
+                                                </a>
+                                            @elseif($type === 'phone')
+                                                <a href="tel:{{ preg_replace('/[^0-9+]/', '', $fv->value) }}" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-lime-50 text-lime-800 hover:underline border border-lime-200" title="{{ $def->label }}: {{ $fv->value }}">
+                                                    <span class="text-lime-700 font-semibold">{{ $def->label }}:</span>
+                                                    <span>{{ $fv->value }}</span>
+                                                </a>
+                                            @else
+                                                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-200" title="{{ $def->label }}: {{ $fv->value }}">
+                                                    <span class="text-indigo-500 font-semibold">{{ $def->label }}:</span>
+                                                    <span>{{ \Illuminate\Support\Str::limit($fv->value, 35) }}</span>
+                                                </span>
+                                            @endif
                                         @endif
                                     @endforeach
                                 </div>

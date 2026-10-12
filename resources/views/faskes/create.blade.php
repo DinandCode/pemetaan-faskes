@@ -1644,28 +1644,151 @@
                         </button>
                     </div>
 
-                    <!-- Dynamic Fields Grid -->
+                    <!-- Dynamic Fields Grid (10 Tipe Data) -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3" x-show="visibleCustomFields.length > 0">
                         <template x-for="field in visibleCustomFields" :key="field.id">
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-700 mb-1.5">
+                            <div class="space-y-1">
+                                <label class="block text-xs font-semibold text-slate-700">
                                     <span x-text="field.label"></span>
                                     <template x-if="field.is_required">
                                         <span class="text-rose-500 font-bold">*</span>
                                     </template>
                                 </label>
-                                <select :name="'custom[' + field.id + ']'"
-                                        :required="field.is_required"
-                                        x-model="customValues[field.id]"
-                                        class="input-modern w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
-                                    <option value="">-- Pilih --</option>
-                                    <template x-for="opt in field.options" :key="opt">
-                                        <option :value="opt" x-text="opt" :selected="customValues[field.id] == opt"></option>
-                                    </template>
-                                    <template x-if="field.old_unlisted_value">
-                                        <option :value="field.old_unlisted_value" x-text="field.old_unlisted_value + ' (nilai lama)'" selected></option>
-                                    </template>
-                                </select>
+
+                                <!-- 1. TEXT -->
+                                <template x-if="field.type === 'text'">
+                                    <input type="text"
+                                           :name="'custom[' + field.id + ']'"
+                                           :required="field.is_required"
+                                           :maxlength="field.config && field.config.max_length ? field.config.max_length : 255"
+                                           :placeholder="field.config && field.config.placeholder ? field.config.placeholder : ''"
+                                           x-model="customValues[field.id]"
+                                           class="input-modern w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+                                </template>
+
+                                <!-- 2. TEXTAREA -->
+                                <template x-if="field.type === 'textarea'">
+                                    <textarea :name="'custom[' + field.id + ']'"
+                                              :required="field.is_required"
+                                              :rows="field.config && field.config.rows ? field.config.rows : 3"
+                                              :maxlength="field.config && field.config.max_length ? field.config.max_length : 2000"
+                                              :placeholder="field.config && field.config.placeholder ? field.config.placeholder : ''"
+                                              x-model="customValues[field.id]"
+                                              class="input-modern w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"></textarea>
+                                </template>
+
+                                <!-- 3. NUMBER -->
+                                <template x-if="field.type === 'number'">
+                                    <div class="relative">
+                                        <input type="number"
+                                               :name="'custom[' + field.id + ']'"
+                                               :required="field.is_required"
+                                               :step="field.config && field.config.decimals ? Math.pow(10, -field.config.decimals) : '1'"
+                                               :min="field.config && field.config.min !== null ? field.config.min : ''"
+                                               :max="field.config && field.config.max !== null ? field.config.max : ''"
+                                               x-model="customValues[field.id]"
+                                               class="input-modern w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                                               :class="field.config && field.config.unit ? 'pr-12' : ''">
+                                        <template x-if="field.config && field.config.unit">
+                                            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400 select-none" x-text="field.config.unit"></span>
+                                        </template>
+                                    </div>
+                                </template>
+
+                                <!-- 4. DATE -->
+                                <template x-if="field.type === 'date'">
+                                    <input type="date"
+                                           :name="'custom[' + field.id + ']'"
+                                           :required="field.is_required"
+                                           x-model="customValues[field.id]"
+                                           class="input-modern w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+                                </template>
+
+                                <!-- 5. BOOLEAN -->
+                                <template x-if="field.type === 'boolean'">
+                                    <select :name="'custom[' + field.id + ']'"
+                                            :required="field.is_required"
+                                            x-model="customValues[field.id]"
+                                            class="input-modern w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+                                        <option value="">-- Belum Diisi --</option>
+                                        <option value="Ya" :selected="customValues[field.id] === 'Ya' || customValues[field.id] === true || customValues[field.id] === '1'">Ya</option>
+                                        <option value="Tidak" :selected="customValues[field.id] === 'Tidak' || customValues[field.id] === false || customValues[field.id] === '0'">Tidak</option>
+                                    </select>
+                                </template>
+
+                                <!-- 6. SELECT -->
+                                <template x-if="field.type === 'select'">
+                                    <select :name="'custom[' + field.id + ']'"
+                                            :required="field.is_required"
+                                            x-model="customValues[field.id]"
+                                            class="input-modern w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+                                        <option value="">-- Pilih --</option>
+                                        <template x-for="opt in field.options" :key="opt">
+                                            <option :value="opt" x-text="opt" :selected="customValues[field.id] == opt"></option>
+                                        </template>
+                                        <template x-if="field.old_unlisted_value">
+                                            <option :value="field.old_unlisted_value" x-text="field.old_unlisted_value + ' (nilai lama)'" selected></option>
+                                        </template>
+                                    </select>
+                                </template>
+
+                                <!-- 7. MULTISELECT -->
+                                <template x-if="field.type === 'multiselect'">
+                                    <div class="space-y-1">
+                                        <div class="flex flex-wrap gap-1.5 p-2 bg-slate-50 border border-slate-200 rounded-lg min-h-[38px]">
+                                            <template x-for="opt in field.options" :key="opt">
+                                                <label class="inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs border cursor-pointer transition select-none"
+                                                       :class="isMultiselectChecked(field.id, opt) ? 'bg-indigo-600 text-white border-indigo-600 font-semibold' : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'">
+                                                    <input type="checkbox"
+                                                           :name="'custom[' + field.id + '][]'"
+                                                           :value="opt"
+                                                           :checked="isMultiselectChecked(field.id, opt)"
+                                                           @change="toggleMultiselect(field.id, opt, field.config ? field.config.max_select : null)"
+                                                           class="hidden">
+                                                    <span x-text="opt"></span>
+                                                </label>
+                                            </template>
+                                        </div>
+                                        <template x-if="field.config && field.config.max_select">
+                                            <p class="text-[10px] text-slate-400">Maksimal: <span class="font-semibold text-slate-600" x-text="field.config.max_select"></span> pilihan</p>
+                                        </template>
+                                    </div>
+                                </template>
+
+                                <!-- 8. URL -->
+                                <template x-if="field.type === 'url'">
+                                    <input type="url"
+                                           :name="'custom[' + field.id + ']'"
+                                           :required="field.is_required"
+                                           :placeholder="field.config && field.config.placeholder ? field.config.placeholder : 'https://...'"
+                                           x-model="customValues[field.id]"
+                                           class="input-modern w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+                                </template>
+
+                                <!-- 9. EMAIL -->
+                                <template x-if="field.type === 'email'">
+                                    <input type="email"
+                                           :name="'custom[' + field.id + ']'"
+                                           :required="field.is_required"
+                                           :placeholder="field.config && field.config.placeholder ? field.config.placeholder : 'nama@domain.com'"
+                                           x-model="customValues[field.id]"
+                                           class="input-modern w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+                                </template>
+
+                                <!-- 10. PHONE -->
+                                <template x-if="field.type === 'phone'">
+                                    <input type="tel"
+                                           :name="'custom[' + field.id + ']'"
+                                           :required="field.is_required"
+                                           :placeholder="field.config && field.config.placeholder ? field.config.placeholder : '08xxxxxxxxxx'"
+                                           x-model="customValues[field.id]"
+                                           class="input-modern w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+                                </template>
+
+                                <!-- Help text -->
+                                <template x-if="field.config && field.config.help_text">
+                                    <p class="text-[10.5px] text-slate-400 mt-0.5" x-text="field.config.help_text"></p>
+                                </template>
                             </div>
                         </template>
                     </div>
@@ -1872,6 +1995,29 @@
                             old_unlisted_value: oldUnlisted
                         };
                     });
+                },
+
+                isMultiselectChecked(fieldId, opt) {
+                    const val = this.customValues ? this.customValues[fieldId] : null;
+                    if (Array.isArray(val)) return val.includes(opt);
+                    if (typeof val === 'string' && val) return val.split(';').map(s => s.trim()).includes(opt);
+                    return false;
+                },
+                toggleMultiselect(fieldId, opt, maxSelect) {
+                    if (!this.customValues) this.customValues = {};
+                    let val = this.customValues[fieldId];
+                    let arr = Array.isArray(val) ? [...val] : (typeof val === 'string' && val ? val.split(';').map(s => s.trim()) : []);
+                    const idx = arr.indexOf(opt);
+                    if (idx > -1) {
+                        arr.splice(idx, 1);
+                    } else {
+                        if (maxSelect && arr.length >= maxSelect) {
+                            alert('Maksimal ' + maxSelect + ' pilihan untuk kolom ini.');
+                            return;
+                        }
+                        arr.push(opt);
+                    }
+                    this.customValues[fieldId] = arr;
                 },
 
                 openCustomFieldModal() {
