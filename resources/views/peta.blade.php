@@ -134,6 +134,32 @@
         /* Ikon default: gaya outline, warna ikut currentColor */
         .icon { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
         .icon-solid { fill: currentColor; stroke: none; }
+
+        /* Accordion CSS Transition (display grid 0fr -> 1fr) (Tugas 12B) */
+        .accordion-grid-wrapper {
+            display: grid;
+            grid-template-rows: 0fr;
+            transition: grid-template-rows 250ms cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .accordion-grid-wrapper.is-open {
+            grid-template-rows: 1fr;
+        }
+        .accordion-grid-inner {
+            overflow: hidden;
+            min-height: 0;
+        }
+
+        /* prefers-reduced-motion: Nonaktifkan animasi transisi bagi user yang sensitif gerak */
+        @media (prefers-reduced-motion: reduce) {
+            .accordion-grid-wrapper,
+            aside,
+            .transition-transform,
+            .transition-all,
+            .transition {
+                transition-duration: 0.01ms !important;
+                animation-duration: 0.01ms !important;
+            }
+        }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-800 antialiased overflow-hidden h-screen w-screen flex flex-col font-sans"
@@ -208,6 +234,16 @@
             </symbol>
             <symbol id="ic-lock" viewBox="0 0 24 24">
                 <path d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/>
+            </symbol>
+            <symbol id="ic-eye" viewBox="0 0 24 24">
+                <path d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/>
+                <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </symbol>
+            <symbol id="ic-fullscreen" viewBox="0 0 24 24">
+                <path d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75v4.5m0-4.5h-4.5m4.5 0L15 9m5.25 11.25v-4.5m0 4.5h-4.5m4.5 0L15 15"/>
+            </symbol>
+            <symbol id="ic-fullscreen-exit" viewBox="0 0 24 24">
+                <path d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9V4.5M15 9h4.5M15 9l5.25-5.25M15 15v4.5M15 15h4.5m0 0l5.25 5.25"/>
             </symbol>
         </defs>
     </svg>
@@ -356,11 +392,38 @@
                     <span>Titik event sudah terkunci. Klik &lsquo;Hapus Titik&rsquo; di panel untuk memindahkannya.</span>
                 </div>
             </div>
+
+            <!-- Tombol Layar Penuh (Fullscreen API) di Kontrol Peta (Tugas 12A) -->
+            <div class="absolute bottom-6 right-4 sm:right-6 z-[400] pointer-events-auto">
+                <button type="button"
+                        @click="toggleFullscreen()"
+                        :title="isFullscreen ? 'Keluar dari Layar Penuh' : 'Layar Penuh (Fullscreen)'"
+                        class="p-2 sm:p-2.5 rounded-xl bg-white/95 backdrop-blur-sm hover:bg-white text-slate-700 hover:text-slate-900 shadow-md border border-slate-200 transition focus:outline-none focus:ring-2 focus:ring-blue-400 flex items-center justify-center">
+                    <template x-if="!isFullscreen">
+                        <svg class="icon w-4 h-4"><use href="#ic-fullscreen"/></svg>
+                    </template>
+                    <template x-if="isFullscreen">
+                        <svg class="icon w-4 h-4"><use href="#ic-fullscreen-exit"/></svg>
+                    </template>
+                </button>
+            </div>
         </div>
 
-        <!-- Sidebar Kontrol: Filter Atribut & Analisis Lokasi Event -->
-        <aside class="absolute lg:relative top-0 right-0 h-full w-full sm:w-[400px] lg:w-[440px] bg-white border-l border-slate-200 shadow-2xl z-20 flex flex-col transition-transform duration-300 ease-in-out"
-               :class="sidebarOpen ? 'translate-x-0' : 'translate-x-full lg:hidden'">
+        <!-- Mobile Backdrop Overlay (< 768px / md:hidden) saat Sidebar Terbuka (Tugas 12A) -->
+        <div x-show="sidebarOpen"
+             x-cloak
+             @click="sidebarOpen = false"
+             x-transition:enter="transition-opacity ease-out duration-250"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition-opacity ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-20 md:hidden pointer-events-auto"></div>
+
+        <!-- Sidebar Kontrol: Filter Atribut & Analisis Lokasi Event (Tugas 12A & 12B) -->
+        <aside class="fixed md:relative top-0 right-0 h-full w-[88vw] max-w-[420px] md:w-[400px] lg:w-[440px] bg-white border-l border-slate-200 shadow-2xl z-30 md:z-20 flex flex-col transition-all duration-250 ease-in-out"
+               :class="sidebarOpen ? 'translate-x-0 opacity-100' : 'translate-x-full md:translate-x-0 md:w-0 md:overflow-hidden md:opacity-0 md:border-l-0'">
 
             <!-- Sidebar Header & Tab Navigation -->
             <div class="p-3 border-b border-slate-200 bg-slate-50/90 flex-shrink-0 space-y-2">
@@ -469,236 +532,241 @@
                     </div>
                 </template>
 
-                <!-- 1. Pilihan Jenis Faskes (Checkbox) -->
-                <div class="bg-white rounded-xl p-3.5 border border-slate-200 shadow-sm space-y-2.5">
-                    <div class="flex items-center justify-between border-b border-slate-100 pb-2">
-                        <label class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                            <svg class="icon w-4 h-4 text-slate-600"><use href="#ic-hospital"/></svg>
-                            <span>Pilihan Jenis Faskes</span>
-                        </label>
-                        <div class="space-x-1 text-[11px] flex-shrink-0">
-                            <button type="button" @click="selectAllJenis()" class="text-blue-600 hover:text-blue-800 font-medium">Pilih Semua</button>
-                            <span class="text-slate-300">&bull;</span>
-                            <button type="button" @click="clearAllJenis()" class="text-slate-500 hover:text-slate-700 font-medium">Kosongkan</button>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 min-[380px]:grid-cols-2 gap-2 text-xs">
-                        <!-- Rumah Sakit -->
-                        <label class="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-slate-50 border border-slate-100 cursor-pointer transition">
-                            <input type="checkbox" value="rumah_sakit" x-model="selectedJenis" @change="applyDynamicFilters()"
-                                   class="rounded text-red-600 focus:ring-red-500">
-                            <span class="w-2.5 h-2.5 rounded-full bg-red-500 flex-shrink-0"></span>
-                            <span class="text-slate-700 font-medium truncate">Rumah Sakit</span>
-                        </label>
-
-                        <!-- Puskesmas -->
-                        <label class="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-slate-50 border border-slate-100 cursor-pointer transition">
-                            <input type="checkbox" value="puskesmas" x-model="selectedJenis" @change="applyDynamicFilters()"
-                                   class="rounded text-blue-600 focus:ring-blue-500">
-                            <span class="w-2.5 h-2.5 rounded-full bg-blue-500 flex-shrink-0"></span>
-                            <span class="text-slate-700 font-medium truncate">Puskesmas</span>
-                        </label>
-
-                        <!-- Klinik Pratama -->
-                        <label class="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-slate-50 border border-slate-100 cursor-pointer transition">
-                            <input type="checkbox" value="klinik_pratama" x-model="selectedJenis" @change="applyDynamicFilters()"
-                                   class="rounded text-emerald-600 focus:ring-emerald-500">
-                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 flex-shrink-0"></span>
-                            <span class="text-slate-700 font-medium truncate">Klinik Pratama</span>
-                        </label>
-
-                        <!-- Klinik Utama -->
-                        <label class="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-slate-50 border border-slate-100 cursor-pointer transition">
-                            <input type="checkbox" value="klinik_utama" x-model="selectedJenis" @change="applyDynamicFilters()"
-                                   class="rounded text-teal-600 focus:ring-teal-500">
-                            <span class="w-2.5 h-2.5 rounded-full bg-teal-500 flex-shrink-0"></span>
-                            <span class="text-slate-700 font-medium truncate">Klinik Utama</span>
-                        </label>
-
-                        <!-- Laboratorium -->
-                        <label class="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-slate-50 border border-slate-100 cursor-pointer transition">
-                            <input type="checkbox" value="laboratorium" x-model="selectedJenis" @change="applyDynamicFilters()"
-                                   class="rounded text-purple-600 focus:ring-purple-500">
-                            <span class="w-2.5 h-2.5 rounded-full bg-purple-500 flex-shrink-0"></span>
-                            <span class="text-slate-700 font-medium truncate">Laboratorium</span>
-                        </label>
-
-                        <!-- UPKDK -->
-                        <label class="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-slate-50 border border-slate-100 cursor-pointer transition">
-                            <input type="checkbox" value="upkdk" x-model="selectedJenis" @change="applyDynamicFilters()"
-                                   class="rounded text-amber-600 focus:ring-amber-500">
-                            <span class="w-2.5 h-2.5 rounded-full bg-amber-500 flex-shrink-0"></span>
-                            <span class="text-slate-700 font-medium truncate">UPKDK</span>
-                        </label>
-
-                        <!-- Griya Sehat -->
-                        <label class="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-slate-50 border border-slate-100 cursor-pointer transition">
-                            <input type="checkbox" value="griya_sehat" x-model="selectedJenis" @change="applyDynamicFilters()"
-                                   class="rounded text-cyan-600 focus:ring-cyan-500">
-                            <span class="w-2.5 h-2.5 rounded-full bg-cyan-500 flex-shrink-0"></span>
-                            <span class="text-slate-700 font-medium truncate">Griya Sehat</span>
-                        </label>
-
-                        <!-- TPMD -->
-                        <label class="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-slate-50 border border-slate-100 cursor-pointer transition">
-                            <input type="checkbox" value="tpmd" x-model="selectedJenis" @change="applyDynamicFilters()"
-                                   class="rounded text-sky-600 focus:ring-sky-500">
-                            <span class="w-2.5 h-2.5 rounded-full bg-sky-500 flex-shrink-0"></span>
-                            <span class="text-slate-700 font-medium truncate">TPMD (Dokter)</span>
-                        </label>
-
-                        <!-- TPMDG -->
-                        <label class="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-slate-50 border border-slate-100 cursor-pointer transition">
-                            <input type="checkbox" value="tpmdg" x-model="selectedJenis" @change="applyDynamicFilters()"
-                                   class="rounded text-indigo-600 focus:ring-indigo-500">
-                            <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 flex-shrink-0"></span>
-                            <span class="text-slate-700 font-medium truncate">TPMDG (Dokter Gigi)</span>
-                        </label>
-
-                        <!-- TPMB -->
-                        <label class="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-slate-50 border border-slate-100 cursor-pointer transition">
-                            <input type="checkbox" value="tpmb" x-model="selectedJenis" @change="applyDynamicFilters()"
-                                   class="rounded text-pink-600 focus:ring-pink-500">
-                            <span class="w-2.5 h-2.5 rounded-full bg-pink-500 flex-shrink-0"></span>
-                            <span class="text-slate-700 font-medium truncate">TPMB (Bidan)</span>
-                        </label>
-
-                        <!-- TPMP -->
-                        <label class="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-slate-50 border border-slate-100 cursor-pointer transition">
-                            <input type="checkbox" value="tpmp" x-model="selectedJenis" @change="applyDynamicFilters()"
-                                   class="rounded text-lime-600 focus:ring-lime-500">
-                            <span class="w-2.5 h-2.5 rounded-full bg-lime-500 flex-shrink-0"></span>
-                            <span class="text-slate-700 font-medium truncate">TPMP (Perawat)</span>
-                        </label>
+                <!-- Kontrol Buka Semua / Tutup Semua Accordion (Tugas 12B) -->
+                <div class="flex items-center justify-between px-1 text-xs">
+                    <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Kelompok Filter</span>
+                    <div class="flex items-center gap-2">
+                        <button type="button" @click="toggleAllAccordions(true)"
+                                class="text-[11px] text-blue-600 hover:text-blue-800 font-semibold transition focus:outline-none">
+                            Buka Semua
+                        </button>
+                        <span class="text-slate-300">&bull;</span>
+                        <button type="button" @click="toggleAllAccordions(false)"
+                                class="text-[11px] text-slate-500 hover:text-slate-700 font-semibold transition focus:outline-none">
+                            Tutup Semua
+                        </button>
                     </div>
                 </div>
 
-                <!-- 2. Filter Spesifik (Atribut Child Tables via Eloquent whereHas) -->
-                <div class="bg-white rounded-xl p-3.5 border border-slate-200 shadow-sm space-y-2.5">
-                    <label class="text-xs font-bold text-slate-800 flex items-center gap-1.5 border-b border-slate-100 pb-2">
-                        <svg class="icon w-4 h-4 text-slate-600"><use href="#ic-bolt"/></svg>
-                        <span>Filter Spesifik Layanan & Fasilitas</span>
-                    </label>
-
-                    <div class="space-y-2 text-xs">
-                        <!-- Ambulans Gadar / Transport -->
-                        <label class="flex items-center justify-between gap-2 p-2 rounded-lg border border-slate-200 hover:bg-amber-50/50 cursor-pointer transition"
-                               :class="filterAmbulans ? 'bg-amber-50 border-amber-300' : 'bg-white'">
-                            <div class="flex items-center gap-2.5 min-w-0">
-                                <svg class="icon w-5 h-5 text-amber-600 flex-shrink-0"><use href="#ic-medical"/></svg>
-                                <div class="min-w-0">
-                                    <div class="font-bold text-slate-800">Memiliki Ambulans Gadar / Transport</div>
-                                    <div class="text-[10px] text-slate-500">RS, Puskesmas, atau Klinik yang siaga ambulans</div>
-                                </div>
-                            </div>
-                            <input type="checkbox" x-model="filterAmbulans" @change="applyDynamicFilters()"
-                                   class="h-4 w-4 rounded text-amber-600 focus:ring-amber-500 flex-shrink-0">
-                        </label>
-
-                        <!-- Melayani BPJS -->
-                        <label class="flex items-center justify-between gap-2 p-2 rounded-lg border border-slate-200 hover:bg-emerald-50/50 cursor-pointer transition"
-                               :class="filterBpjs ? 'bg-emerald-50 border-emerald-300' : 'bg-white'">
-                            <div class="flex items-center gap-2.5 min-w-0">
-                                <svg class="icon w-5 h-5 text-emerald-600 flex-shrink-0"><use href="#ic-card"/></svg>
-                                <div class="min-w-0">
-                                    <div class="font-bold text-slate-800">Melayani Pasien BPJS Kesehatan</div>
-                                    <div class="text-[10px] text-slate-500">Puskesmas, RS, dan Klinik Pratama mitra BPJS</div>
-                                </div>
-                            </div>
-                            <input type="checkbox" x-model="filterBpjs" @change="applyDynamicFilters()"
-                                   class="h-4 w-4 rounded text-emerald-600 focus:ring-emerald-500 flex-shrink-0">
-                        </label>
-
-                        <!-- Memiliki Bed Rawat Inap -->
-                        <label class="flex items-center justify-between gap-2 p-2 rounded-lg border border-slate-200 hover:bg-blue-50/50 cursor-pointer transition"
-                               :class="filterRawatInap ? 'bg-blue-50 border-blue-300' : 'bg-white'">
-                            <div class="flex items-center gap-2.5 min-w-0">
-                                <svg class="icon w-5 h-5 text-blue-600 flex-shrink-0"><use href="#ic-bed"/></svg>
-                                <div class="min-w-0">
-                                    <div class="font-bold text-slate-800">Memiliki Bed Rawat Inap</div>
-                                    <div class="text-[10px] text-slate-500">RS, Puskesmas Rawat Inap, atau Klinik berbed</div>
-                                </div>
-                            </div>
-                            <input type="checkbox" x-model="filterRawatInap" @change="applyDynamicFilters()"
-                                   class="h-4 w-4 rounded text-blue-600 focus:ring-blue-500 flex-shrink-0">
-                        </label>
-
-                        <!-- Status PONED (Khusus Puskesmas) -->
-                        <label class="flex items-center justify-between gap-2 p-2 rounded-lg border border-slate-200 hover:bg-rose-50/50 cursor-pointer transition"
-                               :class="filterPoned ? 'bg-rose-50 border-rose-300' : 'bg-white'">
-                            <div class="flex items-center gap-2.5 min-w-0">
-                                <svg class="icon w-5 h-5 text-rose-600 flex-shrink-0"><use href="#ic-heart"/></svg>
-                                <div class="min-w-0">
-                                    <div class="font-bold text-slate-800">Status PONED (Khusus Puskesmas)</div>
-                                    <div class="text-[10px] text-slate-500">Pelayanan Obstetri Neonatal Emergensi Dasar</div>
-                                </div>
-                            </div>
-                            <input type="checkbox" x-model="filterPoned" @change="applyDynamicFilters()"
-                                   class="h-4 w-4 rounded text-rose-600 focus:ring-rose-500 flex-shrink-0">
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Layer Batas Wilayah Kabupaten (Garis Pembatas Non-Interaktif) -->
-                <div class="bg-white rounded-xl p-3 border border-slate-200 shadow-sm flex items-center justify-between gap-2 text-xs">
-                    <div class="flex items-center gap-2.5 min-w-0">
-                        <svg class="icon w-5 h-5 text-slate-600 flex-shrink-0"><use href="#ic-map"/></svg>
-                        <div class="min-w-0">
-                            <div class="font-bold text-slate-800">Layer Batas Kabupaten</div>
-                            <div class="text-[10px] text-slate-500">Garis batas luar Kab. Banyumas saja (tanpa batas kecamatan)</div>
-                        </div>
-                    </div>
+                <!-- 1. Pilihan Jenis Faskes (Accordion Group 1) -->
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                     <button type="button"
-                            @click="toggleKabupatenLayer()"
-                            :class="showKabupatenLayer ? 'bg-blue-600' : 'bg-slate-300'"
-                            class="relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
-                            role="switch"
-                            :aria-checked="showKabupatenLayer"
-                            title="Nyalakan / Matikan Garis Batas Kabupaten">
-                        <span :class="showKabupatenLayer ? 'translate-x-4' : 'translate-x-0'"
-                              class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"></span>
+                            @click="toggleAccordion('jenis')"
+                            :aria-expanded="accordionOpen.jenis"
+                            aria-controls="accordion-content-jenis"
+                            class="w-full p-3 text-left font-bold text-xs text-slate-800 flex items-center justify-between hover:bg-slate-50 transition focus:outline-none">
+                        <div class="flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-lg bg-red-50 text-red-600 flex items-center justify-center flex-shrink-0">
+                                <svg class="icon w-3.5 h-3.5"><use href="#ic-hospital"/></svg>
+                            </span>
+                            <span>Pilihan Jenis Faskes</span>
+                            <span x-show="draftFilters.selectedJenis.length > 0"
+                                  class="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-600 text-white"
+                                  x-text="draftFilters.selectedJenis.length"></span>
+                            <span x-show="hasUnappliedChanges('jenis')"
+                                  class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"
+                                  title="Ada perubahan belum diterapkan"></span>
+                        </div>
+                        <svg class="w-4 h-4 text-slate-400 transform transition-transform"
+                             :class="accordionOpen.jenis ? 'rotate-180' : ''"
+                             fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
                     </button>
+
+                    <div id="accordion-content-jenis" class="accordion-grid-wrapper" :class="accordionOpen.jenis ? 'is-open' : ''">
+                        <div class="accordion-grid-inner">
+                            <div class="p-3 pt-0 border-t border-slate-100 space-y-2.5 text-xs bg-slate-50/50">
+                                <div class="flex items-center justify-between pt-2.5">
+                                    <span class="text-[11px] text-slate-500 font-medium">Pilih jenis faskes:</span>
+                                    <div class="space-x-1 text-[11px] flex-shrink-0">
+                                        <button type="button" @click="selectAllJenis()" class="text-blue-600 hover:text-blue-800 font-medium">Pilih Semua</button>
+                                        <span class="text-slate-300">&bull;</span>
+                                        <button type="button" @click="clearAllJenis()" class="text-slate-500 hover:text-slate-700 font-medium">Kosongkan</button>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 min-[380px]:grid-cols-2 gap-2 text-xs">
+                                    <!-- Rumah Sakit -->
+                                    <label class="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-slate-50 border border-slate-200/80 bg-white cursor-pointer transition">
+                                        <input type="checkbox" value="rumah_sakit" x-model="draftFilters.selectedJenis" @keydown.enter.prevent="applyFilters(true)"
+                                               class="rounded text-red-600 focus:ring-red-500">
+                                        <span class="w-2.5 h-2.5 rounded-full bg-red-500 flex-shrink-0"></span>
+                                        <span class="text-slate-700 font-medium truncate">Rumah Sakit</span>
+                                    </label>
+
+                                    <!-- Puskesmas -->
+                                    <label class="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-slate-50 border border-slate-200/80 bg-white cursor-pointer transition">
+                                        <input type="checkbox" value="puskesmas" x-model="draftFilters.selectedJenis" @keydown.enter.prevent="applyFilters(true)"
+                                               class="rounded text-blue-600 focus:ring-blue-500">
+                                        <span class="w-2.5 h-2.5 rounded-full bg-blue-500 flex-shrink-0"></span>
+                                        <span class="text-slate-700 font-medium truncate">Puskesmas</span>
+                                    </label>
+
+                                    <!-- Klinik Pratama -->
+                                    <label class="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-slate-50 border border-slate-200/80 bg-white cursor-pointer transition">
+                                        <input type="checkbox" value="klinik_pratama" x-model="draftFilters.selectedJenis" @keydown.enter.prevent="applyFilters(true)"
+                                               class="rounded text-emerald-600 focus:ring-emerald-500">
+                                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 flex-shrink-0"></span>
+                                        <span class="text-slate-700 font-medium truncate">Klinik Pratama</span>
+                                    </label>
+
+                                    <!-- Klinik Utama -->
+                                    <label class="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-slate-50 border border-slate-200/80 bg-white cursor-pointer transition">
+                                        <input type="checkbox" value="klinik_utama" x-model="draftFilters.selectedJenis" @keydown.enter.prevent="applyFilters(true)"
+                                               class="rounded text-teal-600 focus:ring-teal-500">
+                                        <span class="w-2.5 h-2.5 rounded-full bg-teal-500 flex-shrink-0"></span>
+                                        <span class="text-slate-700 font-medium truncate">Klinik Utama</span>
+                                    </label>
+
+                                    <!-- Laboratorium -->
+                                    <label class="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-slate-50 border border-slate-200/80 bg-white cursor-pointer transition">
+                                        <input type="checkbox" value="laboratorium" x-model="draftFilters.selectedJenis" @keydown.enter.prevent="applyFilters(true)"
+                                               class="rounded text-purple-600 focus:ring-purple-500">
+                                        <span class="w-2.5 h-2.5 rounded-full bg-purple-500 flex-shrink-0"></span>
+                                        <span class="text-slate-700 font-medium truncate">Laboratorium</span>
+                                    </label>
+
+                                    <!-- UPKDK -->
+                                    <label class="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-slate-50 border border-slate-200/80 bg-white cursor-pointer transition">
+                                        <input type="checkbox" value="upkdk" x-model="draftFilters.selectedJenis" @keydown.enter.prevent="applyFilters(true)"
+                                               class="rounded text-amber-600 focus:ring-amber-500">
+                                        <span class="w-2.5 h-2.5 rounded-full bg-amber-500 flex-shrink-0"></span>
+                                        <span class="text-slate-700 font-medium truncate">UPKDK</span>
+                                    </label>
+
+                                    <!-- Griya Sehat -->
+                                    <label class="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-slate-50 border border-slate-200/80 bg-white cursor-pointer transition">
+                                        <input type="checkbox" value="griya_sehat" x-model="draftFilters.selectedJenis" @keydown.enter.prevent="applyFilters(true)"
+                                               class="rounded text-cyan-600 focus:ring-cyan-500">
+                                        <span class="w-2.5 h-2.5 rounded-full bg-cyan-500 flex-shrink-0"></span>
+                                        <span class="text-slate-700 font-medium truncate">Griya Sehat</span>
+                                    </label>
+
+                                    <!-- TPMD -->
+                                    <label class="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-slate-50 border border-slate-200/80 bg-white cursor-pointer transition">
+                                        <input type="checkbox" value="tpmd" x-model="draftFilters.selectedJenis" @keydown.enter.prevent="applyFilters(true)"
+                                               class="rounded text-sky-600 focus:ring-sky-500">
+                                        <span class="w-2.5 h-2.5 rounded-full bg-sky-500 flex-shrink-0"></span>
+                                        <span class="text-slate-700 font-medium truncate">TPMD (Dokter)</span>
+                                    </label>
+
+                                    <!-- TPMDG -->
+                                    <label class="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-slate-50 border border-slate-200/80 bg-white cursor-pointer transition">
+                                        <input type="checkbox" value="tpmdg" x-model="draftFilters.selectedJenis" @keydown.enter.prevent="applyFilters(true)"
+                                               class="rounded text-indigo-600 focus:ring-indigo-500">
+                                        <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 flex-shrink-0"></span>
+                                        <span class="text-slate-700 font-medium truncate">TPMDG (Dokter Gigi)</span>
+                                    </label>
+
+                                    <!-- TPMB -->
+                                    <label class="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-slate-50 border border-slate-200/80 bg-white cursor-pointer transition">
+                                        <input type="checkbox" value="tpmb" x-model="draftFilters.selectedJenis" @keydown.enter.prevent="applyFilters(true)"
+                                               class="rounded text-pink-600 focus:ring-pink-500">
+                                        <span class="w-2.5 h-2.5 rounded-full bg-pink-500 flex-shrink-0"></span>
+                                        <span class="text-slate-700 font-medium truncate">TPMB (Bidan)</span>
+                                    </label>
+
+                                    <!-- TPMP -->
+                                    <label class="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-slate-50 border border-slate-200/80 bg-white cursor-pointer transition">
+                                        <input type="checkbox" value="tpmp" x-model="draftFilters.selectedJenis" @keydown.enter.prevent="applyFilters(true)"
+                                               class="rounded text-lime-600 focus:ring-lime-500">
+                                        <span class="w-2.5 h-2.5 rounded-full bg-lime-500 flex-shrink-0"></span>
+                                        <span class="text-slate-700 font-medium truncate">TPMP (Perawat)</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- 3. Filter Wilayah Kecamatan (Dropdown) & Pencarian Teks -->
-                <div class="bg-white rounded-xl p-3.5 border border-slate-200 shadow-sm space-y-3">
-                    <div class="flex items-center justify-between border-b border-slate-100 pb-2">
-                        <label class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                            <svg class="icon w-4 h-4 text-slate-600"><use href="#ic-pin"/></svg>
-                            <span>Filter Wilayah Kecamatan</span>
-                        </label>
-                        <template x-if="selectedKecamatan">
-                            <button type="button" @click="selectedKecamatan = ''; applyDynamicFilters(true)"
-                                    class="text-[11px] text-blue-600 hover:text-blue-800 font-semibold flex-shrink-0">
-                                Reset Wilayah
-                            </button>
-                        </template>
-                    </div>
+                <!-- 2. Layanan & Fasilitas (Accordion Group 2) -->
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                    <button type="button"
+                            @click="toggleAccordion('layanan')"
+                            :aria-expanded="accordionOpen.layanan"
+                            aria-controls="accordion-content-layanan"
+                            class="w-full p-3 text-left font-bold text-xs text-slate-800 flex items-center justify-between hover:bg-slate-50 transition focus:outline-none">
+                        <div class="flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0">
+                                <svg class="icon w-3.5 h-3.5"><use href="#ic-bolt"/></svg>
+                            </span>
+                            <span>Layanan &amp; Fasilitas</span>
+                            <span x-show="((draftFilters.filterAmbulans?1:0) + (draftFilters.filterBpjs?1:0) + (draftFilters.filterRawatInap?1:0) + (draftFilters.filterPoned?1:0)) > 0"
+                                  class="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-600 text-white"
+                                  x-text="(draftFilters.filterAmbulans?1:0) + (draftFilters.filterBpjs?1:0) + (draftFilters.filterRawatInap?1:0) + (draftFilters.filterPoned?1:0)"></span>
+                            <span x-show="hasUnappliedChanges('layanan')"
+                                  class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"
+                                  title="Ada perubahan belum diterapkan"></span>
+                        </div>
+                        <svg class="w-4 h-4 text-slate-400 transform transition-transform"
+                             :class="accordionOpen.layanan ? 'rotate-180' : ''"
+                             fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
 
-                    <!-- Dropdown Pilihan Kecamatan -->
-                    <div>
-                        <label class="block text-[11px] text-slate-500 mb-1">Pilih Kecamatan:</label>
-                        <select x-model="selectedKecamatan" @change="applyDynamicFilters(true)"
-                                class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
-                            <option value="">-- Semua Kecamatan (Kab. Banyumas) --</option>
-                            <template x-for="kec in daftarKecamatan" :key="kec">
-                                <option :value="kec" x-text="`Kecamatan ${kec}`"></option>
-                            </template>
-                        </select>
-                    </div>
+                    <div id="accordion-content-layanan" class="accordion-grid-wrapper" :class="accordionOpen.layanan ? 'is-open' : ''">
+                        <div class="accordion-grid-inner">
+                            <div class="p-3 pt-0 border-t border-slate-100 space-y-2 text-xs bg-slate-50/50">
+                                <div class="space-y-2 pt-2.5">
+                                    <!-- Ambulans Gadar / Transport -->
+                                    <label class="flex items-center justify-between gap-2 p-2 rounded-lg border border-slate-200 hover:bg-amber-50/50 cursor-pointer transition"
+                                           :class="draftFilters.filterAmbulans ? 'bg-amber-50 border-amber-300' : 'bg-white'">
+                                        <div class="flex items-center gap-2.5 min-w-0">
+                                            <svg class="icon w-5 h-5 text-amber-600 flex-shrink-0"><use href="#ic-medical"/></svg>
+                                            <div class="min-w-0">
+                                                <div class="font-bold text-slate-800">Memiliki Ambulans Gadar / Transport</div>
+                                                <div class="text-[10px] text-slate-500">RS, Puskesmas, atau Klinik yang siaga ambulans</div>
+                                            </div>
+                                        </div>
+                                        <input type="checkbox" x-model="draftFilters.filterAmbulans" @keydown.enter.prevent="applyFilters(true)"
+                                               class="h-4 w-4 rounded text-amber-600 focus:ring-amber-500 flex-shrink-0">
+                                    </label>
 
-                    <!-- Input Pencarian Teks -->
-                    <div>
-                        <label class="block text-[11px] text-slate-500 mb-1">Pencarian Teks / Nama:</label>
-                        <div class="relative">
-                            <input type="text" x-model="filterSearch" @input.debounce.300ms="applyDynamicFilters(false)"
-                                   placeholder="Cari nama faskes, alamat, desa..."
-                                   class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-700 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <template x-if="filterSearch">
-                                <button @click="filterSearch = ''; applyDynamicFilters(false)"
-                                        class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 font-bold text-xs">&times;</button>
-                            </template>
+                                    <!-- Melayani BPJS -->
+                                    <label class="flex items-center justify-between gap-2 p-2 rounded-lg border border-slate-200 hover:bg-emerald-50/50 cursor-pointer transition"
+                                           :class="draftFilters.filterBpjs ? 'bg-emerald-50 border-emerald-300' : 'bg-white'">
+                                        <div class="flex items-center gap-2.5 min-w-0">
+                                            <svg class="icon w-5 h-5 text-emerald-600 flex-shrink-0"><use href="#ic-card"/></svg>
+                                            <div class="min-w-0">
+                                                <div class="font-bold text-slate-800">Melayani Pasien BPJS Kesehatan</div>
+                                                <div class="text-[10px] text-slate-500">Puskesmas, RS, dan Klinik Pratama mitra BPJS</div>
+                                            </div>
+                                        </div>
+                                        <input type="checkbox" x-model="draftFilters.filterBpjs" @keydown.enter.prevent="applyFilters(true)"
+                                               class="h-4 w-4 rounded text-emerald-600 focus:ring-emerald-500 flex-shrink-0">
+                                    </label>
+
+                                    <!-- Memiliki Bed Rawat Inap -->
+                                    <label class="flex items-center justify-between gap-2 p-2 rounded-lg border border-slate-200 hover:bg-blue-50/50 cursor-pointer transition"
+                                           :class="draftFilters.filterRawatInap ? 'bg-blue-50 border-blue-300' : 'bg-white'">
+                                        <div class="flex items-center gap-2.5 min-w-0">
+                                            <svg class="icon w-5 h-5 text-blue-600 flex-shrink-0"><use href="#ic-bed"/></svg>
+                                            <div class="min-w-0">
+                                                <div class="font-bold text-slate-800">Memiliki Bed Rawat Inap</div>
+                                                <div class="text-[10px] text-slate-500">RS, Puskesmas Rawat Inap, atau Klinik berbed</div>
+                                            </div>
+                                        </div>
+                                        <input type="checkbox" x-model="draftFilters.filterRawatInap" @keydown.enter.prevent="applyFilters(true)"
+                                               class="h-4 w-4 rounded text-blue-600 focus:ring-blue-500 flex-shrink-0">
+                                    </label>
+
+                                    <!-- Status PONED (Khusus Puskesmas) -->
+                                    <label class="flex items-center justify-between gap-2 p-2 rounded-lg border border-slate-200 hover:bg-rose-50/50 cursor-pointer transition"
+                                           :class="draftFilters.filterPoned ? 'bg-rose-50 border-rose-300' : 'bg-white'">
+                                        <div class="flex items-center gap-2.5 min-w-0">
+                                            <svg class="icon w-5 h-5 text-rose-600 flex-shrink-0"><use href="#ic-heart"/></svg>
+                                            <div class="min-w-0">
+                                                <div class="font-bold text-slate-800">Status PONED (Khusus Puskesmas)</div>
+                                                <div class="text-[10px] text-slate-500">Pelayanan Obstetri Neonatal Emergensi Dasar</div>
+                                            </div>
+                                        </div>
+                                        <input type="checkbox" x-model="draftFilters.filterPoned" @keydown.enter.prevent="applyFilters(true)"
+                                               class="h-4 w-4 rounded text-rose-600 focus:ring-rose-500 flex-shrink-0">
+                                    </label>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -713,12 +781,14 @@
                         <span class="text-[10px] text-slate-400 font-medium">Opsional &amp; Komprehensif</span>
                     </div>
 
-                    <!-- 1. Akordeon Ambulans & Kapasitas -->
+                    <!-- 3. Ambulans & Kapasitas (Accordion Group 3) -->
                     <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden"
                          x-show="hasAnyJenis(['rumah_sakit', 'puskesmas', 'klinik_pratama', 'klinik_utama', 'upkdk', 'griya_sehat'])">
                         <button type="button"
-                                @click="accordionOpen.ambulans = !accordionOpen.ambulans"
-                                class="w-full p-3 text-left font-bold text-xs text-slate-800 flex items-center justify-between hover:bg-slate-50 transition">
+                                @click="toggleAccordion('kapasitas')"
+                                :aria-expanded="accordionOpen.kapasitas"
+                                aria-controls="accordion-content-kapasitas"
+                                class="w-full p-3 text-left font-bold text-xs text-slate-800 flex items-center justify-between hover:bg-slate-50 transition focus:outline-none">
                             <div class="flex items-center gap-2">
                                 <span class="w-6 h-6 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center flex-shrink-0">
                                     <svg class="icon w-3.5 h-3.5"><use href="#ic-medical"/></svg>
@@ -727,113 +797,125 @@
                                 <span x-show="countFilterAmbulansKapasitas() > 0"
                                       class="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-600 text-white"
                                       x-text="countFilterAmbulansKapasitas()"></span>
+                                <span x-show="hasUnappliedChanges('kapasitas')"
+                                      class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"
+                                      title="Ada perubahan belum diterapkan"></span>
                             </div>
                             <svg class="w-4 h-4 text-slate-400 transform transition-transform"
-                                 :class="accordionOpen.ambulans ? 'rotate-180' : ''"
+                                 :class="accordionOpen.kapasitas ? 'rotate-180' : ''"
                                  fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                             </svg>
                         </button>
 
-                        <div x-show="accordionOpen.ambulans" class="p-3 pt-0 border-t border-slate-100 space-y-3 text-xs bg-slate-50/50">
-                            <!-- Total Ambulans Minimal -->
-                            <div class="mt-2.5">
-                                <div class="flex justify-between items-center mb-1">
-                                    <label class="text-[11px] font-semibold text-slate-700">Total Ambulans Minimal</label>
-                                    <span class="text-[11px] font-bold text-blue-600" x-text="minTotalAmbulans > 0 ? `${minTotalAmbulans} Unit` : 'Semua (0)'"></span>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <button type="button" @click="if(minTotalAmbulans > 0) { minTotalAmbulans--; onNumberFilterChange(); }"
-                                            class="w-7 h-7 rounded border border-slate-200 bg-white hover:bg-slate-100 font-bold text-slate-600 flex items-center justify-center">-</button>
-                                    <input type="range" min="0" max="10" step="1" x-model.number="minTotalAmbulans" @input="onNumberFilterChange()"
-                                           class="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
-                                    <button type="button" @click="if(minTotalAmbulans < 10) { minTotalAmbulans++; onNumberFilterChange(); }"
-                                            class="w-7 h-7 rounded border border-slate-200 bg-white hover:bg-slate-100 font-bold text-slate-600 flex items-center justify-center">+</button>
-                                </div>
-                                <span class="text-[10px] text-slate-400 italic">Puskesmas, RS, Klinik Pratama &amp; Klinik Utama</span>
-                            </div>
+                        <div id="accordion-content-kapasitas" class="accordion-grid-wrapper" :class="accordionOpen.kapasitas ? 'is-open' : ''">
+                            <div class="accordion-grid-inner">
+                                <div class="p-3 pt-0 border-t border-slate-100 space-y-3 text-xs bg-slate-50/50">
+                                    <!-- Total Ambulans Minimal -->
+                                    <div class="mt-2.5">
+                                        <div class="flex justify-between items-center mb-1">
+                                            <label class="text-[11px] font-semibold text-slate-700">Total Ambulans Minimal</label>
+                                            <span class="text-[11px] font-bold text-blue-600" x-text="draftFilters.minTotalAmbulans > 0 ? `${draftFilters.minTotalAmbulans} Unit` : 'Semua (0)'"></span>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <button type="button" @click="if(draftFilters.minTotalAmbulans > 0) { draftFilters.minTotalAmbulans--; }"
+                                                    class="w-7 h-7 rounded border border-slate-200 bg-white hover:bg-slate-100 font-bold text-slate-600 flex items-center justify-center">-</button>
+                                            <input type="range" min="0" max="10" step="1" x-model.number="draftFilters.minTotalAmbulans" @keydown.enter.prevent="applyFilters(true)"
+                                                   class="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                                            <button type="button" @click="if(draftFilters.minTotalAmbulans < 10) { draftFilters.minTotalAmbulans++; }"
+                                                    class="w-7 h-7 rounded border border-slate-200 bg-white hover:bg-slate-100 font-bold text-slate-600 flex items-center justify-center">+</button>
+                                        </div>
+                                        <span class="text-[10px] text-slate-400 italic">Puskesmas, RS, Klinik Pratama &amp; Klinik Utama</span>
+                                    </div>
 
-                            <!-- Ambulans Gadar Minimal (Khusus RS) -->
-                            <div x-show="isJenisSelected('rumah_sakit')" class="pt-2 border-t border-slate-200/60">
-                                <div class="flex justify-between items-center mb-1">
-                                    <label class="text-[11px] font-semibold text-slate-700">Ambulans Gadar Minimal (RS)</label>
-                                    <span class="text-[11px] font-bold text-amber-600" x-text="minAmbulansGadar > 0 ? `${minAmbulansGadar} Unit` : 'Semua (0)'"></span>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <button type="button" @click="if(minAmbulansGadar > 0) { minAmbulansGadar--; onNumberFilterChange(); }"
-                                            class="w-7 h-7 rounded border border-slate-200 bg-white hover:bg-slate-100 font-bold text-slate-600 flex items-center justify-center">-</button>
-                                    <input type="range" min="0" max="10" step="1" x-model.number="minAmbulansGadar" @input="onNumberFilterChange()"
-                                           class="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-amber-600">
-                                    <button type="button" @click="if(minAmbulansGadar < 10) { minAmbulansGadar++; onNumberFilterChange(); }"
-                                            class="w-7 h-7 rounded border border-slate-200 bg-white hover:bg-slate-100 font-bold text-slate-600 flex items-center justify-center">+</button>
-                                </div>
-                            </div>
+                                    <!-- Ambulans Gadar Minimal (Khusus RS) -->
+                                    <div x-show="isJenisSelected('rumah_sakit')" class="pt-2 border-t border-slate-200/60">
+                                        <div class="flex justify-between items-center mb-1">
+                                            <label class="text-[11px] font-semibold text-slate-700">Ambulans Gadar Minimal (RS)</label>
+                                            <span class="text-[11px] font-bold text-amber-600" x-text="draftFilters.minAmbulansGadar > 0 ? `${draftFilters.minAmbulansGadar} Unit` : 'Semua (0)'"></span>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <button type="button" @click="if(draftFilters.minAmbulansGadar > 0) { draftFilters.minAmbulansGadar--; }"
+                                                    class="w-7 h-7 rounded border border-slate-200 bg-white hover:bg-slate-100 font-bold text-slate-600 flex items-center justify-center">-</button>
+                                            <input type="range" min="0" max="10" step="1" x-model.number="draftFilters.minAmbulansGadar" @keydown.enter.prevent="applyFilters(true)"
+                                                   class="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-amber-600">
+                                            <button type="button" @click="if(draftFilters.minAmbulansGadar < 10) { draftFilters.minAmbulansGadar++; }"
+                                                    class="w-7 h-7 rounded border border-slate-200 bg-white hover:bg-slate-100 font-bold text-slate-600 flex items-center justify-center">+</button>
+                                        </div>
+                                    </div>
 
-                            <!-- Ambulans Roda Dua Minimal (Khusus Puskesmas) -->
-                            <div x-show="isJenisSelected('puskesmas')" class="pt-2 border-t border-slate-200/60">
-                                <div class="flex justify-between items-center mb-1">
-                                    <label class="text-[11px] font-semibold text-slate-700">Ambulans Roda Dua Minimal (Puskesmas)</label>
-                                    <span class="text-[11px] font-bold text-blue-600" x-text="minAmbulansRodaDua > 0 ? `${minAmbulansRodaDua} Unit` : 'Semua (0)'"></span>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <button type="button" @click="if(minAmbulansRodaDua > 0) { minAmbulansRodaDua--; onNumberFilterChange(); }"
-                                            class="w-7 h-7 rounded border border-slate-200 bg-white hover:bg-slate-100 font-bold text-slate-600 flex items-center justify-center">-</button>
-                                    <input type="range" min="0" max="10" step="1" x-model.number="minAmbulansRodaDua" @input="onNumberFilterChange()"
-                                           class="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
-                                    <button type="button" @click="if(minAmbulansRodaDua < 10) { minAmbulansRodaDua++; onNumberFilterChange(); }"
-                                            class="w-7 h-7 rounded border border-slate-200 bg-white hover:bg-slate-100 font-bold text-slate-600 flex items-center justify-center">+</button>
-                                </div>
-                            </div>
+                                    <!-- Ambulans Roda Dua Minimal (Khusus Puskesmas) -->
+                                    <div x-show="isJenisSelected('puskesmas')" class="pt-2 border-t border-slate-200/60">
+                                        <div class="flex justify-between items-center mb-1">
+                                            <label class="text-[11px] font-semibold text-slate-700">Ambulans Roda Dua Minimal (Puskesmas)</label>
+                                            <span class="text-[11px] font-bold text-blue-600" x-text="draftFilters.minAmbulansRodaDua > 0 ? `${draftFilters.minAmbulansRodaDua} Unit` : 'Semua (0)'"></span>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <button type="button" @click="if(draftFilters.minAmbulansRodaDua > 0) { draftFilters.minAmbulansRodaDua--; }"
+                                                    class="w-7 h-7 rounded border border-slate-200 bg-white hover:bg-slate-100 font-bold text-slate-600 flex items-center justify-center">-</button>
+                                            <input type="range" min="0" max="10" step="1" x-model.number="draftFilters.minAmbulansRodaDua" @keydown.enter.prevent="applyFilters(true)"
+                                                   class="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                                            <button type="button" @click="if(draftFilters.minAmbulansRodaDua < 10) { draftFilters.minAmbulansRodaDua++; }"
+                                                    class="w-7 h-7 rounded border border-slate-200 bg-white hover:bg-slate-100 font-bold text-slate-600 flex items-center justify-center">+</button>
+                                        </div>
+                                    </div>
 
-                            <!-- Jumlah TT Rawat Inap Minimal -->
-                            <div x-show="hasAnyJenis(['puskesmas', 'klinik_pratama', 'klinik_utama'])" class="pt-2 border-t border-slate-200/60">
-                                <div class="flex justify-between items-center mb-1">
-                                    <label class="text-[11px] font-semibold text-slate-700">Jumlah TT (Tempat Tidur) Minimal</label>
-                                    <span class="text-[11px] font-bold text-indigo-600" x-text="minBed > 0 ? `${minBed} Bed` : 'Semua (0)'"></span>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <button type="button" @click="if(minBed > 0) { minBed = Math.max(0, minBed - 5); onNumberFilterChange(); }"
-                                            class="w-7 h-7 rounded border border-slate-200 bg-white hover:bg-slate-100 font-bold text-slate-600 flex items-center justify-center">-</button>
-                                    <input type="range" min="0" max="100" step="5" x-model.number="minBed" @input="onNumberFilterChange()"
-                                           class="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
-                                    <button type="button" @click="if(minBed < 100) { minBed += 5; onNumberFilterChange(); }"
-                                            class="w-7 h-7 rounded border border-slate-200 bg-white hover:bg-slate-100 font-bold text-slate-600 flex items-center justify-center">+</button>
-                                </div>
-                                <p class="text-[10px] text-slate-400 italic mt-0.5">*RS belum memiliki data jumlah TT di sistem</p>
-                            </div>
+                                    <!-- Jumlah TT Rawat Inap Minimal -->
+                                    <div x-show="hasAnyJenis(['puskesmas', 'klinik_pratama', 'klinik_utama'])" class="pt-2 border-t border-slate-200/60">
+                                        <div class="flex justify-between items-center mb-1">
+                                            <label class="text-[11px] font-semibold text-slate-700">Jumlah TT (Tempat Tidur) Minimal</label>
+                                            <span class="text-[11px] font-bold text-indigo-600" x-text="draftFilters.minBed > 0 ? `${draftFilters.minBed} Bed` : 'Semua (0)'"></span>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <button type="button" @click="if(draftFilters.minBed > 0) { draftFilters.minBed = Math.max(0, draftFilters.minBed - 5); }"
+                                                    class="w-7 h-7 rounded border border-slate-200 bg-white hover:bg-slate-100 font-bold text-slate-600 flex items-center justify-center">-</button>
+                                            <input type="range" min="0" max="100" step="5" x-model.number="draftFilters.minBed" @keydown.enter.prevent="applyFilters(true)"
+                                                   class="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
+                                            <button type="button" @click="if(draftFilters.minBed < 100) { draftFilters.minBed += 5; }"
+                                                    class="w-7 h-7 rounded border border-slate-200 bg-white hover:bg-slate-100 font-bold text-slate-600 flex items-center justify-center">+</button>
+                                        </div>
+                                        <p class="text-[10px] text-slate-400 italic mt-0.5">*RS belum memiliki data jumlah TT di sistem</p>
+                                    </div>
 
-                            <!-- Jumlah SDM Minimal -->
-                            <div x-show="hasAnyJenis(['puskesmas', 'klinik_pratama', 'upkdk', 'griya_sehat'])" class="pt-2 border-t border-slate-200/60">
-                                <div class="flex justify-between items-center mb-1">
-                                    <label class="text-[11px] font-semibold text-slate-700">Jumlah Tenaga SDM Minimal</label>
-                                    <span class="text-[11px] font-bold text-emerald-600" x-text="minSdm > 0 ? `${minSdm} Orang` : 'Semua (0)'"></span>
+                                    <!-- Jumlah SDM Minimal -->
+                                    <div x-show="hasAnyJenis(['puskesmas', 'klinik_pratama', 'upkdk', 'griya_sehat'])" class="pt-2 border-t border-slate-200/60">
+                                        <div class="flex justify-between items-center mb-1">
+                                            <label class="text-[11px] font-semibold text-slate-700">Jumlah Tenaga SDM Minimal</label>
+                                            <span class="text-[11px] font-bold text-emerald-600" x-text="draftFilters.minSdm > 0 ? `${draftFilters.minSdm} Orang` : 'Semua (0)'"></span>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <button type="button" @click="if(draftFilters.minSdm > 0) { draftFilters.minSdm = Math.max(0, draftFilters.minSdm - 5); }"
+                                                    class="w-7 h-7 rounded border border-slate-200 bg-white hover:bg-slate-100 font-bold text-slate-600 flex items-center justify-center">-</button>
+                                            <input type="range" min="0" max="150" step="5" x-model.number="draftFilters.minSdm" @keydown.enter.prevent="applyFilters(true)"
+                                                   class="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-emerald-600">
+                                            <button type="button" @click="if(draftFilters.minSdm < 150) { draftFilters.minSdm += 5; }"
+                                                    class="w-7 h-7 rounded border border-slate-200 bg-white hover:bg-slate-100 font-bold text-slate-600 flex items-center justify-center">+</button>
+                                        </div>
+                                        <span class="text-[10px] text-slate-400 italic">Puskesmas, Klinik Pratama, UPKDK, Griya Sehat</span>
+                                    </div>
                                 </div>
-                                <div class="flex items-center gap-2">
-                                    <button type="button" @click="if(minSdm > 0) { minSdm = Math.max(0, minSdm - 5); onNumberFilterChange(); }"
-                                            class="w-7 h-7 rounded border border-slate-200 bg-white hover:bg-slate-100 font-bold text-slate-600 flex items-center justify-center">-</button>
-                                    <input type="range" min="0" max="150" step="5" x-model.number="minSdm" @input="onNumberFilterChange()"
-                                           class="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-emerald-600">
-                                    <button type="button" @click="if(minSdm < 150) { minSdm += 5; onNumberFilterChange(); }"
-                                            class="w-7 h-7 rounded border border-slate-200 bg-white hover:bg-slate-100 font-bold text-slate-600 flex items-center justify-center">+</button>
-                                </div>
-                                <span class="text-[10px] text-slate-400 italic">Puskesmas, Klinik Pratama, UPKDK, Griya Sehat</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- 2. Akordeon Kategori Layanan -->
+                    <!-- 4. Kategori & Kepemilikan (Accordion Group 4) -->
                     <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                         <button type="button"
-                                @click="accordionOpen.kategori = !accordionOpen.kategori"
-                                class="w-full p-3 text-left font-bold text-xs text-slate-800 flex items-center justify-between hover:bg-slate-50 transition">
+                                @click="toggleAccordion('kategori')"
+                                :aria-expanded="accordionOpen.kategori"
+                                aria-controls="accordion-content-kategori"
+                                class="w-full p-3 text-left font-bold text-xs text-slate-800 flex items-center justify-between hover:bg-slate-50 transition focus:outline-none">
                             <div class="flex items-center gap-2">
                                 <span class="w-6 h-6 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center flex-shrink-0">
                                     <svg class="icon w-3.5 h-3.5"><use href="#ic-hospital"/></svg>
                                 </span>
-                                <span>Kategori Layanan</span>
+                                <span>Kategori &amp; Kepemilikan</span>
                                 <span x-show="countFilterKategori() > 0"
                                       class="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-600 text-white"
                                       x-text="countFilterKategori()"></span>
+                                <span x-show="hasUnappliedChanges('kategori')"
+                                      class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"
+                                      title="Ada perubahan belum diterapkan"></span>
                             </div>
                             <svg class="w-4 h-4 text-slate-400 transform transition-transform"
                                  :class="accordionOpen.kategori ? 'rotate-180' : ''"
@@ -842,124 +924,133 @@
                             </svg>
                         </button>
 
-                        <div x-show="accordionOpen.kategori" class="p-3 pt-0 border-t border-slate-100 space-y-2.5 text-xs bg-slate-50/50">
-                            <!-- Kepemilikan (Klinik Pratama, Klinik Utama, Lab) -->
-                            <div x-show="hasAnyJenis(['klinik_pratama', 'klinik_utama', 'laboratorium'])" class="mt-2.5">
-                                <label class="block text-[11px] font-semibold text-slate-700 mb-1">Kepemilikan (Klinik &amp; Lab)</label>
-                                <select x-model="kepemilikan" @change="applyDynamicFilters()"
-                                        class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    <option value="">Semua Kepemilikan</option>
-                                    <option value="Swasta">Swasta</option>
-                                    <option value="Pemerintah">Pemerintah</option>
-                                </select>
-                            </div>
+                        <div id="accordion-content-kategori" class="accordion-grid-wrapper" :class="accordionOpen.kategori ? 'is-open' : ''">
+                            <div class="accordion-grid-inner">
+                                <div class="p-3 pt-0 border-t border-slate-100 space-y-2.5 text-xs bg-slate-50/50">
+                                    <!-- Kepemilikan (Klinik Pratama, Klinik Utama, Lab) -->
+                                    <div x-show="hasAnyJenis(['klinik_pratama', 'klinik_utama', 'laboratorium'])" class="mt-2.5">
+                                        <label class="block text-[11px] font-semibold text-slate-700 mb-1">Kepemilikan (Klinik &amp; Lab)</label>
+                                        <select x-model="draftFilters.kepemilikan" @keydown.enter.prevent="applyFilters(true)"
+                                                class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                                            <option value="">Semua Kepemilikan</option>
+                                            <option value="Swasta">Swasta</option>
+                                            <option value="Pemerintah">Pemerintah</option>
+                                        </select>
+                                    </div>
 
-                            <!-- Tipe RS (Rumah Sakit) -->
-                            <div x-show="isJenisSelected('rumah_sakit')">
-                                <label class="block text-[11px] font-semibold text-slate-700 mb-1">Tipe Rumah Sakit</label>
-                                <select x-model="tipeRs" @change="applyDynamicFilters()"
-                                        class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    <option value="">Semua Tipe RS</option>
-                                    <option value="A">Kelas A</option>
-                                    <option value="B">Kelas B</option>
-                                    <option value="C">Kelas C</option>
-                                    <option value="D">Kelas D</option>
-                                    <option value="D Pratama">Kelas D Pratama</option>
-                                </select>
-                            </div>
+                                    <!-- Tipe RS (Rumah Sakit) -->
+                                    <div x-show="isJenisSelected('rumah_sakit')">
+                                        <label class="block text-[11px] font-semibold text-slate-700 mb-1">Tipe Rumah Sakit</label>
+                                        <select x-model="draftFilters.tipeRs" @keydown.enter.prevent="applyFilters(true)"
+                                                class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                                            <option value="">Semua Tipe RS</option>
+                                            <option value="A">Kelas A</option>
+                                            <option value="B">Kelas B</option>
+                                            <option value="C">Kelas C</option>
+                                            <option value="D">Kelas D</option>
+                                            <option value="D Pratama">Kelas D Pratama</option>
+                                        </select>
+                                    </div>
 
-                            <!-- Kategori Puskesmas -->
-                            <div x-show="isJenisSelected('puskesmas')">
-                                <label class="block text-[11px] font-semibold text-slate-700 mb-1">Kategori Puskesmas</label>
-                                <select x-model="kategoriPuskesmas" @change="applyDynamicFilters()"
-                                        class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    <option value="">Semua Kategori</option>
-                                    <option value="rawat_inap">Rawat Inap</option>
-                                    <option value="rawat_jalan">Non Rawat Inap (Rawat Jalan)</option>
-                                </select>
-                            </div>
+                                    <!-- Kategori Puskesmas -->
+                                    <div x-show="isJenisSelected('puskesmas')">
+                                        <label class="block text-[11px] font-semibold text-slate-700 mb-1">Kategori Puskesmas</label>
+                                        <select x-model="draftFilters.kategoriPuskesmas" @keydown.enter.prevent="applyFilters(true)"
+                                                class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                                            <option value="">Semua Kategori</option>
+                                            <option value="rawat_inap">Rawat Inap</option>
+                                            <option value="rawat_jalan">Non Rawat Inap (Rawat Jalan)</option>
+                                        </select>
+                                    </div>
 
-                            <!-- Wilayah Puskesmas -->
-                            <div x-show="isJenisSelected('puskesmas')">
-                                <label class="block text-[11px] font-semibold text-slate-700 mb-1">Wilayah Puskesmas</label>
-                                <select x-model="wilayahPuskesmas" @change="applyDynamicFilters()"
-                                        class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    <option value="">Semua Wilayah</option>
-                                    <option value="perkotaan">Perkotaan</option>
-                                    <option value="pedesaan">Perdesaan</option>
-                                </select>
-                            </div>
+                                    <!-- Wilayah Puskesmas -->
+                                    <div x-show="isJenisSelected('puskesmas')">
+                                        <label class="block text-[11px] font-semibold text-slate-700 mb-1">Wilayah Puskesmas</label>
+                                        <select x-model="draftFilters.wilayahPuskesmas" @keydown.enter.prevent="applyFilters(true)"
+                                                class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                                            <option value="">Semua Wilayah</option>
+                                            <option value="perkotaan">Perkotaan</option>
+                                            <option value="pedesaan">Perdesaan</option>
+                                        </select>
+                                    </div>
 
-                            <!-- Kemampuan Persalinan Puskesmas -->
-                            <div x-show="isJenisSelected('puskesmas')">
-                                <label class="block text-[11px] font-semibold text-slate-700 mb-1">Persalinan Puskesmas</label>
-                                <select x-model="persalinanPuskesmas" @change="applyDynamicFilters()"
-                                        class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    <option value="">Semua Kemampuan</option>
-                                    <option value="poned">PONED</option>
-                                    <option value="mampu_salin">NON PONED (Mampu Salin)</option>
-                                    <option value="tidak_mampu_salin">NON PONED (Tidak Mampu Salin)</option>
-                                </select>
-                            </div>
+                                    <!-- Kemampuan Persalinan Puskesmas -->
+                                    <div x-show="isJenisSelected('puskesmas')">
+                                        <label class="block text-[11px] font-semibold text-slate-700 mb-1">Persalinan Puskesmas</label>
+                                        <select x-model="draftFilters.persalinanPuskesmas" @keydown.enter.prevent="applyFilters(true)"
+                                                class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                                            <option value="">Semua Kemampuan</option>
+                                            <option value="poned">PONED</option>
+                                            <option value="mampu_salin">NON PONED (Mampu Salin)</option>
+                                            <option value="tidak_mampu_salin">NON PONED (Tidak Mampu Salin)</option>
+                                        </select>
+                                    </div>
 
-                            <!-- PONEK Rumah Sakit -->
-                            <div x-show="isJenisSelected('rumah_sakit')">
-                                <label class="block text-[11px] font-semibold text-slate-700 mb-1">PONEK Rumah Sakit</label>
-                                <select x-model="ponekRs" @change="applyDynamicFilters()"
-                                        class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    <option value="">Semua PONEK</option>
-                                    <option value="ponek">PONEK</option>
-                                    <option value="non_ponek">NON PONEK</option>
-                                </select>
-                            </div>
+                                    <!-- PONEK Rumah Sakit -->
+                                    <div x-show="isJenisSelected('rumah_sakit')">
+                                        <label class="block text-[11px] font-semibold text-slate-700 mb-1">PONEK Rumah Sakit</label>
+                                        <select x-model="draftFilters.ponekRs" @keydown.enter.prevent="applyFilters(true)"
+                                                class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                                            <option value="">Semua PONEK</option>
+                                            <option value="ponek">PONEK</option>
+                                            <option value="non_ponek">NON PONEK</option>
+                                        </select>
+                                    </div>
 
-                            <!-- Kategori Layanan Klinik (Pratama & Utama) -->
-                            <div x-show="hasAnyJenis(['klinik_pratama', 'klinik_utama'])">
-                                <label class="block text-[11px] font-semibold text-slate-700 mb-1">Layanan Klinik (Pratama &amp; Utama)</label>
-                                <select x-model="kategoriLayananKlinik" @change="applyDynamicFilters()"
-                                        class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    <option value="">Semua Layanan</option>
-                                    <option value="rawat_jalan">Rawat Jalan</option>
-                                    <option value="rawat_inap">Rawat Inap</option>
-                                </select>
-                            </div>
+                                    <!-- Kategori Layanan Klinik (Pratama & Utama) -->
+                                    <div x-show="hasAnyJenis(['klinik_pratama', 'klinik_utama'])">
+                                        <label class="block text-[11px] font-semibold text-slate-700 mb-1">Layanan Klinik (Pratama &amp; Utama)</label>
+                                        <select x-model="draftFilters.kategoriLayananKlinik" @keydown.enter.prevent="applyFilters(true)"
+                                                class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                                            <option value="">Semua Layanan</option>
+                                            <option value="rawat_jalan">Rawat Jalan</option>
+                                            <option value="rawat_inap">Rawat Inap</option>
+                                        </select>
+                                    </div>
 
-                            <!-- BPJS Klinik -->
-                            <div x-show="hasAnyJenis(['klinik_pratama', 'klinik_utama'])">
-                                <label class="block text-[11px] font-semibold text-slate-700 mb-1">Kerja Sama BPJS (Khusus Klinik)</label>
-                                <select x-model="bpjsKlinik" @change="applyDynamicFilters()"
-                                        class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    <option value="">Semua (Mitra &amp; Non Mitra)</option>
-                                    <option value="ya">Bekerja sama BPJS</option>
-                                    <option value="tidak">Tidak Bekerja sama</option>
-                                </select>
-                            </div>
+                                    <!-- BPJS Klinik -->
+                                    <div x-show="hasAnyJenis(['klinik_pratama', 'klinik_utama'])">
+                                        <label class="block text-[11px] font-semibold text-slate-700 mb-1">Kerja Sama BPJS (Khusus Klinik)</label>
+                                        <select x-model="draftFilters.bpjsKlinik" @keydown.enter.prevent="applyFilters(true)"
+                                                class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                                            <option value="">Semua (Mitra &amp; Non Mitra)</option>
+                                            <option value="ya">Bekerja sama BPJS</option>
+                                            <option value="tidak">Tidak Bekerja sama</option>
+                                        </select>
+                                    </div>
 
-                            <!-- Status Operasional Faskes -->
-                            <div>
-                                <label class="block text-[11px] font-semibold text-slate-700 mb-1">Status Operasional Faskes</label>
-                                <select x-model="statusOperasional" @change="applyDynamicFilters()"
-                                        class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    <option value="aktif">Aktif Saja (Default)</option>
-                                    <option value="nonaktif">Nonaktif Saja</option>
-                                    <option value="semua">Semua Status (Aktif &amp; Nonaktif)</option>
-                                </select>
+                                    <!-- Status Operasional Faskes -->
+                                    <div>
+                                        <label class="block text-[11px] font-semibold text-slate-700 mb-1">Status Operasional Faskes</label>
+                                        <select x-model="draftFilters.statusOperasional" @keydown.enter.prevent="applyFilters(true)"
+                                                class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                                            <option value="aktif">Aktif Saja (Default)</option>
+                                            <option value="nonaktif">Nonaktif Saja</option>
+                                            <option value="semua">Semua Status (Aktif &amp; Nonaktif)</option>
+                                        </select>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- 3. Akordeon Izin Operasional -->
+                    <!-- 5. Izin Operasional (Accordion Group 5) -->
                     <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                         <button type="button"
-                                @click="accordionOpen.izin = !accordionOpen.izin"
-                                class="w-full p-3 text-left font-bold text-xs text-slate-800 flex items-center justify-between hover:bg-slate-50 transition">
+                                @click="toggleAccordion('izin')"
+                                :aria-expanded="accordionOpen.izin"
+                                aria-controls="accordion-content-izin"
+                                class="w-full p-3 text-left font-bold text-xs text-slate-800 flex items-center justify-between hover:bg-slate-50 transition focus:outline-none">
                             <div class="flex items-center gap-2">
                                 <span class="w-6 h-6 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center flex-shrink-0">
                                     <svg class="icon w-3.5 h-3.5"><use href="#ic-doc"/></svg>
                                 </span>
                                 <span>Izin Operasional</span>
-                                <span x-show="statusIzin !== ''"
+                                <span x-show="draftFilters.statusIzin !== ''"
                                       class="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-600 text-white">1</span>
+                                <span x-show="hasUnappliedChanges('izin')"
+                                      class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"
+                                      title="Ada perubahan belum diterapkan"></span>
                             </div>
                             <svg class="w-4 h-4 text-slate-400 transform transition-transform"
                                  :class="accordionOpen.izin ? 'rotate-180' : ''"
@@ -968,30 +1059,36 @@
                             </svg>
                         </button>
 
-                        <div x-show="accordionOpen.izin" class="p-3 pt-0 border-t border-slate-100 space-y-2 text-xs bg-slate-50/50">
-                            <div class="mt-2.5">
-                                <label class="block text-[11px] font-semibold text-slate-700 mb-1">Masa Berlaku Izin Operasional</label>
-                                <select x-model="statusIzin" @change="applyDynamicFilters()"
-                                        class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    <option value="">Semua Status Izin</option>
-                                    <option value="berlaku">Berlaku (&gt; 6 bulan)</option>
-                                    <option value="berakhir_6_bulan">Segera Berakhir (&le; 6 bulan)</option>
-                                    <option value="berakhir_3_bulan">Segera Berakhir (&le; 3 bulan)</option>
-                                    <option value="berakhir_1_bulan">Segera Berakhir (&le; 1 bulan)</option>
-                                    <option value="kedaluwarsa">Kedaluwarsa</option>
-                                    <option value="belum_diisi">Belum Diisi / Tanpa Data</option>
-                                </select>
-                                <span class="text-[10px] text-slate-400 mt-1 block">Memeriksa kolom masa izin seluruh faskes terkait</span>
+                        <div id="accordion-content-izin" class="accordion-grid-wrapper" :class="accordionOpen.izin ? 'is-open' : ''">
+                            <div class="accordion-grid-inner">
+                                <div class="p-3 pt-0 border-t border-slate-100 space-y-2 text-xs bg-slate-50/50">
+                                    <div class="mt-2.5">
+                                        <label class="block text-[11px] font-semibold text-slate-700 mb-1">Masa Berlaku Izin Operasional</label>
+                                        <select x-model="draftFilters.statusIzin" @keydown.enter.prevent="applyFilters(true)"
+                                                class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                                            <option value="">Semua Status Izin</option>
+                                            <option value="berlaku">Berlaku (&gt; 6 bulan)</option>
+                                            <option value="berakhir_6_bulan">Segera Berakhir (&le; 6 bulan)</option>
+                                            <option value="berakhir_3_bulan">Segera Berakhir (&le; 3 bulan)</option>
+                                            <option value="berakhir_1_bulan">Segera Berakhir (&le; 1 bulan)</option>
+                                            <option value="kedaluwarsa">Kedaluwarsa</option>
+                                            <option value="belum_diisi">Belum Diisi / Tanpa Data</option>
+                                        </select>
+                                        <span class="text-[10px] text-slate-400 mt-1 block">Memeriksa kolom masa izin seluruh faskes terkait</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- 4. Akordeon Kolom Tambahan (Custom Fields) -->
+                    <!-- 6. Kolom Tambahan Dinamis (Accordion Group 6) -->
                     @if(isset($activeFieldDefinitions) && $activeFieldDefinitions->count() > 0)
                     <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                         <button type="button"
-                                @click="accordionOpen.custom = !accordionOpen.custom"
-                                class="w-full p-3 text-left font-bold text-xs text-slate-800 flex items-center justify-between hover:bg-slate-50 transition">
+                                @click="toggleAccordion('custom')"
+                                :aria-expanded="accordionOpen.custom"
+                                aria-controls="accordion-content-custom"
+                                class="w-full p-3 text-left font-bold text-xs text-slate-800 flex items-center justify-between hover:bg-slate-50 transition focus:outline-none">
                             <div class="flex items-center gap-2">
                                 <span class="w-6 h-6 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center flex-shrink-0">
                                     <svg class="icon w-3.5 h-3.5"><use href="#ic-table"/></svg>
@@ -1000,6 +1097,9 @@
                                 <span x-show="countFilterCustom() > 0"
                                       class="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-600 text-white"
                                       x-text="countFilterCustom()"></span>
+                                <span x-show="hasUnappliedChanges('custom')"
+                                      class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"
+                                      title="Ada perubahan belum diterapkan"></span>
                             </div>
                             <svg class="w-4 h-4 text-slate-400 transform transition-transform"
                                  :class="accordionOpen.custom ? 'rotate-180' : ''"
@@ -1008,28 +1108,173 @@
                             </svg>
                         </button>
 
-                        <div x-show="accordionOpen.custom" class="p-3 pt-0 border-t border-slate-100 space-y-2.5 text-xs bg-slate-50/50">
-                            @foreach($activeFieldDefinitions as $def)
-                                <div class="mt-2.5"
-                                     @if($def->jenis_faskes) x-show="isJenisSelected('{{ $def->jenis_faskes }}')" @endif>
-                                    <label class="block text-[11px] font-semibold text-slate-700 mb-1">
-                                        {{ $def->label }}
-                                        @if($def->jenis_faskes)
-                                            <span class="text-[10px] text-slate-400 font-normal">({{ $def->jenis_faskes }})</span>
-                                        @endif
-                                    </label>
-                                    <select x-model="customFilter['{{ $def->field_key }}']" @change="applyDynamicFilters()"
-                                            class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                        <option value="">Semua {{ $def->label }}</option>
-                                        @foreach($def->options as $opt)
-                                            <option value="{{ $opt }}">{{ $opt }}</option>
-                                        @endforeach
-                                    </select>
+                        <div id="accordion-content-custom" class="accordion-grid-wrapper" :class="accordionOpen.custom ? 'is-open' : ''">
+                            <div class="accordion-grid-inner">
+                                <div class="p-3 pt-0 border-t border-slate-100 space-y-2.5 text-xs bg-slate-50/50">
+                                    @foreach($activeFieldDefinitions as $def)
+                                        <div class="mt-2.5"
+                                             @if($def->jenis_faskes) x-show="isJenisSelected('{{ $def->jenis_faskes }}')" @endif>
+                                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">
+                                                {{ $def->label }}
+                                                @if($def->jenis_faskes)
+                                                    <span class="text-[10px] text-slate-400 font-normal">({{ $def->jenis_faskes }})</span>
+                                                @endif
+                                            </label>
+                                            <select x-model="draftFilters.customFilter['{{ $def->field_key }}']" @keydown.enter.prevent="applyFilters(true)"
+                                                    class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                                                <option value="">Semua {{ $def->label }}</option>
+                                                @foreach($def->options as $opt)
+                                                    <option value="{{ $opt }}">{{ $opt }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                    @endforeach
                                 </div>
-                            @endforeach
+                            </div>
                         </div>
                     </div>
                     @endif
+                    <!-- 7. Wilayah & Pencarian (Accordion Group 7) -->
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                        <button type="button"
+                                @click="toggleAccordion('wilayah')"
+                                :aria-expanded="accordionOpen.wilayah"
+                                aria-controls="accordion-content-wilayah"
+                                class="w-full p-3 text-left font-bold text-xs text-slate-800 flex items-center justify-between hover:bg-slate-50 transition focus:outline-none">
+                            <div class="flex items-center gap-2">
+                                <span class="w-6 h-6 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center flex-shrink-0">
+                                    <svg class="icon w-3.5 h-3.5"><use href="#ic-pin"/></svg>
+                                </span>
+                                <span>Wilayah &amp; Pencarian</span>
+                                <span x-show="(draftFilters.selectedKecamatan ? 1 : 0) + (draftFilters.filterSearch ? 1 : 0) > 0"
+                                      class="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-600 text-white"
+                                      x-text="(draftFilters.selectedKecamatan ? 1 : 0) + (draftFilters.filterSearch ? 1 : 0)"></span>
+                                <span x-show="hasUnappliedChanges('wilayah')"
+                                      class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"
+                                      title="Ada perubahan belum diterapkan"></span>
+                            </div>
+                            <svg class="w-4 h-4 text-slate-400 transform transition-transform"
+                                 :class="accordionOpen.wilayah ? 'rotate-180' : ''"
+                                 fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+
+                        <div id="accordion-content-wilayah" class="accordion-grid-wrapper" :class="accordionOpen.wilayah ? 'is-open' : ''">
+                            <div class="accordion-grid-inner">
+                                <div class="p-3 pt-0 border-t border-slate-100 space-y-3 text-xs bg-slate-50/50">
+                                    <!-- Dropdown Pilihan Kecamatan -->
+                                    <div class="pt-2.5">
+                                        <div class="flex items-center justify-between mb-1">
+                                            <label class="block text-[11px] font-semibold text-slate-700">Pilih Kecamatan:</label>
+                                            <template x-if="draftFilters.selectedKecamatan">
+                                                <button type="button" @click="draftFilters.selectedKecamatan = ''"
+                                                        class="text-[10px] text-blue-600 hover:text-blue-800 font-semibold">
+                                                    Reset Wilayah
+                                                </button>
+                                            </template>
+                                        </div>
+                                        <select x-model="draftFilters.selectedKecamatan" @keydown.enter.prevent="applyFilters(true)"
+                                                class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                                            <option value="">-- Semua Kecamatan (Kab. Banyumas) --</option>
+                                            <template x-for="kec in daftarKecamatan" :key="kec">
+                                                <option :value="kec" x-text="`Kecamatan ${kec}`"></option>
+                                            </template>
+                                        </select>
+                                    </div>
+
+                                    <!-- Input Pencarian Teks -->
+                                    <div>
+                                        <label class="block text-[11px] font-semibold text-slate-700 mb-1">Pencarian Teks / Nama:</label>
+                                        <div class="relative">
+                                            <input type="text" x-model="draftFilters.filterSearch" @keydown.enter.prevent="applyFilters(true)"
+                                                   placeholder="Cari nama faskes, alamat, desa..."
+                                                   class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 pr-7 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                            <template x-if="draftFilters.filterSearch">
+                                                <button type="button" @click="draftFilters.filterSearch = ''"
+                                                        class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 font-bold text-xs">&times;</button>
+                                            </template>
+                                        </div>
+                                        <p class="text-[10px] text-slate-400 mt-1">Tekan <b>Enter</b> atau tombol <b>Terapkan Filter</b> untuk mencari.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 8. Tampilan & Layer (Accordion Group 8 - Kontrol Instan) -->
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                        <button type="button"
+                                @click="toggleAccordion('tampilan')"
+                                :aria-expanded="accordionOpen.tampilan"
+                                aria-controls="accordion-content-tampilan"
+                                class="w-full p-3 text-left font-bold text-xs text-slate-800 flex items-center justify-between hover:bg-slate-50 transition focus:outline-none">
+                            <div class="flex items-center gap-2">
+                                <span class="w-6 h-6 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center flex-shrink-0">
+                                    <svg class="icon w-3.5 h-3.5"><use href="#ic-map"/></svg>
+                                </span>
+                                <span>Tampilan &amp; Layer</span>
+                                <span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600">Instan</span>
+                            </div>
+                            <svg class="w-4 h-4 text-slate-400 transform transition-transform"
+                                 :class="accordionOpen.tampilan ? 'rotate-180' : ''"
+                                 fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+
+                        <div id="accordion-content-tampilan" class="accordion-grid-wrapper" :class="accordionOpen.tampilan ? 'is-open' : ''">
+                            <div class="accordion-grid-inner">
+                                <div class="p-3 pt-0 border-t border-slate-100 space-y-3 text-xs bg-slate-50/50">
+                                    <!-- Layer Batas Wilayah Kabupaten (Kontrol Instan) -->
+                                    <div class="pt-2.5 flex items-center justify-between gap-2">
+                                        <div class="flex items-center gap-2 min-w-0">
+                                            <svg class="icon w-4 h-4 text-slate-600 flex-shrink-0"><use href="#ic-map"/></svg>
+                                            <div class="min-w-0">
+                                                <div class="font-bold text-slate-800">Layer Batas Kabupaten</div>
+                                                <div class="text-[10px] text-slate-500">Garis batas luar Kab. Banyumas</div>
+                                            </div>
+                                        </div>
+                                        <button type="button"
+                                                @click="toggleKabupatenLayer()"
+                                                :class="showKabupatenLayer ? 'bg-blue-600' : 'bg-slate-300'"
+                                                class="relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
+                                                role="switch"
+                                                :aria-checked="showKabupatenLayer"
+                                                title="Nyalakan / Matikan Garis Batas Kabupaten">
+                                            <span :class="showKabupatenLayer ? 'translate-x-4' : 'translate-x-0'"
+                                                  class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"></span>
+                                        </button>
+                                    </div>
+
+                                    <!-- Toggle: Tampilkan semua jenis di semua zoom (Kontrol Instan) -->
+                                    <div class="pt-2 border-t border-slate-200/60 flex items-center justify-between gap-2">
+                                        <div class="min-w-0">
+                                            <div class="font-bold text-slate-800">Semua Jenis di Semua Zoom</div>
+                                            <div class="text-[10px] text-slate-500" x-text="showAllTypesAtAllZooms ? 'Semua jenis tampil tanpa LOD' : 'LOD aktif (hemat DOM)'"></div>
+                                        </div>
+                                        <input type="checkbox" id="toggle-all-zooms-acc" x-model="showAllTypesAtAllZooms" @change="onToggleAllZooms()"
+                                               class="rounded text-blue-600 focus:ring-blue-500 h-4 w-4 cursor-pointer">
+                                    </div>
+
+                                    <!-- Toggle: Tampilkan titik di luar Banyumas di peta (Kontrol Instan) -->
+                                    <template x-if="invalidCoordinateCount > 0">
+                                        <div class="pt-2 border-t border-slate-200/60 flex items-center justify-between gap-2">
+                                            <div class="min-w-0">
+                                                <div class="font-bold text-amber-800">Titik di Luar Banyumas</div>
+                                                <div class="text-[10px] text-amber-700">
+                                                    <span x-text="invalidCoordinateCount"></span> titik terdeteksi
+                                                    <button type="button" @click="openInvalidModal()" class="underline font-semibold ml-1">Lihat</button>
+                                                </div>
+                                            </div>
+                                            <input type="checkbox" id="toggle-outside-markers-acc" x-model="showOutsideBanyumasMarkers" @change="toggleOutsideBanyumasMarkers()"
+                                                   class="rounded text-amber-600 focus:ring-amber-500 h-4 w-4 cursor-pointer">
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- 4. Daftar Faskes Hasil Filter (Dapat Diklik untuk Fokus ke Peta) -->
@@ -1096,6 +1341,17 @@
 
             <!-- TAB 2: ANALISIS LOKASI EVENT (POSTGIS & OSRM) -->
             <div x-show="activeTab === 'event'" class="flex-1 overflow-y-auto p-3 sm:p-4 space-y-4 custom-scrollbar">
+
+                <!-- Peringatan jika ada perubahan filter atribut yang belum diterapkan (Tugas 12C) -->
+                <template x-if="hasUnappliedChanges()">
+                    <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2.5 text-xs text-amber-800">
+                        <svg class="icon w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5"><use href="#ic-warning"/></svg>
+                        <div class="flex-1">
+                            <span class="font-bold text-amber-900 block mb-0.5">Ada perubahan filter yang belum diterapkan!</span>
+                            <span class="text-[11px] text-amber-700">Analisis Event saat ini menggunakan filter yang sudah diterapkan sebelumnya. Klik <b>Terapkan Filter</b> di Tab Filter Atribut jika ingin menggunakan pilihan terbaru.</span>
+                        </div>
+                    </div>
+                </template>
 
                 <div class="bg-slate-50 rounded-xl p-3.5 border border-slate-200 space-y-3">
                     <div>
@@ -1283,8 +1539,46 @@
 
             </div>
 
-            <!-- Footer Stats -->
-            <div class="p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] bg-slate-50 border-t border-slate-200 text-center text-[11px] text-slate-500 flex-shrink-0">
+            <!-- Sticky Footer: Aksi Terapkan Filter & Reset (Tugas 12C) -->
+            <div x-show="activeTab === 'filter'"
+                 class="sticky bottom-0 p-3 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] flex-shrink-0 space-y-2 z-10">
+                <div class="flex items-center gap-2">
+                    <!-- Tombol Reset -->
+                    <button type="button"
+                            @click="resetAllFilters()"
+                            class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition flex items-center justify-center gap-1.5 focus:outline-none focus:ring-2 focus:ring-slate-300">
+                        <span>Reset</span>
+                    </button>
+
+                    <!-- Tombol Terapkan Filter -->
+                    <button type="button"
+                            @click="applyFilters(true)"
+                            :disabled="isFiltering"
+                            class="flex-1 py-2 px-4 rounded-xl text-xs font-bold text-white transition flex items-center justify-center gap-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                            :class="hasUnappliedChanges() ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/20' : 'bg-blue-500/80 hover:bg-blue-600 text-white'">
+                        <!-- Spinner saat proses filtering -->
+                        <template x-if="isFiltering">
+                            <svg class="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                            </svg>
+                        </template>
+                        <template x-if="!isFiltering">
+                            <svg class="icon w-3.5 h-3.5"><use href="#ic-bolt"/></svg>
+                        </template>
+
+                        <span x-text="isFiltering ? 'Menerapkan...' : (unappliedChangeCount() > 0 ? `Terapkan (${unappliedChangeCount()})` : 'Terapkan Filter')"></span>
+                    </button>
+                </div>
+
+                <div class="text-center text-[10.5px] text-slate-400">
+                    Master Data: <b class="text-slate-600" x-text="totalFaskes"></b> Faskes &bull; Kab. Banyumas
+                </div>
+            </div>
+
+            <!-- Footer Stats untuk Tab Analisis Event -->
+            <div x-show="activeTab === 'event'"
+                 class="p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] bg-slate-50 border-t border-slate-200 text-center text-[11px] text-slate-500 flex-shrink-0">
                 Total Master Data: <span class="font-bold text-slate-700" x-text="totalFaskes"></span> Faskes &bull; Kab. Banyumas
             </div>
         </aside>
@@ -1417,46 +1711,127 @@
                 isFiltering: false,
                 hasSearched: false,
                 totalFaskes: 0,
+                isFullscreen: false,
 
-                // Filter Atribut Dinamis
-                selectedJenis: ['rumah_sakit', 'puskesmas', 'klinik_pratama', 'klinik_utama', 'laboratorium', 'upkdk', 'griya_sehat', 'tpmd', 'tpmdg', 'tpmb', 'tpmp'],
-                filterAmbulans: false,
-                filterBpjs: false,
-                filterRawatInap: false,
-                filterPoned: false,
-                filterSearch: '',
-
-                // State Akordeon Filter Lanjutan (Tugas 4)
+                // 8 Grup Akordeon Sidebar Filter (Tugas 12B)
                 accordionOpen: {
-                    ambulans: false,
+                    jenis: true,
+                    layanan: true,
+                    kapasitas: false,
                     kategori: false,
                     izin: false,
-                    custom: false
+                    custom: false,
+                    wilayah: true,
+                    tampilan: false
                 },
+
+                // Model Draft vs Applied Filters (Tugas 12C)
+                // Pilihan pengguna ditampung di draftFilters. Peta & data hanya berubah saat tombol 'Terapkan' diklik.
+                draftFilters: {
+                    selectedJenis: ['rumah_sakit', 'puskesmas', 'klinik_pratama', 'klinik_utama', 'laboratorium', 'upkdk', 'griya_sehat', 'tpmd', 'tpmdg', 'tpmb', 'tpmp'],
+                    filterAmbulans: false,
+                    filterBpjs: false,
+                    filterRawatInap: false,
+                    filterPoned: false,
+                    selectedKecamatan: '',
+                    filterSearch: '',
+                    minTotalAmbulans: 0,
+                    minAmbulansGadar: 0,
+                    minAmbulansRodaDua: 0,
+                    minBed: 0,
+                    minSdm: 0,
+                    kepemilikan: '',
+                    tipeRs: '',
+                    kategoriPuskesmas: '',
+                    wilayahPuskesmas: '',
+                    persalinanPuskesmas: '',
+                    ponekRs: '',
+                    kategoriLayananKlinik: '',
+                    bpjsKlinik: '',
+                    statusIzin: '',
+                    statusOperasional: 'aktif',
+                    customFilter: {}
+                },
+
+                appliedFilters: {
+                    selectedJenis: ['rumah_sakit', 'puskesmas', 'klinik_pratama', 'klinik_utama', 'laboratorium', 'upkdk', 'griya_sehat', 'tpmd', 'tpmdg', 'tpmb', 'tpmp'],
+                    filterAmbulans: false,
+                    filterBpjs: false,
+                    filterRawatInap: false,
+                    filterPoned: false,
+                    selectedKecamatan: '',
+                    filterSearch: '',
+                    minTotalAmbulans: 0,
+                    minAmbulansGadar: 0,
+                    minAmbulansRodaDua: 0,
+                    minBed: 0,
+                    minSdm: 0,
+                    kepemilikan: '',
+                    tipeRs: '',
+                    kategoriPuskesmas: '',
+                    wilayahPuskesmas: '',
+                    persalinanPuskesmas: '',
+                    ponekRs: '',
+                    kategoriLayananKlinik: '',
+                    bpjsKlinik: '',
+                    statusIzin: '',
+                    statusOperasional: 'aktif',
+                    customFilter: {}
+                },
+
+                // Getters praktis untuk backward compatibility ekspresi di template lama/eksternal
+                get selectedJenis() { return this.appliedFilters.selectedJenis; },
+                set selectedJenis(v) { this.draftFilters.selectedJenis = v; },
+                get filterAmbulans() { return this.appliedFilters.filterAmbulans; },
+                set filterAmbulans(v) { this.draftFilters.filterAmbulans = v; },
+                get filterBpjs() { return this.appliedFilters.filterBpjs; },
+                set filterBpjs(v) { this.draftFilters.filterBpjs = v; },
+                get filterRawatInap() { return this.appliedFilters.filterRawatInap; },
+                set filterRawatInap(v) { this.draftFilters.filterRawatInap = v; },
+                get filterPoned() { return this.appliedFilters.filterPoned; },
+                set filterPoned(v) { this.draftFilters.filterPoned = v; },
+                get selectedKecamatan() { return this.appliedFilters.selectedKecamatan; },
+                set selectedKecamatan(v) { this.draftFilters.selectedKecamatan = v; },
+                get filterSearch() { return this.appliedFilters.filterSearch; },
+                set filterSearch(v) { this.draftFilters.filterSearch = v; },
+                get minTotalAmbulans() { return this.appliedFilters.minTotalAmbulans; },
+                set minTotalAmbulans(v) { this.draftFilters.minTotalAmbulans = v; },
+                get minAmbulansGadar() { return this.appliedFilters.minAmbulansGadar; },
+                set minAmbulansGadar(v) { this.draftFilters.minAmbulansGadar = v; },
+                get minAmbulansRodaDua() { return this.appliedFilters.minAmbulansRodaDua; },
+                set minAmbulansRodaDua(v) { this.draftFilters.minAmbulansRodaDua = v; },
+                get minBed() { return this.appliedFilters.minBed; },
+                set minBed(v) { this.draftFilters.minBed = v; },
+                get minSdm() { return this.appliedFilters.minSdm; },
+                set minSdm(v) { this.draftFilters.minSdm = v; },
+                get kepemilikan() { return this.appliedFilters.kepemilikan; },
+                set kepemilikan(v) { this.draftFilters.kepemilikan = v; },
+                get tipeRs() { return this.appliedFilters.tipeRs; },
+                set tipeRs(v) { this.draftFilters.tipeRs = v; },
+                get kategoriPuskesmas() { return this.appliedFilters.kategoriPuskesmas; },
+                set kategoriPuskesmas(v) { this.draftFilters.kategoriPuskesmas = v; },
+                get wilayahPuskesmas() { return this.appliedFilters.wilayahPuskesmas; },
+                set wilayahPuskesmas(v) { this.draftFilters.wilayahPuskesmas = v; },
+                get persalinanPuskesmas() { return this.appliedFilters.persalinanPuskesmas; },
+                set persalinanPuskesmas(v) { this.draftFilters.persalinanPuskesmas = v; },
+                get ponekRs() { return this.appliedFilters.ponekRs; },
+                set ponekRs(v) { this.draftFilters.ponekRs = v; },
+                get kategoriLayananKlinik() { return this.appliedFilters.kategoriLayananKlinik; },
+                set kategoriLayananKlinik(v) { this.draftFilters.kategoriLayananKlinik = v; },
+                get bpjsKlinik() { return this.appliedFilters.bpjsKlinik; },
+                set bpjsKlinik(v) { this.draftFilters.bpjsKlinik = v; },
+                get statusIzin() { return this.appliedFilters.statusIzin; },
+                set statusIzin(v) { this.draftFilters.statusIzin = v; },
+                get statusOperasional() { return this.appliedFilters.statusOperasional; },
+                set statusOperasional(v) { this.draftFilters.statusOperasional = v; },
+                get customFilter() { return this.appliedFilters.customFilter; },
+                set customFilter(v) { this.draftFilters.customFilter = v; },
+
                 filterDebounceTimer: null,
                 filterAbortController: null,
 
-                // Nilai Filter Lanjutan (Tugas 4)
-                minTotalAmbulans: 0,
-                minAmbulansGadar: 0,
-                minAmbulansRodaDua: 0,
-                minBed: 0,
-                minSdm: 0,
-                kepemilikan: '',
-                tipeRs: '',
-                kategoriPuskesmas: '',
-                wilayahPuskesmas: '',
-                persalinanPuskesmas: '',
-                ponekRs: '',
-                kategoriLayananKlinik: '',
-                bpjsKlinik: '',
-                statusIzin: '',
-                statusOperasional: 'aktif',
-                customFilter: {},
-
-                // State Layer Batas Wilayah Kabupaten & Pilihan Wilayah
+                // Kontrol layer langsung (instan, tidak perlu tombol Terapkan)
                 showKabupatenLayer: true,
-                selectedKecamatan: '',
                 daftarKecamatan: [
                     'Ajibarang', 'Banyumas', 'Baturraden', 'Cilongok', 'Gumelar',
                     'Jatilawang', 'Kalibagor', 'Karanglewas', 'Kebasen', 'Kedungbanteng',
@@ -1517,6 +1892,248 @@
                 faskesList: [],
                 hasilAnalisis: [],
 
+                // Helper Deep Clone untuk Filter State (Tugas 12C)
+                cloneFilterState(src) {
+                    return {
+                        selectedJenis: Array.isArray(src.selectedJenis) ? [...src.selectedJenis] : [...ALL_FASKES_TYPES],
+                        filterAmbulans: Boolean(src.filterAmbulans),
+                        filterBpjs: Boolean(src.filterBpjs),
+                        filterRawatInap: Boolean(src.filterRawatInap),
+                        filterPoned: Boolean(src.filterPoned),
+                        selectedKecamatan: src.selectedKecamatan || '',
+                        filterSearch: src.filterSearch || '',
+                        minTotalAmbulans: Number(src.minTotalAmbulans) || 0,
+                        minAmbulansGadar: Number(src.minAmbulansGadar) || 0,
+                        minAmbulansRodaDua: Number(src.minAmbulansRodaDua) || 0,
+                        minBed: Number(src.minBed) || 0,
+                        minSdm: Number(src.minSdm) || 0,
+                        kepemilikan: src.kepemilikan || '',
+                        tipeRs: src.tipeRs || '',
+                        kategoriPuskesmas: src.kategoriPuskesmas || '',
+                        wilayahPuskesmas: src.wilayahPuskesmas || '',
+                        persalinanPuskesmas: src.persalinanPuskesmas || '',
+                        ponekRs: src.ponekRs || '',
+                        kategoriLayananKlinik: src.kategoriLayananKlinik || '',
+                        bpjsKlinik: src.bpjsKlinik || '',
+                        statusIzin: src.statusIzin || '',
+                        statusOperasional: src.statusOperasional || 'aktif',
+                        customFilter: src.customFilter ? { ...src.customFilter } : {}
+                    };
+                },
+
+                // Persistensi Preferensi Accordion via localStorage (Tugas 12B)
+                loadAccordionPreferences() {
+                    try {
+                        const saved = localStorage.getItem('peta_accordion_prefs');
+                        if (saved) {
+                            const parsed = JSON.parse(saved);
+                            if (parsed && typeof parsed === 'object') {
+                                Object.keys(this.accordionOpen).forEach(key => {
+                                    if (typeof parsed[key] === 'boolean') {
+                                        this.accordionOpen[key] = parsed[key];
+                                    }
+                                });
+                            }
+                        }
+                    } catch (e) {
+                        /* localStorage aman jika diblokir/private mode */
+                    }
+                },
+
+                saveAccordionPreferences() {
+                    try {
+                        localStorage.setItem('peta_accordion_prefs', JSON.stringify(this.accordionOpen));
+                    } catch (e) {
+                        /* no-op */
+                    }
+                },
+
+                toggleAccordion(groupKey) {
+                    if (this.accordionOpen[groupKey] !== undefined) {
+                        this.accordionOpen[groupKey] = !this.accordionOpen[groupKey];
+                        this.saveAccordionPreferences();
+                    }
+                },
+
+                toggleAllAccordions(openAll) {
+                    Object.keys(this.accordionOpen).forEach(k => {
+                        this.accordionOpen[k] = Boolean(openAll);
+                    });
+                    this.saveAccordionPreferences();
+                },
+
+                areAllAccordionsOpen() {
+                    return Object.values(this.accordionOpen).every(v => v === true);
+                },
+
+                // Hitung Perubahan Belum Diterapkan (Unapplied Changes) (Tugas 12C)
+                hasUnappliedChanges(groupKey = null) {
+                    const d = this.draftFilters;
+                    const a = this.appliedFilters;
+
+                    if (!groupKey) {
+                        return this.unappliedChangeCount() > 0;
+                    }
+
+                    switch (groupKey) {
+                        case 'jenis': {
+                            if (d.selectedJenis.length !== a.selectedJenis.length) return true;
+                            return !d.selectedJenis.every(j => a.selectedJenis.includes(j));
+                        }
+                        case 'layanan':
+                            return d.filterAmbulans !== a.filterAmbulans ||
+                                   d.filterBpjs !== a.filterBpjs ||
+                                   d.filterRawatInap !== a.filterRawatInap ||
+                                   d.filterPoned !== a.filterPoned;
+                        case 'kapasitas':
+                            return d.minTotalAmbulans !== a.minTotalAmbulans ||
+                                   d.minAmbulansGadar !== a.minAmbulansGadar ||
+                                   d.minAmbulansRodaDua !== a.minAmbulansRodaDua ||
+                                   d.minBed !== a.minBed ||
+                                   d.minSdm !== a.minSdm;
+                        case 'kategori':
+                            return d.kepemilikan !== a.kepemilikan ||
+                                   d.tipeRs !== a.tipeRs ||
+                                   d.kategoriPuskesmas !== a.kategoriPuskesmas ||
+                                   d.wilayahPuskesmas !== a.wilayahPuskesmas ||
+                                   d.persalinanPuskesmas !== a.persalinanPuskesmas ||
+                                   d.ponekRs !== a.ponekRs ||
+                                   d.kategoriLayananKlinik !== a.kategoriLayananKlinik ||
+                                   d.bpjsKlinik !== a.bpjsKlinik ||
+                                   d.statusOperasional !== a.statusOperasional;
+                        case 'izin':
+                            return d.statusIzin !== a.statusIzin;
+                        case 'custom': {
+                            const dKeys = Object.keys(d.customFilter || {});
+                            const aKeys = Object.keys(a.customFilter || {});
+                            if (dKeys.length !== aKeys.length) return true;
+                            return dKeys.some(k => (d.customFilter[k] || '') !== (a.customFilter[k] || ''));
+                        }
+                        case 'wilayah':
+                            return d.selectedKecamatan !== a.selectedKecamatan ||
+                                   (d.filterSearch || '').trim() !== (a.filterSearch || '').trim();
+                        default:
+                            return false;
+                    }
+                },
+
+                unappliedChangeCount() {
+                    const d = this.draftFilters;
+                    const a = this.appliedFilters;
+                    let count = 0;
+
+                    // Jenis faskes
+                    const sameJenis = d.selectedJenis.length === a.selectedJenis.length &&
+                        d.selectedJenis.every(j => a.selectedJenis.includes(j));
+                    if (!sameJenis) count++;
+
+                    // Layanan & Fasilitas
+                    if (d.filterAmbulans !== a.filterAmbulans) count++;
+                    if (d.filterBpjs !== a.filterBpjs) count++;
+                    if (d.filterRawatInap !== a.filterRawatInap) count++;
+                    if (d.filterPoned !== a.filterPoned) count++;
+
+                    // Ambulans & Kapasitas
+                    if (d.minTotalAmbulans !== a.minTotalAmbulans) count++;
+                    if (d.minAmbulansGadar !== a.minAmbulansGadar) count++;
+                    if (d.minAmbulansRodaDua !== a.minAmbulansRodaDua) count++;
+                    if (d.minBed !== a.minBed) count++;
+                    if (d.minSdm !== a.minSdm) count++;
+
+                    // Kategori & Klasifikasi
+                    if (d.kepemilikan !== a.kepemilikan) count++;
+                    if (d.tipeRs !== a.tipeRs) count++;
+                    if (d.kategoriPuskesmas !== a.kategoriPuskesmas) count++;
+                    if (d.wilayahPuskesmas !== a.wilayahPuskesmas) count++;
+                    if (d.persalinanPuskesmas !== a.persalinanPuskesmas) count++;
+                    if (d.ponekRs !== a.ponekRs) count++;
+                    if (d.kategoriLayananKlinik !== a.kategoriLayananKlinik) count++;
+                    if (d.bpjsKlinik !== a.bpjsKlinik) count++;
+                    if (d.statusOperasional !== a.statusOperasional) count++;
+
+                    // Izin Operasional
+                    if (d.statusIzin !== a.statusIzin) count++;
+
+                    // Wilayah & Pencarian
+                    if (d.selectedKecamatan !== a.selectedKecamatan) count++;
+                    if ((d.filterSearch || '').trim() !== (a.filterSearch || '').trim()) count++;
+
+                    // Custom fields
+                    const allCustomKeys = new Set([
+                        ...Object.keys(d.customFilter || {}),
+                        ...Object.keys(a.customFilter || {})
+                    ]);
+                    allCustomKeys.forEach(k => {
+                        if ((d.customFilter[k] || '') !== (a.customFilter[k] || '')) {
+                            count++;
+                        }
+                    });
+
+                    return count;
+                },
+
+                // Terapkan Filter (Draft -> Applied) (Tugas 12C)
+                applyFilters(fitBounds = false) {
+                    this.appliedFilters = this.cloneFilterState(this.draftFilters);
+                    this.typeDataCache.clear();
+                    this.loadFilterCountsAndSync(fitBounds);
+                },
+
+                // Reset Semua Filter ke Default (Draft & Applied) (Tugas 12C)
+                resetAllFilters() {
+                    const defaults = {
+                        selectedJenis: [...ALL_FASKES_TYPES],
+                        filterAmbulans: false,
+                        filterBpjs: false,
+                        filterRawatInap: false,
+                        filterPoned: false,
+                        selectedKecamatan: '',
+                        filterSearch: '',
+                        minTotalAmbulans: 0,
+                        minAmbulansGadar: 0,
+                        minAmbulansRodaDua: 0,
+                        minBed: 0,
+                        minSdm: 0,
+                        kepemilikan: '',
+                        tipeRs: '',
+                        kategoriPuskesmas: '',
+                        wilayahPuskesmas: '',
+                        persalinanPuskesmas: '',
+                        ponekRs: '',
+                        kategoriLayananKlinik: '',
+                        bpjsKlinik: '',
+                        statusIzin: '',
+                        statusOperasional: 'aktif',
+                        customFilter: {}
+                    };
+                    this.draftFilters = this.cloneFilterState(defaults);
+                    this.appliedFilters = this.cloneFilterState(defaults);
+                    this.typeDataCache.clear();
+                    this.loadFilterCountsAndSync(true);
+                },
+
+                // Fullscreen API Helper (Tugas 12A)
+                toggleFullscreen() {
+                    const el = document.documentElement;
+                    if (!document.fullscreenElement) {
+                        if (el.requestFullscreen) {
+                            el.requestFullscreen().catch(() => {});
+                        } else if (el.webkitRequestFullscreen) {
+                            el.webkitRequestFullscreen();
+                        } else if (el.msRequestFullscreen) {
+                            el.msRequestFullscreen();
+                        }
+                    } else {
+                        if (document.exitFullscreen) {
+                            document.exitFullscreen().catch(() => {});
+                        } else if (document.webkitExitFullscreen) {
+                            document.webkitExitFullscreen();
+                        } else if (document.msExitFullscreen) {
+                            document.msExitFullscreen();
+                        }
+                    }
+                },
+
                 initMap() {
                     // Default center: Purwokerto, Kabupaten Banyumas (-7.424364, 109.230345)
                     this.map = L.map('map', {
@@ -1526,6 +2143,19 @@
                     }).setView([-7.424364, 109.230345], BASE_ZOOM);
 
                     this.currentZoom = this.map.getZoom();
+
+                    // Muat preferensi akordeon dari localStorage
+                    this.loadAccordionPreferences();
+
+                    // Listener fullscreenchange standar browser
+                    const onFsChange = () => {
+                        this.isFullscreen = Boolean(document.fullscreenElement);
+                        setTimeout(() => {
+                            if (this.map) this.map.invalidateSize({ animate: false });
+                        }, 100);
+                    };
+                    document.addEventListener('fullscreenchange', onFsChange);
+                    document.addEventListener('webkitfullscreenchange', onFsChange);
 
                     // Posisi Zoom Control di pojok kiri bawah
                     L.control.zoom({ position: 'bottomleft' }).addTo(this.map);
@@ -1542,26 +2172,20 @@
                         }
                     });
 
-                    // Layer Groups Leaflet:
-                    // 1. Batas Kabupaten (Garis pembatas non-interaktif)
-                    // 2. Faskes Markers (LayerGroup standar tanpa cluster - Tugas 9)
-                    // 3. Rute OSRM
-                    // 4. Titik Event & Radius Circle
-                    // 5. Faskes di Luar Wilayah Banyumas (Tugas 11)
+                    // Layer Groups Leaflet
                     this.kabupatenLayerGroup = L.layerGroup().addTo(this.map);
                     this.faskesLayerGroup = L.layerGroup().addTo(this.map);
                     this.routeLayerGroup = L.layerGroup().addTo(this.map);
                     this.eventLayerGroup = L.layerGroup().addTo(this.map);
                     this.outsideBanyumasLayerGroup = L.layerGroup().addTo(this.map);
 
-                    // Inisialisasi cache icon satu kali untuk 11 jenis faskes (Tugas 8B)
+                    // Inisialisasi cache icon
                     this.initIconCache();
 
-                    // Muat Batas Luar Kabupaten Banyumas (Non-Interaktif)
+                    // Muat Batas Luar Kabupaten Banyumas
                     this.loadKabupatenBoundary();
 
-                    // Viewport Culling & LOD Synchronizer pada event moveend / zoomend (Tugas 9)
-                    // Debounce 150 ms agar tidak membebani browser saat scrolling/panning cepat
+                    // Viewport Culling & LOD Synchronizer
                     this.map.on('moveend', () => {
                         this.currentZoom = this.map.getZoom();
                         clearTimeout(this.cullDebounceTimer);
@@ -1583,27 +2207,50 @@
                         this.setEventPoint(e.latlng.lat, e.latlng.lng);
                     });
 
-                    // Muat Data Awal Faskes (LOD zoom: hanya jenis yang aktif di BASE_ZOOM)
+                    // Muat Data Awal Faskes
                     this.loadInitialFaskes();
 
-                    // Listener Kustom untuk 'Jadikan Titik Event' dari Popup Faskes
+                    // Listener Kustom 'Jadikan Titik Event' dari Popup
                     window.addEventListener('set-event-here', (e) => {
                         if (this.eventLat !== null && this.eventLng !== null) return;
                         this.setEventPoint(e.detail.lat, e.detail.lng);
                         this.activeTab = 'event';
                     });
 
-                    // Bersihkan floating overlay/badge liar di kanvas peta
+                    // Bersihkan floating overlay/badge liar
                     this.cleanupStrayMapOverlays();
 
-                    // Invalidate size saat sidebar ditutup/dibuka
+                    // Responsif: Invalidate size saat sidebar ditutup/dibuka & transitionend (Tugas 12A)
                     this.$watch('sidebarOpen', () => {
                         setTimeout(() => {
                             if (this.map) {
-                                this.map.invalidateSize({ animate: true });
+                                this.map.invalidateSize({ animate: false });
                             }
-                        }, 320);
+                        }, 260);
                     });
+
+                    // Listener transitionend pada sidebar aside (Tugas 12A)
+                    const asideEl = document.querySelector('aside');
+                    if (asideEl) {
+                        asideEl.addEventListener('transitionend', () => {
+                            if (this.map) {
+                                this.map.invalidateSize({ animate: false });
+                            }
+                        });
+                    }
+
+                    // Window resize & orientation change dengan debounce 150 ms (Tugas 12A)
+                    let resizeTimer = null;
+                    const onWindowResize = () => {
+                        clearTimeout(resizeTimer);
+                        resizeTimer = setTimeout(() => {
+                            if (this.map) {
+                                this.map.invalidateSize({ animate: false });
+                            }
+                        }, 150);
+                    };
+                    window.addEventListener('resize', onWindowResize, { passive: true });
+                    window.addEventListener('orientationchange', onWindowResize, { passive: true });
                 },
 
                 // Helper: Tombol Zoom In satu tingkat dari floating notice
@@ -1616,7 +2263,8 @@
                 // Helper LOD: Apakah suatu jenis faskes sudah boleh tampil di zoom saat ini? (Tugas 9)
                 isTypeUnlocked(jenis) {
                     if (this.showAllTypesAtAllZooms) return true;
-                    if (SHOW_SINGLE_TYPE_ALWAYS && this.selectedJenis.length === 1 && this.selectedJenis.includes(jenis)) {
+                    const sel = this.appliedFilters.selectedJenis;
+                    if (SHOW_SINGLE_TYPE_ALWAYS && sel.length === 1 && sel.includes(jenis)) {
                         return true;
                     }
                     const minZoom = ZOOM_THRESHOLDS[jenis] !== undefined ? ZOOM_THRESHOLDS[jenis] : BASE_ZOOM;
@@ -1635,7 +2283,8 @@
                 // Floating Notice Text: Jenis faskes yang dipilih user namun belum tampil karena zoom level
                 getPendingTypesText() {
                     if (this.showAllTypesAtAllZooms) return '';
-                    if (SHOW_SINGLE_TYPE_ALWAYS && this.selectedJenis.length === 1) return '';
+                    const sel = this.appliedFilters.selectedJenis;
+                    if (SHOW_SINGLE_TYPE_ALWAYS && sel.length === 1) return '';
 
                     const lockedLabels = [];
                     const typesToCheck = [
@@ -1649,7 +2298,7 @@
                     ];
 
                     for (const item of typesToCheck) {
-                        if (this.selectedJenis.includes(item.key) && !this.isTypeUnlocked(item.key)) {
+                        if (sel.includes(item.key) && !this.isTypeUnlocked(item.key)) {
                             lockedLabels.push(item.label);
                         }
                     }
@@ -1668,102 +2317,102 @@
 
                 // Tandatangan filter untuk pengelompokan cache (mengecualikan jenis_faskes)
                 getFilterSignature() {
+                    const af = this.appliedFilters;
                     const obj = {
-                        amb: this.filterAmbulans ? 1 : 0,
-                        bpjs: this.filterBpjs ? 1 : 0,
-                        rinap: this.filterRawatInap ? 1 : 0,
-                        poned: this.filterPoned ? 1 : 0,
-                        kec: this.selectedKecamatan || '',
-                        q: this.filterSearch.trim(),
-                        totamb: this.minTotalAmbulans,
-                        gadar: this.minAmbulansGadar,
-                        r2: this.minAmbulansRodaDua,
-                        bed: this.minBed,
-                        sdm: this.minSdm,
-                        milik: this.kepemilikan,
-                        trs: this.tipeRs,
-                        katpkm: this.kategoriPuskesmas,
-                        wilpkm: this.wilayahPuskesmas,
-                        salinpkm: this.persalinanPuskesmas,
-                        ponek: this.ponekRs,
-                        katkln: this.kategoriLayananKlinik,
-                        bpjskln: this.bpjsKlinik,
-                        izin: this.statusIzin,
-                        ops: this.statusOperasional,
-                        cust: JSON.stringify(this.customFilter || {})
+                        amb: af.filterAmbulans ? 1 : 0,
+                        bpjs: af.filterBpjs ? 1 : 0,
+                        rinap: af.filterRawatInap ? 1 : 0,
+                        poned: af.filterPoned ? 1 : 0,
+                        kec: af.selectedKecamatan || '',
+                        q: (af.filterSearch || '').trim(),
+                        totamb: af.minTotalAmbulans,
+                        gadar: af.minAmbulansGadar,
+                        r2: af.minAmbulansRodaDua,
+                        bed: af.minBed,
+                        sdm: af.minSdm,
+                        milik: af.kepemilikan,
+                        trs: af.tipeRs,
+                        katpkm: af.kategoriPuskesmas,
+                        wilpkm: af.wilayahPuskesmas,
+                        salinpkm: af.persalinanPuskesmas,
+                        ponek: af.ponekRs,
+                        katkln: af.kategoriLayananKlinik,
+                        bpjskln: af.bpjsKlinik,
+                        izin: af.statusIzin,
+                        ops: af.statusOperasional,
+                        cust: JSON.stringify(af.customFilter || {})
                     };
                     return JSON.stringify(obj);
                 },
 
                 // ============================================================
-                // METODE HELPER FILTER & STATE IDENTIFIERS (Tugas 11)
+                // METODE HELPER FILTER & STATE IDENTIFIERS (Tugas 11 & 12)
                 // ============================================================
 
-                // Cek apakah ada jenis faskes dalam selectedJenis yang terdapat di array arr
+                // Cek apakah ada jenis faskes dalam draftFilters.selectedJenis yang terdapat di array arr
                 hasAnyJenis(arr) {
-                    if (!Array.isArray(arr) || !Array.isArray(this.selectedJenis)) return false;
-                    return arr.some(j => this.selectedJenis.includes(j));
+                    if (!Array.isArray(arr) || !Array.isArray(this.draftFilters.selectedJenis)) return false;
+                    return arr.some(j => this.draftFilters.selectedJenis.includes(j));
                 },
 
-                // Cek apakah suatu jenis faskes sedang dicentang di selectedJenis
+                // Cek apakah suatu jenis faskes sedang dicentang di draftFilters.selectedJenis
                 isJenisSelected(jenis) {
-                    return Array.isArray(this.selectedJenis) && this.selectedJenis.includes(jenis);
+                    return Array.isArray(this.draftFilters.selectedJenis) && this.draftFilters.selectedJenis.includes(jenis);
                 },
 
-                // Hitung total filter atribut yang sedang aktif (untuk badge tab sidebar)
+                // Hitung total filter atribut yang sedang aktif di appliedFilters (untuk badge tab sidebar)
                 activeFilterCount() {
                     let count = 0;
-                    if (this.filterAmbulans) count++;
-                    if (this.filterBpjs) count++;
-                    if (this.filterRawatInap) count++;
-                    if (this.filterPoned) count++;
-                    if (this.selectedKecamatan) count++;
-                    if (this.filterSearch && this.filterSearch.trim()) count++;
+                    const af = this.appliedFilters;
+                    if (af.filterAmbulans) count++;
+                    if (af.filterBpjs) count++;
+                    if (af.filterRawatInap) count++;
+                    if (af.filterPoned) count++;
+                    if (af.selectedKecamatan) count++;
+                    if (af.filterSearch && af.filterSearch.trim()) count++;
                     count += this.countFilterAmbulansKapasitas();
                     count += this.countFilterKategori();
-                    if (this.statusIzin) count++;
+                    if (af.statusIzin) count++;
                     count += this.countFilterCustom();
                     return count;
                 },
 
-                // Hitung jumlah filter aktif pada sub-akordeon Ambulans & Kapasitas
+                // Hitung jumlah filter aktif pada sub-akordeon Ambulans & Kapasitas (pakai draftFilters agar badge akordeon langsung reaktif)
                 countFilterAmbulansKapasitas() {
                     let c = 0;
-                    if (this.minTotalAmbulans > 0) c++;
-                    if (this.minAmbulansGadar > 0) c++;
-                    if (this.minAmbulansRodaDua > 0) c++;
-                    if (this.minBed > 0) c++;
-                    if (this.minSdm > 0) c++;
+                    const df = this.draftFilters;
+                    if (df.minTotalAmbulans > 0) c++;
+                    if (df.minAmbulansGadar > 0) c++;
+                    if (df.minAmbulansRodaDua > 0) c++;
+                    if (df.minBed > 0) c++;
+                    if (df.minSdm > 0) c++;
                     return c;
                 },
 
                 // Hitung jumlah filter aktif pada sub-akordeon Kategori & Klasifikasi
                 countFilterKategori() {
                     let c = 0;
-                    if (this.kepemilikan) c++;
-                    if (this.tipeRs) c++;
-                    if (this.kategoriPuskesmas) c++;
-                    if (this.wilayahPuskesmas) c++;
-                    if (this.persalinanPuskesmas) c++;
-                    if (this.ponekRs) c++;
-                    if (this.kategoriLayananKlinik) c++;
-                    if (this.bpjsKlinik) c++;
+                    const df = this.draftFilters;
+                    if (df.kepemilikan) c++;
+                    if (df.tipeRs) c++;
+                    if (df.kategoriPuskesmas) c++;
+                    if (df.wilayahPuskesmas) c++;
+                    if (df.persalinanPuskesmas) c++;
+                    if (df.ponekRs) c++;
+                    if (df.kategoriLayananKlinik) c++;
+                    if (df.bpjsKlinik) c++;
                     return c;
                 },
 
                 // Hitung jumlah filter aktif pada sub-akordeon Custom Filter Dinamis
                 countFilterCustom() {
-                    if (!this.customFilter) return 0;
-                    return Object.values(this.customFilter).filter(v => v !== null && v !== undefined && v !== '').length;
+                    if (!this.draftFilters.customFilter) return 0;
+                    return Object.values(this.draftFilters.customFilter).filter(v => v !== null && v !== undefined && v !== '').length;
                 },
 
-                // Handler debounced saat nilai input angka/slider berubah
+                // Handler saat nilai input angka/slider berubah (Draft model: tidak langsung fetch API)
                 onNumberFilterChange() {
-                    clearTimeout(this.filterDebounceTimer);
-                    this.filterDebounceTimer = setTimeout(() => {
-                        this.typeDataCache.clear();
-                        this.applyDynamicFilters(false);
-                    }, 350);
+                    // Cukup perbarui draftFilters, pengguna akan mengklik 'Terapkan Filter'
                 },
 
                 // Pembersihan overlay Leaflet liar jika ada kontrol/layer yatim
@@ -2154,39 +2803,42 @@
                     requestAnimationFrame(mountChunk);
                 },
 
-                // Helper: Bangun URL query string dari seluruh filter aktif
-                buildFilterQueryParams() {
+                // Helper: Bangun URL query string dari seluruh filter aktif (membaca dari appliedFilters)
+                buildFilterQueryParams(sourceState = null) {
                     const params = new URLSearchParams();
+                    const state = sourceState || this.appliedFilters;
 
                     // Array jenis faskes
-                    this.selectedJenis.forEach(j => params.append('jenis_faskes[]', j));
+                    if (Array.isArray(state.selectedJenis)) {
+                        state.selectedJenis.forEach(j => params.append('jenis_faskes[]', j));
+                    }
 
                     // Filter spesifik atribut
-                    if (this.filterAmbulans) params.append('has_ambulans', '1');
-                    if (this.filterBpjs) params.append('has_bpjs', '1');
-                    if (this.filterRawatInap) params.append('has_rawat_inap', '1');
-                    if (this.filterPoned) params.append('has_poned', '1');
-                    if (this.selectedKecamatan) params.append('kecamatan', this.selectedKecamatan);
-                    if (this.filterSearch.trim()) params.append('search', this.filterSearch.trim());
+                    if (state.filterAmbulans) params.append('has_ambulans', '1');
+                    if (state.filterBpjs) params.append('has_bpjs', '1');
+                    if (state.filterRawatInap) params.append('has_rawat_inap', '1');
+                    if (state.filterPoned) params.append('has_poned', '1');
+                    if (state.selectedKecamatan) params.append('kecamatan', state.selectedKecamatan);
+                    if (state.filterSearch && state.filterSearch.trim()) params.append('search', state.filterSearch.trim());
 
                     // Filter lanjutan baru (Tugas 4)
-                    if (this.minTotalAmbulans > 0) params.append('min_total_ambulans', this.minTotalAmbulans);
-                    if (this.minAmbulansGadar > 0) params.append('min_ambulans_gadar', this.minAmbulansGadar);
-                    if (this.minAmbulansRodaDua > 0) params.append('min_ambulans_roda_dua', this.minAmbulansRodaDua);
-                    if (this.minBed > 0) params.append('min_bed', this.minBed);
-                    if (this.minSdm > 0) params.append('min_sdm', this.minSdm);
-                    if (this.kepemilikan) params.append('kepemilikan', this.kepemilikan);
-                    if (this.tipeRs) params.append('tipe_rs', this.tipeRs);
-                    if (this.kategoriPuskesmas) params.append('kategori_puskesmas', this.kategoriPuskesmas);
-                    if (this.wilayahPuskesmas) params.append('wilayah_puskesmas', this.wilayahPuskesmas);
-                    if (this.persalinanPuskesmas) params.append('persalinan_puskesmas', this.persalinanPuskesmas);
-                    if (this.ponekRs) params.append('ponek_rs', this.ponekRs);
-                    if (this.kategoriLayananKlinik) params.append('kategori_layanan_klinik', this.kategoriLayananKlinik);
-                    if (this.bpjsKlinik) params.append('bpjs_klinik', this.bpjsKlinik);
-                    if (this.statusIzin) params.append('status_izin', this.statusIzin);
-                    if (this.statusOperasional) params.append('status_operasional', this.statusOperasional);
-                    if (this.customFilter) {
-                        for (const [k, v] of Object.entries(this.customFilter)) {
+                    if (state.minTotalAmbulans > 0) params.append('min_total_ambulans', state.minTotalAmbulans);
+                    if (state.minAmbulansGadar > 0) params.append('min_ambulans_gadar', state.minAmbulansGadar);
+                    if (state.minAmbulansRodaDua > 0) params.append('min_ambulans_roda_dua', state.minAmbulansRodaDua);
+                    if (state.minBed > 0) params.append('min_bed', state.minBed);
+                    if (state.minSdm > 0) params.append('min_sdm', state.minSdm);
+                    if (state.kepemilikan) params.append('kepemilikan', state.kepemilikan);
+                    if (state.tipeRs) params.append('tipe_rs', state.tipeRs);
+                    if (state.kategoriPuskesmas) params.append('kategori_puskesmas', state.kategoriPuskesmas);
+                    if (state.wilayahPuskesmas) params.append('wilayah_puskesmas', state.wilayahPuskesmas);
+                    if (state.persalinanPuskesmas) params.append('persalinan_puskesmas', state.persalinanPuskesmas);
+                    if (state.ponekRs) params.append('ponek_rs', state.ponekRs);
+                    if (state.kategoriLayananKlinik) params.append('kategori_layanan_klinik', state.kategoriLayananKlinik);
+                    if (state.bpjsKlinik) params.append('bpjs_klinik', state.bpjsKlinik);
+                    if (state.statusIzin) params.append('status_izin', state.statusIzin);
+                    if (state.statusOperasional) params.append('status_operasional', state.statusOperasional);
+                    if (state.customFilter) {
+                        for (const [k, v] of Object.entries(state.customFilter)) {
                             if (v) params.append(`custom_filter[${k}]`, v);
                         }
                     }
@@ -2194,9 +2846,9 @@
                     return params;
                 },
 
-                // AJAX: Ambil data saat filter diubah user
+                // AJAX: Ambil data saat filter diubah user (Forwarding ke applyFilters)
                 applyDynamicFilters(fitBounds = false) {
-                    this.loadFilterCountsAndSync(fitBounds);
+                    this.applyFilters(fitBounds);
                 },
 
                 // Tutup semua popup & bersihkan faskes layer group
@@ -2249,43 +2901,17 @@
                 },
 
                 selectAllJenis() {
-                    this.selectedJenis = ['rumah_sakit', 'puskesmas', 'klinik_pratama', 'klinik_utama', 'laboratorium', 'upkdk', 'griya_sehat', 'tpmd', 'tpmdg', 'tpmb', 'tpmp'];
-                    this.applyDynamicFilters();
+                    this.draftFilters.selectedJenis = [...ALL_FASKES_TYPES];
                 },
 
                 clearAllJenis() {
-                    this.selectedJenis = [];
-                    this.applyDynamicFilters();
+                    this.draftFilters.selectedJenis = [];
                 },
 
                 resetDynamicFilters() {
-                    this.selectedJenis = ['rumah_sakit', 'puskesmas', 'klinik_pratama', 'klinik_utama', 'laboratorium', 'upkdk', 'griya_sehat', 'tpmd', 'tpmdg', 'tpmb', 'tpmp'];
-                    this.filterAmbulans = false;
-                    this.filterBpjs = false;
-                    this.filterRawatInap = false;
-                    this.filterPoned = false;
-                    this.selectedKecamatan = '';
-                    this.filterSearch = '';
-
-                    this.minTotalAmbulans = 0;
-                    this.minAmbulansGadar = 0;
-                    this.minAmbulansRodaDua = 0;
-                    this.minBed = 0;
-                    this.minSdm = 0;
-                    this.kepemilikan = '';
-                    this.tipeRs = '';
-                    this.kategoriPuskesmas = '';
-                    this.wilayahPuskesmas = '';
-                    this.persalinanPuskesmas = '';
-                    this.ponekRs = '';
-                    this.kategoriLayananKlinik = '';
-                    this.bpjsKlinik = '';
-                    this.statusIzin = '';
-                    this.statusOperasional = 'aktif';
-                    this.customFilter = {};
-
-                    this.applyDynamicFilters(true);
+                    this.resetAllFilters();
                 },
+
 
                 // Update kontras warna garis batas wilayah sesuai mode basemap (Tugas 7B)
                 updateBoundaryContrast(layerName) {
@@ -2445,13 +3071,14 @@
                     this.eventMarker = null;
                 },
 
-                // Jalankan Pencarian Faskes & Rute OSRM
+                // Jalankan Pencarian Faskes & Rute OSRM (Memakai appliedFilters sesuai Tugas 12C)
                 cariFaskesTerdekat() {
                     if (!this.eventLat || !this.eventLng) return;
 
                     this.isLoading = true;
                     this.routeLayerGroup.clearLayers();
 
+                    const af = this.appliedFilters;
                     const params = new URLSearchParams({
                         latitude: this.eventLat,
                         longitude: this.eventLng,
@@ -2460,32 +3087,32 @@
                         sort_by: 'jarak_jalan'
                     });
 
-                    // Sertakan filter aktif jenis & spesifik lama
-                    if (this.selectedJenis.length > 0 && this.selectedJenis.length < 11) {
-                        this.selectedJenis.forEach(j => params.append('jenis_faskes[]', j));
+                    // Sertakan filter aktif dari appliedFilters
+                    if (Array.isArray(af.selectedJenis) && af.selectedJenis.length > 0 && af.selectedJenis.length < 11) {
+                        af.selectedJenis.forEach(j => params.append('jenis_faskes[]', j));
                     }
-                    if (this.filterAmbulans) params.append('has_ambulans', '1');
-                    if (this.filterBpjs) params.append('has_bpjs', '1');
-                    if (this.filterRawatInap) params.append('has_rawat_inap', '1');
-                    if (this.filterPoned) params.append('has_poned', '1');
+                    if (af.filterAmbulans) params.append('has_ambulans', '1');
+                    if (af.filterBpjs) params.append('has_bpjs', '1');
+                    if (af.filterRawatInap) params.append('has_rawat_inap', '1');
+                    if (af.filterPoned) params.append('has_poned', '1');
 
-                    // Sertakan filter atribut lanjutan (Tugas 4)
-                    if (this.minTotalAmbulans > 0) params.append('min_total_ambulans', this.minTotalAmbulans);
-                    if (this.minAmbulansGadar > 0) params.append('min_ambulans_gadar', this.minAmbulansGadar);
-                    if (this.minAmbulansRodaDua > 0) params.append('min_ambulans_roda_dua', this.minAmbulansRodaDua);
-                    if (this.minBed > 0) params.append('min_bed', this.minBed);
-                    if (this.minSdm > 0) params.append('min_sdm', this.minSdm);
-                    if (this.kepemilikan) params.append('kepemilikan', this.kepemilikan);
-                    if (this.tipeRs) params.append('tipe_rs', this.tipeRs);
-                    if (this.kategoriPuskesmas) params.append('kategori_puskesmas', this.kategoriPuskesmas);
-                    if (this.wilayahPuskesmas) params.append('wilayah_puskesmas', this.wilayahPuskesmas);
-                    if (this.persalinanPuskesmas) params.append('persalinan_puskesmas', this.persalinanPuskesmas);
-                    if (this.ponekRs) params.append('ponek_rs', this.ponekRs);
-                    if (this.kategoriLayananKlinik) params.append('kategori_layanan_klinik', this.kategoriLayananKlinik);
-                    if (this.bpjsKlinik) params.append('bpjs_klinik', this.bpjsKlinik);
-                    if (this.statusIzin) params.append('status_izin', this.statusIzin);
-                    if (this.customFilter) {
-                        for (const [k, v] of Object.entries(this.customFilter)) {
+                    // Sertakan filter atribut lanjutan
+                    if (af.minTotalAmbulans > 0) params.append('min_total_ambulans', af.minTotalAmbulans);
+                    if (af.minAmbulansGadar > 0) params.append('min_ambulans_gadar', af.minAmbulansGadar);
+                    if (af.minAmbulansRodaDua > 0) params.append('min_ambulans_roda_dua', af.minAmbulansRodaDua);
+                    if (af.minBed > 0) params.append('min_bed', af.minBed);
+                    if (af.minSdm > 0) params.append('min_sdm', af.minSdm);
+                    if (af.kepemilikan) params.append('kepemilikan', af.kepemilikan);
+                    if (af.tipeRs) params.append('tipe_rs', af.tipeRs);
+                    if (af.kategoriPuskesmas) params.append('kategori_puskesmas', af.kategoriPuskesmas);
+                    if (af.wilayahPuskesmas) params.append('wilayah_puskesmas', af.wilayahPuskesmas);
+                    if (af.persalinanPuskesmas) params.append('persalinan_puskesmas', af.persalinanPuskesmas);
+                    if (af.ponekRs) params.append('ponek_rs', af.ponekRs);
+                    if (af.kategoriLayananKlinik) params.append('kategori_layanan_klinik', af.kategoriLayananKlinik);
+                    if (af.bpjsKlinik) params.append('bpjs_klinik', af.bpjsKlinik);
+                    if (af.statusIzin) params.append('status_izin', af.statusIzin);
+                    if (af.customFilter) {
+                        for (const [k, v] of Object.entries(af.customFilter)) {
                             if (v) params.append(`custom_filter[${k}]`, v);
                         }
                     }
@@ -2588,43 +3215,44 @@
                     }
                 },
 
-                // URL Helper untuk Export Hasil Analisis (Excel / PDF)
+                // URL Helper untuk Export Hasil Analisis (Excel / PDF) (Memakai appliedFilters)
                 getExportUrl(format) {
                     if (!this.eventLat || !this.eventLng) return '#';
                     const base = format === 'excel'
                         ? '{{ route("analisis.export.excel") }}'
                         : '{{ route("analisis.export.pdf") }}';
+                    const af = this.appliedFilters;
                     const params = new URLSearchParams({
                         latitude: this.eventLat,
                         longitude: this.eventLng,
                         radius_km: this.radiusKm,
                         limit: 5
                     });
-                    if (this.selectedJenis.length > 0 && this.selectedJenis.length < 11) {
-                        this.selectedJenis.forEach(j => params.append('jenis_faskes[]', j));
+                    if (Array.isArray(af.selectedJenis) && af.selectedJenis.length > 0 && af.selectedJenis.length < 11) {
+                        af.selectedJenis.forEach(j => params.append('jenis_faskes[]', j));
                     }
-                    if (this.filterAmbulans) params.append('has_ambulans', '1');
-                    if (this.filterBpjs) params.append('has_bpjs', '1');
-                    if (this.filterRawatInap) params.append('has_rawat_inap', '1');
-                    if (this.filterPoned) params.append('has_poned', '1');
+                    if (af.filterAmbulans) params.append('has_ambulans', '1');
+                    if (af.filterBpjs) params.append('has_bpjs', '1');
+                    if (af.filterRawatInap) params.append('has_rawat_inap', '1');
+                    if (af.filterPoned) params.append('has_poned', '1');
 
                     // Filter Lanjutan (Tugas 4)
-                    if (this.minTotalAmbulans > 0) params.append('min_total_ambulans', this.minTotalAmbulans);
-                    if (this.minAmbulansGadar > 0) params.append('min_ambulans_gadar', this.minAmbulansGadar);
-                    if (this.minAmbulansRodaDua > 0) params.append('min_ambulans_roda_dua', this.minAmbulansRodaDua);
-                    if (this.minBed > 0) params.append('min_bed', this.minBed);
-                    if (this.minSdm > 0) params.append('min_sdm', this.minSdm);
-                    if (this.kepemilikan) params.append('kepemilikan', this.kepemilikan);
-                    if (this.tipeRs) params.append('tipe_rs', this.tipeRs);
-                    if (this.kategoriPuskesmas) params.append('kategori_puskesmas', this.kategoriPuskesmas);
-                    if (this.wilayahPuskesmas) params.append('wilayah_puskesmas', this.wilayahPuskesmas);
-                    if (this.persalinanPuskesmas) params.append('persalinan_puskesmas', this.persalinanPuskesmas);
-                    if (this.ponekRs) params.append('ponek_rs', this.ponekRs);
-                    if (this.kategoriLayananKlinik) params.append('kategori_layanan_klinik', this.kategoriLayananKlinik);
-                    if (this.bpjsKlinik) params.append('bpjs_klinik', this.bpjsKlinik);
-                    if (this.statusIzin) params.append('status_izin', this.statusIzin);
-                    if (this.customFilter) {
-                        for (const [k, v] of Object.entries(this.customFilter)) {
+                    if (af.minTotalAmbulans > 0) params.append('min_total_ambulans', af.minTotalAmbulans);
+                    if (af.minAmbulansGadar > 0) params.append('min_ambulans_gadar', af.minAmbulansGadar);
+                    if (af.minAmbulansRodaDua > 0) params.append('min_ambulans_roda_dua', af.minAmbulansRodaDua);
+                    if (af.minBed > 0) params.append('min_bed', af.minBed);
+                    if (af.minSdm > 0) params.append('min_sdm', af.minSdm);
+                    if (af.kepemilikan) params.append('kepemilikan', af.kepemilikan);
+                    if (af.tipeRs) params.append('tipe_rs', af.tipeRs);
+                    if (af.kategoriPuskesmas) params.append('kategori_puskesmas', af.kategoriPuskesmas);
+                    if (af.wilayahPuskesmas) params.append('wilayah_puskesmas', af.wilayahPuskesmas);
+                    if (af.persalinanPuskesmas) params.append('persalinan_puskesmas', af.persalinanPuskesmas);
+                    if (af.ponekRs) params.append('ponek_rs', af.ponekRs);
+                    if (af.kategoriLayananKlinik) params.append('kategori_layanan_klinik', af.kategoriLayananKlinik);
+                    if (af.bpjsKlinik) params.append('bpjs_klinik', af.bpjsKlinik);
+                    if (af.statusIzin) params.append('status_izin', af.statusIzin);
+                    if (af.customFilter) {
+                        for (const [k, v] of Object.entries(af.customFilter)) {
                             if (v) params.append(`custom_filter[${k}]`, v);
                         }
                     }
