@@ -638,6 +638,10 @@
                             <option value="klinik_utama">Klinik Utama</option>
                             <option value="laboratorium">Laboratorium</option>
                             <option value="griya_sehat">Griya Sehat</option>
+                            <option value="tpmd">TPMD (Praktik Mandiri Dokter)</option>
+                            <option value="tpmdg">TPMDG (Praktik Mandiri Dokter Gigi)</option>
+                            <option value="tpmb">TPMB (Praktik Mandiri Bidan)</option>
+                            <option value="tpmp">TPMP (Praktik Mandiri Perawat)</option>
                         </select>
                     </div>
 
