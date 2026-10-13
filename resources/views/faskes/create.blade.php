@@ -1626,6 +1626,7 @@
                                    placeholder="Jumlah SDM">
                         </div>
                     </div>
+                </div>
 
                 <!-- 8. CHILD: SEMUA TPM (TPMD / TPMDG / TPMB / TPMP) -->
                 <div x-show="['tpmd','tpmdg','tpmb','tpmp'].includes(jenisFaskes)" x-transition class="space-y-4">
@@ -1636,8 +1637,6 @@
                                    class="input-modern w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-xs">
                         </div>
                     </div>
-                </div>
-
                 </div>
 
                 <!-- SUB-BAGIAN: KOLOM TAMBAHAN (CUSTOM FIELDS) -->
