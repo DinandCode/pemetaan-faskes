@@ -413,6 +413,14 @@ class FaskesImportService
                 break;
 
             case 'tpmd':
+                $columns['masa_sip'] = [
+                    'header'   => 'Masa Berlaku SIP',
+                    'required' => false,
+                    'type'     => 'date',
+                    'desc'     => 'Masa berlaku Surat Izin Praktik (SIP) dokter. Format: YYYY-MM-DD (Contoh: 2028-12-31).',
+                ];
+                break;
+
             case 'tpmdg':
             case 'tpmb':
             case 'tpmp':
@@ -1320,6 +1328,13 @@ class FaskesImportService
                         'kontak_pj'  => $row['kontak_pj'] ?? null,
                         'jumlah_sdm' => (int) ($row['jumlah_sdm'] ?? 0),
                     ]
+                );
+                break;
+
+            case 'tpmd':
+                $faskes->tpmdDetail()->updateOrCreate(
+                    ['faskes_id' => $faskes->id],
+                    ['masa_sip' => $row['masa_sip'] ?? null]
                 );
                 break;
         }

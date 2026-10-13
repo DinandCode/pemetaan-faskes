@@ -22,6 +22,7 @@ class IzinOperasionalService
         'klinik_utama'   => 'Klinik Utama',
         'laboratorium'   => 'Laboratorium',
         'griya_sehat'    => 'Griya Sehat',
+        'tpmd'           => 'TPMD (Praktik Mandiri Dokter)',
     ];
 
     /**
@@ -56,6 +57,9 @@ class IzinOperasionalService
             ->leftJoin('griya_sehat_details as gs', function ($j) {
                 $j->on('gs.faskes_id', '=', 'f.id')->where('f.jenis_faskes', '=', 'griya_sehat');
             })
+            ->leftJoin('tpmd_details as tpmd', function ($j) {
+                $j->on('tpmd.faskes_id', '=', 'f.id')->where('f.jenis_faskes', '=', 'tpmd');
+            })
             ->whereRaw('LOWER(f.status) = ?', ['aktif'])
             ->whereIn('f.jenis_faskes', $monitoredKeys)
             ->select([
@@ -65,7 +69,7 @@ class IzinOperasionalService
                 'f.kecamatan',
                 'f.desa',
                 'f.nomor_telepon',
-                DB::raw('COALESCE(p.masa_izin, rs.masa_izin, kp.masa_izin, ku.masa_izin, lab.masa_izin, gs.masa_izin) as masa_izin'),
+                DB::raw('COALESCE(p.masa_izin, rs.masa_izin, kp.masa_izin, ku.masa_izin, lab.masa_izin, gs.masa_izin, tpmd.masa_sip) as masa_izin'),
             ]);
 
         if (! empty($jenisFaskes) && in_array($jenisFaskes, $monitoredKeys, true)) {

@@ -189,6 +189,14 @@ class Faskes extends Model
     }
 
     /**
+     * Relasi hasOne ke detail TPMD (Tempat Praktik Mandiri Dokter).
+     */
+    public function tpmdDetail(): HasOne
+    {
+        return $this->hasOne(TpmdDetail::class, 'faskes_id');
+    }
+
+    /**
      * Relasi hasMany ke nilai kolom tambahan (custom fields).
      */
     public function fieldValues(): \Illuminate\Database\Eloquent\Relations\HasMany
@@ -209,6 +217,7 @@ class Faskes extends Model
             'laboratorium'   => $this->laboratoriumDetail,
             'upkdk'          => $this->upkdkDetail,
             'griya_sehat'    => $this->griyaSehatDetail,
+            'tpmd'           => $this->tpmdDetail,
             default          => null,
         };
     }

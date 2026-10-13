@@ -22,6 +22,7 @@ class FaskesExportQueryBuilder
             'laboratoriumDetail',
             'upkdkDetail',
             'griyaSehatDetail',
+            'tpmdDetail',
             'fieldValues.definition',
         ]);
 
