@@ -1627,12 +1627,12 @@
                         </div>
                     </div>
 
-                <!-- 8. CHILD: TPMD -->
-                <div x-show="jenisFaskes === 'tpmd'" x-transition class="space-y-4">
+                <!-- 8. CHILD: SEMUA TPM (TPMD / TPMDG / TPMB / TPMP) -->
+                <div x-show="['tpmd','tpmdg','tpmb','tpmp'].includes(jenisFaskes)" x-transition class="space-y-4">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                             <label class="block text-xs font-semibold text-slate-700 mb-1.5">Masa Berlaku SIP (Surat Izin Praktik)</label>
-                            <input type="date" name="tpmd_masa_sip" value="{{ old('tpmd_masa_sip') }}"
+                            <input type="date" name="tpm_masa_sip" value="{{ old('tpm_masa_sip') }}"
                                    class="input-modern w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-xs">
                         </div>
                     </div>

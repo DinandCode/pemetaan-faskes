@@ -144,9 +144,15 @@ class FaskesPerKecamatanExport implements FromCollection, WithHeadings, WithMapp
             $masaIzin = $this->formatDateSafe($faskes->griyaSehatDetail->masa_izin ?? null);
             $pj = $faskes->griyaSehatDetail->pj ?: '-';
             $kontakPj = $faskes->griyaSehatDetail->kontak_pj ?: '-';
-        } elseif ($faskes->jenis_faskes === 'tpmd' && $faskes->tpmdDetail) {
-            $layanan = 'TPMD (Praktik Mandiri Dokter)';
-            $masaIzin = $this->formatDateSafe($faskes->tpmdDetail->masa_sip ?? null);
+        } elseif (in_array($faskes->jenis_faskes, ['tpmd', 'tpmdg', 'tpmb', 'tpmp']) && $faskes->tpmDetail) {
+            $labels = [
+                'tpmd'  => 'TPMD (Praktik Mandiri Dokter)',
+                'tpmdg' => 'TPMDG (Praktik Mandiri Dokter Gigi)',
+                'tpmb'  => 'TPMB (Praktik Mandiri Bidan)',
+                'tpmp'  => 'TPMP (Praktik Mandiri Perawat)',
+            ];
+            $layanan  = $labels[$faskes->jenis_faskes] ?? ucfirst($faskes->jenis_faskes);
+            $masaIzin = $this->formatDateSafe($faskes->tpmDetail->masa_sip ?? null);
         }
 
         $row = [

@@ -631,13 +631,13 @@
                     </div>
                 </div>
 
-                <!-- 8. CHILD: TPMD -->
-                @php $tpmd = $faskes->tpmdDetail; @endphp
-                <div x-show="jenisFaskes === 'tpmd'" x-transition class="space-y-4">
+                <!-- 8. CHILD: SEMUA TPM (TPMD / TPMDG / TPMB / TPMP) -->
+                @php $tpm = $faskes->tpmDetail; @endphp
+                <div x-show="['tpmd','tpmdg','tpmb','tpmp'].includes(jenisFaskes)" x-transition class="space-y-4">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                             <label class="block text-[11px] font-semibold text-slate-700 mb-1.5">Masa Berlaku SIP (Surat Izin Praktik)</label>
-                            <input type="date" name="tpmd_masa_sip" value="{{ old('tpmd_masa_sip', $tpmd?->masa_sip?->format('Y-m-d')) }}"
+                            <input type="date" name="tpm_masa_sip" value="{{ old('tpm_masa_sip', $tpm?->masa_sip?->format('Y-m-d')) }}"
                                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs transition focus:bg-white focus:outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10">
                         </div>
                     </div>

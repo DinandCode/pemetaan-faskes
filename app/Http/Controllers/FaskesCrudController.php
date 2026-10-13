@@ -23,7 +23,7 @@ class FaskesCrudController extends Controller
             'laboratoriumDetail',
             'upkdkDetail',
             'griyaSehatDetail',
-            'tpmdDetail',
+            'tpmDetail',
             'fieldValues.definition',
         ]);
 
@@ -522,9 +522,12 @@ class FaskesCrudController extends Controller
                 break;
 
             case 'tpmd':
-                $faskes->tpmdDetail()->updateOrCreate(
+            case 'tpmdg':
+            case 'tpmb':
+            case 'tpmp':
+                $faskes->tpmDetail()->updateOrCreate(
                     ['faskes_id' => $faskes->id],
-                    ['masa_sip' => $request->input('tpmd_masa_sip') ?: null]
+                    ['masa_sip' => $request->input('tpm_masa_sip') ?: null]
                 );
                 break;
         }
@@ -558,7 +561,10 @@ class FaskesCrudController extends Controller
                 $faskes->griyaSehatDetail()->delete();
                 break;
             case 'tpmd':
-                $faskes->tpmdDetail()->delete();
+            case 'tpmdg':
+            case 'tpmb':
+            case 'tpmp':
+                $faskes->tpmDetail()->delete();
                 break;
         }
     }

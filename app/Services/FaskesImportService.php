@@ -413,18 +413,15 @@ class FaskesImportService
                 break;
 
             case 'tpmd':
+            case 'tpmdg':
+            case 'tpmb':
+            case 'tpmp':
                 $columns['masa_sip'] = [
                     'header'   => 'Masa Berlaku SIP',
                     'required' => false,
                     'type'     => 'date',
-                    'desc'     => 'Masa berlaku Surat Izin Praktik (SIP) dokter. Format: YYYY-MM-DD (Contoh: 2028-12-31).',
+                    'desc'     => 'Masa berlaku Surat Izin Praktik (SIP). Format: YYYY-MM-DD (Contoh: 2028-12-31).',
                 ];
-                break;
-
-            case 'tpmdg':
-            case 'tpmb':
-            case 'tpmp':
-                // Hanya kolom dasar
                 break;
         }
 
@@ -1332,7 +1329,10 @@ class FaskesImportService
                 break;
 
             case 'tpmd':
-                $faskes->tpmdDetail()->updateOrCreate(
+            case 'tpmdg':
+            case 'tpmb':
+            case 'tpmp':
+                $faskes->tpmDetail()->updateOrCreate(
                     ['faskes_id' => $faskes->id],
                     ['masa_sip' => $row['masa_sip'] ?? null]
                 );

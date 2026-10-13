@@ -189,11 +189,11 @@ class Faskes extends Model
     }
 
     /**
-     * Relasi hasOne ke detail TPMD (Tempat Praktik Mandiri Dokter).
+     * Relasi hasOne ke detail TPM (semua jenis Tempat Praktik Mandiri).
      */
-    public function tpmdDetail(): HasOne
+    public function tpmDetail(): HasOne
     {
-        return $this->hasOne(TpmdDetail::class, 'faskes_id');
+        return $this->hasOne(TpmDetail::class, 'faskes_id');
     }
 
     /**
@@ -217,7 +217,7 @@ class Faskes extends Model
             'laboratorium'   => $this->laboratoriumDetail,
             'upkdk'          => $this->upkdkDetail,
             'griya_sehat'    => $this->griyaSehatDetail,
-            'tpmd'           => $this->tpmdDetail,
+            'tpmd', 'tpmdg', 'tpmb', 'tpmp' => $this->tpmDetail,
             default          => null,
         };
     }
