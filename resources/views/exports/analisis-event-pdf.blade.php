@@ -123,13 +123,15 @@
         <thead>
             <tr>
                 <th style="width:4%">No</th>
-                <th style="width:23%">Nama Faskes</th>
-                <th style="width:13%">Jenis</th>
-                <th style="width:14%">Kecamatan</th>
-                <th style="width:20%">Alamat / Kontak</th>
-                <th style="width:8%">Jarak Lurus</th>
-                <th style="width:9%">Jarak Jalan</th>
-                <th style="width:9%">Est. Waktu</th>
+                <th style="width:6%">Rank</th>
+                <th style="width:12%">Prioritas</th>
+                <th style="width:20%">Nama Faskes</th>
+                <th style="width:11%">Jenis</th>
+                <th style="width:12%">Kecamatan</th>
+                <th style="width:17%">Alamat / Kontak</th>
+                <th style="width:6%">Jarak Lurus</th>
+                <th style="width:6%">Jarak Jalan</th>
+                <th style="width:6%">Est. Waktu</th>
             </tr>
         </thead>
         <tbody>
@@ -146,6 +148,8 @@
                         'tpmd', 'tpmdg', 'tpmb', 'tpmp' => 'badge-tpm',
                         default => '',
                     };
+                    $rank = $item['rekomendasi_rank'] ?? ($index + 1);
+                    $tierLabel = $item['prioritas_label'] ?? (isset($item['prioritas_tier']) ? "Tier {$item['prioritas_tier']}" : '-');
                 @endphp
                 <tr class="{{ $index === 0 ? 'best-route' : '' }}">
                     <td style="text-align: center;">
@@ -154,10 +158,16 @@
                             <span class="star">&#9733;</span>
                         @endif
                     </td>
+                    <td style="text-align: center; font-weight: bold;">
+                        #{{ $rank }}
+                    </td>
+                    <td>
+                        <span style="font-weight: bold; font-size: 7.5px;">{{ $tierLabel }}</span>
+                    </td>
                     <td>
                         <strong style="color: #0f172a;">{{ $faskes['nama'] ?? '-' }}</strong>
                         @if($index === 0 && ($item['rute_tersedia'] ?? false))
-                            <br><span style="color:#059669; font-size:7px; font-weight:bold;">(Rute Paling Efisien)</span>
+                            <br><span style="color:#059669; font-size:7px; font-weight:bold;">(REKOMENDASI UTAMA)</span>
                         @endif
                     </td>
                     <td><span class="badge {{ $badgeClass }}">{{ ucwords(str_replace('_', ' ', $faskes['jenis_faskes'] ?? '-')) }}</span></td>

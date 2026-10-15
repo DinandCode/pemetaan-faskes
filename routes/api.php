@@ -15,6 +15,9 @@ use App\Http\Controllers\GeocodeController;
 Route::get('/geocode/search', [GeocodeController::class, 'search'])
     ->middleware('throttle:20,1'); // maks 20 request/menit per IP, cegah spam ke Nominatim
     
+// Endpoint Rute Detail Analisis Event (Lazy Loading Geometry)
+Route::get('/analisis-event/rute', [AnalisisEventController::class, 'rute']);
+
 // Endpoint Analisis Event Spasial & Rute OSRM
 Route::match(['get', 'post'], '/analisis-event', [AnalisisEventController::class, 'analisis']);
 

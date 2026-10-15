@@ -7,15 +7,26 @@ const OSRM_BASE = 'https://router.project-osrm.org';
 const NOMINATIM_SEARCH = 'https://nominatim.openstreetmap.org/search';
 
 const OSRM_PARAMS = ['overview', 'geometries', 'steps', 'radiuses'];
+const OSRM_TABLE_PARAMS = ['sources', 'destinations', 'annotations', 'radiuses'];
 const NOMINATIM_PARAMS = ['q', 'format', 'addressdetails', 'limit', 'countrycodes', 'viewbox', 'bounded'];
 
 const COORDS_PATTERN = /^-?\d{1,3}(\.\d+)?,-?\d{1,3}(\.\d+)?;-?\d{1,3}(\.\d+)?,-?\d{1,3}(\.\d+)?$/;
+const COORDS_TABLE_PATTERN = /^-?\d{1,3}(\.\d+)?,-?\d{1,3}(\.\d+)?(;-?\d{1,3}(\.\d+)?,-?\d{1,3}(\.\d+)?){1,50}$/;
 
 function pick(searchParams, allowed) {
   const out = new URLSearchParams();
   for (const key of allowed) {
     const value = searchParams.get(key);
     if (value !== null && value.length <= 300) out.set(key, value);
+  }
+  return out;
+}
+
+function pickTable(searchParams, allowed) {
+  const out = new URLSearchParams();
+  for (const key of allowed) {
+    const value = searchParams.get(key);
+    if (value !== null && value.length <= 1000) out.set(key, value);
   }
   return out;
 }
@@ -42,6 +53,7 @@ export default async function handler(req, res) {
   const target = searchParams.get('target');
 
   let upstream;
+  let timeoutMs = 8000;
   const headers = { Accept: 'application/json' };
 
   if (target === 'osrm') {
@@ -51,6 +63,14 @@ export default async function handler(req, res) {
       return;
     }
     upstream = `${OSRM_BASE}/route/v1/driving/${coords}?${pick(searchParams, OSRM_PARAMS)}`;
+  } else if (target === 'osrm-table') {
+    const coords = searchParams.get('coords') || '';
+    if (!COORDS_TABLE_PATTERN.test(coords)) {
+      res.status(400).json({ error: 'Format koordinat table tidak valid.' });
+      return;
+    }
+    timeoutMs = 15000;
+    upstream = `${OSRM_BASE}/table/v1/driving/${coords}?${pickTable(searchParams, OSRM_TABLE_PARAMS)}`;
   } else if (target === 'nominatim') {
     headers['User-Agent'] = req.headers['x-forward-user-agent'] || 'SIG-Faskes-Banyumas';
     upstream = `${NOMINATIM_SEARCH}?${pick(searchParams, NOMINATIM_PARAMS)}`;
@@ -62,7 +82,7 @@ export default async function handler(req, res) {
   try {
     const response = await fetch(upstream, {
       headers,
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(timeoutMs),
     });
     const body = await response.text();
 

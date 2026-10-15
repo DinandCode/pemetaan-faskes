@@ -247,20 +247,24 @@ class ImportExportController extends Controller
         $this->prepareTempDirectory();
 
         $request->validate([
-            'latitude'     => 'required|numeric|between:-90,90',
-            'longitude'    => 'required|numeric|between:-180,180',
-            'radius_km'    => 'nullable|numeric|min:0.1',
-            'jenis_faskes' => 'nullable',
-            'limit'        => 'nullable|integer|min:1|max:50',
+            'latitude'        => 'required|numeric|between:-90,90',
+            'longitude'       => 'required|numeric|between:-180,180',
+            'radius_km'       => 'nullable|numeric|min:0.1',
+            'jenis_faskes'    => 'nullable',
+            'limit'           => 'nullable|integer|min:1',
+            'sort_by'         => 'nullable|string|in:jarak_jalan,jarak_lurus,estimasi_waktu',
+            'prioritas_jenis' => 'nullable|boolean',
         ]);
 
         $data = $this->runAnalisis($request);
 
         $parameter = [
-            'latitude'     => $request->input('latitude'),
-            'longitude'    => $request->input('longitude'),
-            'radius_km'    => $request->input('radius_km', 5),
-            'jenis_faskes' => $request->input('jenis_faskes', 'semua'),
+            'latitude'        => $request->input('latitude'),
+            'longitude'       => $request->input('longitude'),
+            'radius_km'       => $request->input('radius_km', 5),
+            'jenis_faskes'    => $request->input('jenis_faskes', 'semua'),
+            'sort_by'         => $request->input('sort_by', 'jarak_jalan'),
+            'prioritas_jenis' => $request->has('prioritas_jenis') ? $request->boolean('prioritas_jenis') : true,
         ];
 
         $timestamp = Carbon::now('Asia/Jakarta')->format('Ymd_His');
@@ -276,20 +280,24 @@ class ImportExportController extends Controller
         $this->prepareTempDirectory();
 
         $request->validate([
-            'latitude'     => 'required|numeric|between:-90,90',
-            'longitude'    => 'required|numeric|between:-180,180',
-            'radius_km'    => 'nullable|numeric|min:0.1',
-            'jenis_faskes' => 'nullable',
-            'limit'        => 'nullable|integer|min:1|max:50',
+            'latitude'        => 'required|numeric|between:-90,90',
+            'longitude'       => 'required|numeric|between:-180,180',
+            'radius_km'       => 'nullable|numeric|min:0.1',
+            'jenis_faskes'    => 'nullable',
+            'limit'           => 'nullable|integer|min:1',
+            'sort_by'         => 'nullable|string|in:jarak_jalan,jarak_lurus,estimasi_waktu',
+            'prioritas_jenis' => 'nullable|boolean',
         ]);
 
         $data = $this->runAnalisis($request);
 
         $parameter = [
-            'latitude'     => $request->input('latitude'),
-            'longitude'    => $request->input('longitude'),
-            'radius_km'    => $request->input('radius_km', 5),
-            'jenis_faskes' => $request->input('jenis_faskes', 'semua'),
+            'latitude'        => $request->input('latitude'),
+            'longitude'       => $request->input('longitude'),
+            'radius_km'       => $request->input('radius_km', 5),
+            'jenis_faskes'    => $request->input('jenis_faskes', 'semua'),
+            'sort_by'         => $request->input('sort_by', 'jarak_jalan'),
+            'prioritas_jenis' => $request->has('prioritas_jenis') ? $request->boolean('prioritas_jenis') : true,
         ];
 
         $printedAt = Carbon::now('Asia/Jakarta')->translatedFormat('d F Y H:i');
@@ -312,11 +320,12 @@ class ImportExportController extends Controller
      */
     protected function runAnalisis(Request $request): array
     {
-        $eventLat  = (float) $request->input('latitude');
-        $eventLng  = (float) $request->input('longitude');
-        $radiusKm  = (float) $request->input('radius_km', 5);
-        $limit     = (int) $request->input('limit', 5);
-        $sortBy    = $request->input('sort_by', 'jarak_jalan');
+        $eventLat       = (float) $request->input('latitude');
+        $eventLng       = (float) $request->input('longitude');
+        $radiusKm       = (float) $request->input('radius_km', 5);
+        $limit          = $request->filled('limit') ? (int) $request->input('limit') : null;
+        $sortBy         = $request->input('sort_by', 'jarak_jalan');
+        $prioritasJenis = $request->has('prioritas_jenis') ? $request->boolean('prioritas_jenis') : true;
 
         $query = Faskes::query()
             ->where('status', 'aktif')
@@ -385,28 +394,74 @@ class ImportExportController extends Controller
         // Terapkan FaskesAttributeFilter
         \App\Support\FaskesAttributeFilter::apply($query, $request);
 
-        // Ambil candidate pool
-        $candidatePool = min(max($limit * 3, 15), 30);
-        $kandidat = $query->orderBy('jarak_lurus_meter', 'asc')->limit($candidatePool)->get();
+        if ($prioritasJenis) {
+            $query->orderByRaw("
+                CASE
+                    WHEN jenis_faskes = 'rumah_sakit' THEN 1
+                    WHEN jenis_faskes = 'puskesmas' THEN 2
+                    ELSE 3
+                END ASC
+            ");
+        }
+        $query->orderBy('jarak_lurus_meter', 'asc');
 
+        // Ambil faskes dengan batas MAX_RESULTS = 300
+        $kandidat = $query->limit(\App\Http\Controllers\AnalisisEventController::MAX_RESULTS)->get();
+
+        /** @var OsrmService $osrmService */
         $osrmService = app(OsrmService::class);
 
-        $hasilAnalisis = $kandidat->map(function (Faskes $faskes) use ($eventLat, $eventLng, $osrmService) {
+        // Batch OSRM Table
+        $destinations = $kandidat->map(fn (Faskes $f) => [
+            'id'  => $f->id,
+            'lat' => (float) $f->latitude,
+            'lng' => (float) $f->longitude,
+        ])->values()->all();
+
+        $chunks = array_chunk($destinations, \App\Http\Controllers\AnalisisEventController::CHUNK_SIZE);
+        $tableResults = [];
+
+        foreach ($chunks as $chunk) {
+            $res = $osrmService->getTable($eventLat, $eventLng, $chunk);
+            if ($res['success']) {
+                foreach ($res['results'] as $r) {
+                    $tableResults[] = $r;
+                }
+            } else {
+                foreach ($chunk as $ignored) {
+                    $tableResults[] = [
+                        'success'          => false,
+                        'distance_meters'  => null,
+                        'duration_seconds' => null,
+                        'distance_km'      => null,
+                        'duration_minutes' => null,
+                        'message'          => 'Jarak jalan tidak tersedia',
+                    ];
+                }
+            }
+        }
+
+        $tierMap = \App\Http\Controllers\AnalisisEventController::TIER_MAP;
+
+        $hasilAnalisis = $kandidat->values()->map(function (Faskes $faskes, int $i) use ($tableResults, $tierMap) {
             $jarakLurusMeter = round((float) $faskes->jarak_lurus_meter, 2);
-            $jarakLurusKm = round($jarakLurusMeter / 1000, 2);
+            $jarakLurusKm    = round($jarakLurusMeter / 1000, 2);
 
-            $osrmResult = $osrmService->getRoute(
-                $eventLat,
-                $eventLng,
-                (float) $faskes->latitude,
-                (float) $faskes->longitude
-            );
+            $tbl = $tableResults[$i] ?? [
+                'success'          => false,
+                'distance_meters'  => null,
+                'duration_seconds' => null,
+                'distance_km'      => null,
+                'duration_minutes' => null,
+            ];
 
-            $ruteTersedia = (bool) $osrmResult['success'];
-            $jarakJalanMeter = $ruteTersedia ? $osrmResult['distance_meters'] : null;
-            $jarakJalanKm = $ruteTersedia ? $osrmResult['distance_km'] : null;
-            $estimasiDetik = $ruteTersedia ? $osrmResult['duration_seconds'] : null;
-            $estimasiMenit = $ruteTersedia ? $osrmResult['duration_minutes'] : null;
+            $ruteTersedia    = (bool) ($tbl['success'] ?? false);
+            $jarakJalanMeter = $ruteTersedia ? $tbl['distance_meters'] : null;
+            $jarakJalanKm    = $ruteTersedia ? $tbl['distance_km'] : null;
+            $estimasiDetik   = $ruteTersedia ? $tbl['duration_seconds'] : null;
+            $estimasiMenit   = $ruteTersedia ? $tbl['duration_minutes'] : null;
+
+            $tierInfo = $tierMap[$faskes->jenis_faskes] ?? ['tier' => 3, 'label' => 'Faskes lainnya'];
 
             return [
                 'detail_faskes' => [
@@ -421,39 +476,71 @@ class ImportExportController extends Controller
                     'nomor_telepon' => $faskes->nomor_telepon,
                     'status'        => $faskes->status,
                 ],
-                'jarak_lurus' => [
+                'prioritas_tier'  => $tierInfo['tier'],
+                'prioritas_label' => $tierInfo['label'],
+                'jarak_lurus'     => [
                     'meter' => $jarakLurusMeter,
                     'km'    => $jarakLurusKm,
                 ],
-                'jarak_jalan' => [
+                'jarak_jalan'     => [
                     'meter' => $jarakJalanMeter,
                     'km'    => $jarakJalanKm,
                 ],
-                'estimasi_waktu' => [
+                'estimasi_waktu'  => [
                     'detik' => $estimasiDetik,
                     'menit' => $estimasiMenit,
                 ],
-                'rute_tersedia' => $ruteTersedia,
+                'rute_tersedia'   => $ruteTersedia,
             ];
         });
 
-        // Sorting
-        $hasilSorted = match ($sortBy) {
-            'jarak_jalan' => $hasilAnalisis->sortBy([
-                fn ($a, $b) => ($a['rute_tersedia'] ? 0 : 1) <=> ($b['rute_tersedia'] ? 0 : 1),
-                fn ($a, $b) => ($a['jarak_jalan']['meter'] ?? PHP_FLOAT_MAX) <=> ($b['jarak_jalan']['meter'] ?? PHP_FLOAT_MAX),
-            ])->values(),
+        // Sorting identik dengan AnalisisEventController
+        $hasilSorted = $hasilAnalisis->sort(function ($a, $b) use ($sortBy, $prioritasJenis) {
+            if ($prioritasJenis) {
+                $tierCmp = ($a['prioritas_tier'] <=> $b['prioritas_tier']);
+                if ($tierCmp !== 0) {
+                    return $tierCmp;
+                }
+            }
 
-            'estimasi_waktu' => $hasilAnalisis->sortBy([
-                fn ($a, $b) => ($a['rute_tersedia'] ? 0 : 1) <=> ($b['rute_tersedia'] ? 0 : 1),
-                fn ($a, $b) => ($a['estimasi_waktu']['detik'] ?? PHP_FLOAT_MAX) <=> ($b['estimasi_waktu']['detik'] ?? PHP_FLOAT_MAX),
-            ])->values(),
+            $ruteCmp = ($a['rute_tersedia'] ? 0 : 1) <=> ($b['rute_tersedia'] ? 0 : 1);
+            if ($ruteCmp !== 0) {
+                return $ruteCmp;
+            }
 
-            'jarak_lurus' => $hasilAnalisis->sortBy('jarak_lurus.meter')->values(),
+            if ($sortBy === 'estimasi_waktu') {
+                if ($a['rute_tersedia'] && $b['rute_tersedia']) {
+                    $durCmp = ($a['estimasi_waktu']['detik'] ?? PHP_FLOAT_MAX) <=> ($b['estimasi_waktu']['detik'] ?? PHP_FLOAT_MAX);
+                    if ($durCmp !== 0) {
+                        return $durCmp;
+                    }
+                }
+                return ($a['jarak_lurus']['meter'] <=> $b['jarak_lurus']['meter']);
+            }
 
-            default => $hasilAnalisis->values(),
-        };
+            if ($sortBy === 'jarak_lurus') {
+                return ($a['jarak_lurus']['meter'] <=> $b['jarak_lurus']['meter']);
+            }
 
-        return $hasilSorted->take($limit)->values()->toArray();
+            if ($a['rute_tersedia'] && $b['rute_tersedia']) {
+                $distCmp = ($a['jarak_jalan']['meter'] ?? PHP_FLOAT_MAX) <=> ($b['jarak_jalan']['meter'] ?? PHP_FLOAT_MAX);
+                if ($distCmp !== 0) {
+                    return $distCmp;
+                }
+            }
+            return ($a['jarak_lurus']['meter'] <=> $b['jarak_lurus']['meter']);
+        })->values();
+
+        if ($limit !== null && $limit > 0) {
+            $hasilFinal = $hasilSorted->take($limit)->values();
+        } else {
+            $hasilFinal = $hasilSorted;
+        }
+
+        // Berikan rekomendasi_rank
+        return $hasilFinal->map(function ($item, int $idx) {
+            $item['rekomendasi_rank'] = $idx + 1;
+            return $item;
+        })->toArray();
     }
 }

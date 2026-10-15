@@ -178,6 +178,182 @@ class OsrmService
     }
 
     /**
+     * Mengambil matriks jarak jalan & durasi tempuh dari satu titik asal ke banyak titik tujuan (1 to N)
+     * menggunakan OSRM Table Service.
+     *
+     * @param float $originLat
+     * @param float $originLng
+     * @param array<int, array{lat: float, lng: float}> $destinations Array koordinat tujuan
+     * @return array{
+     *     success: bool,
+     *     message: ?string,
+     *     results: array<int, array{
+     *         success: bool,
+     *         distance_meters: ?float,
+     *         duration_seconds: ?float,
+     *         distance_km: ?float,
+     *         duration_minutes: ?float,
+     *         snap_distance_dest_meters: ?float,
+     *         message: ?string
+     *     }>
+     * }
+     */
+    public function getTable(float $originLat, float $originLng, array $destinations): array
+    {
+        if (! $this->isValidLatLng($originLat, $originLng)) {
+            return [
+                'success' => false,
+                'message' => 'Koordinat asal tidak valid.',
+                'results' => [],
+            ];
+        }
+
+        if (empty($destinations)) {
+            return [
+                'success' => true,
+                'message' => null,
+                'results' => [],
+            ];
+        }
+
+        // Susun koordinat: origin (index 0), lalu destination 1..N
+        $coordParts = ["{$originLng},{$originLat}"];
+        $radiusesParts = ["{$this->snapSearchRadiusMeters}"];
+
+        foreach ($destinations as $dest) {
+            $dLat = (float) ($dest['lat'] ?? $dest['latitude'] ?? 0);
+            $dLng = (float) ($dest['lng'] ?? $dest['longitude'] ?? 0);
+            $coordParts[] = "{$dLng},{$dLat}";
+            $radiusesParts[] = "{$this->snapSearchRadiusMeters}";
+        }
+
+        $coordinates = implode(';', $coordParts);
+        $url = "{$this->baseUrl}/table/v1/driving/{$coordinates}";
+
+        try {
+            $params = [
+                'sources'     => '0',
+                'annotations' => 'distance,duration',
+                'radiuses'    => implode(';', $radiusesParts),
+            ];
+
+            $request = Http::timeout($this->timeout)->acceptJson();
+            $proxyUrl = env('OUTBOUND_PROXY_URL');
+
+            if ($proxyUrl) {
+                $response = $request
+                    ->withHeaders(['x-proxy-secret' => (string) env('OUTBOUND_PROXY_SECRET')])
+                    ->get($proxyUrl, $params + ['target' => 'osrm-table', 'coords' => $coordinates]);
+            } else {
+                $response = $request->get($url, $params);
+            }
+
+            if (! $response->successful()) {
+                Log::warning('OSRM Table API Error Response', [
+                    'status' => $response->status(),
+                    'url'    => $url,
+                ]);
+
+                return [
+                    'success' => false,
+                    'message' => 'Gagal menghubungi layanan OSRM Table API (HTTP ' . $response->status() . ').',
+                    'results' => [],
+                ];
+            }
+
+            $data = $response->json();
+
+            if (! isset($data['code']) || $data['code'] !== 'Ok' || empty($data['durations'])) {
+                $code = $data['code'] ?? 'Unknown';
+
+                return [
+                    'success' => false,
+                    'message' => "OSRM Table tidak berhasil (Status: {$code}).",
+                    'results' => [],
+                ];
+            }
+
+            $distances = $data['distances'][0] ?? [];
+            $durations = $data['durations'][0] ?? [];
+            $destSnapWaypoints = $data['destinations'] ?? [];
+
+            // Validasi snap distance untuk origin (index 0)
+            $originSnap = isset($destSnapWaypoints[0]['distance']) ? (float) $destSnapWaypoints[0]['distance'] : null;
+            $originSnapExceeded = ($originSnap !== null && $originSnap > $this->maxSnapDistanceMeters);
+
+            $results = [];
+            $destCount = count($destinations);
+
+            for ($i = 0; $i < $destCount; $i++) {
+                $tableIndex = $i + 1; // Karena index 0 adalah origin
+
+                $distMeters = isset($distances[$tableIndex]) && $distances[$tableIndex] !== null ? (float) $distances[$tableIndex] : null;
+                $durSeconds = isset($durations[$tableIndex]) && $durations[$tableIndex] !== null ? (float) $durations[$tableIndex] : null;
+
+                $destSnap = isset($destSnapWaypoints[$tableIndex]['distance']) ? (float) $destSnapWaypoints[$tableIndex]['distance'] : null;
+
+                if ($originSnapExceeded) {
+                    $results[$i] = [
+                        'success'                   => false,
+                        'distance_meters'           => null,
+                        'duration_seconds'          => null,
+                        'distance_km'               => null,
+                        'duration_minutes'          => null,
+                        'snap_distance_dest_meters' => $destSnap,
+                        'message'                   => 'Koordinat event terlalu jauh dari jalan raya (snap distance melebihi batas aman).',
+                    ];
+                } elseif ($destSnap !== null && $destSnap > $this->maxSnapDistanceMeters) {
+                    $results[$i] = [
+                        'success'                   => false,
+                        'distance_meters'           => null,
+                        'duration_seconds'          => null,
+                        'distance_km'               => null,
+                        'duration_minutes'          => null,
+                        'snap_distance_dest_meters' => $destSnap,
+                        'message'                   => 'Koordinat faskes terlalu jauh dari jalan raya (snap distance melebihi batas aman).',
+                    ];
+                } elseif ($distMeters === null || $durSeconds === null) {
+                    $results[$i] = [
+                        'success'                   => false,
+                        'distance_meters'           => null,
+                        'duration_seconds'          => null,
+                        'distance_km'               => null,
+                        'duration_minutes'          => null,
+                        'snap_distance_dest_meters' => $destSnap,
+                        'message'                   => 'Rute jalan tidak terjangkau menurut OSRM.',
+                    ];
+                } else {
+                    $results[$i] = [
+                        'success'                   => true,
+                        'distance_meters'           => $distMeters,
+                        'duration_seconds'          => $durSeconds,
+                        'distance_km'               => round($distMeters / 1000, 2),
+                        'duration_minutes'          => round($durSeconds / 60, 1),
+                        'snap_distance_dest_meters' => $destSnap,
+                        'message'                   => null,
+                    ];
+                }
+            }
+
+            return [
+                'success' => true,
+                'message' => null,
+                'results' => $results,
+            ];
+        } catch (Throwable $e) {
+            Log::error('OSRM Table Exception: ' . $e->getMessage(), [
+                'url' => $url,
+            ]);
+
+            return [
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat memproses rute ke layanan OSRM Table.',
+                'results' => [],
+            ];
+        }
+    }
+
+    /**
      * Helper untuk mengambil rute dari koordinat event langsung ke objek Model Faskes.
      */
     public function getRouteToFaskes(float $originLat, float $originLng, Faskes $faskes): array

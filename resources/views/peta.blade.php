@@ -1463,6 +1463,17 @@
                         </div>
                     </div>
 
+                    <!-- Sakelar Prioritas Jenis Faskes (RS -> Puskesmas -> Lainnya) -->
+                    <div class="flex items-center justify-between pt-1 border-t border-slate-200">
+                        <label for="toggle-prioritas-jenis" class="text-xs font-semibold text-slate-700 cursor-pointer select-none flex items-center gap-1.5">
+                            <span>Prioritaskan RS &rarr; Puskesmas &rarr; lainnya</span>
+                        </label>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="toggle-prioritas-jenis" x-model="prioritasJenis" @change="if (hasSearched) cariFaskesTerdekat()" class="sr-only peer">
+                            <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                    </div>
+
                     <!-- Tombol Cari Faskes Terdekat -->
                     <button @click="cariFaskesTerdekat()"
                             :disabled="!eventLat || !eventLng || isLoading"
@@ -1491,6 +1502,17 @@
                         </template>
                     </div>
 
+                    <!-- Peringatan Batas Maksimal 300 Hasil -->
+                    <template x-if="eventDibatasi">
+                        <div class="mb-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-3 text-xs flex items-start gap-2">
+                            <svg class="icon w-4 h-4 flex-shrink-0 mt-0.5 text-amber-600"><use href="#ic-warning"/></svg>
+                            <div>
+                                <span class="font-bold">Hasil Dibatasi:</span>
+                                <span>Menampilkan 300 dari <b x-text="eventTotalDalamRadius"></b> faskes dalam radius. Perkecil radius atau persempit filter untuk melihat semuanya.</span>
+                            </div>
+                        </div>
+                    </template>
+
                     <!-- Kosong / Belum Dicari -->
                     <template x-if="!hasSearched">
                         <div class="text-center py-8 text-slate-400 border border-dashed border-slate-200 rounded-xl bg-white">
@@ -1508,7 +1530,7 @@
                     </template>
 
                     <!-- Daftar Kartu Faskes Terdekat & Tombol Export -->
-                    <div class="space-y-3" x-show="hasilAnalisis && hasilAnalisis.length > 0">
+                    <div class="space-y-4" x-show="hasilAnalisis && hasilAnalisis.length > 0">
                         <!-- Export Hasil Analisis Buttons -->
                         <div class="flex items-center gap-2 pb-1">
                             <a :href="getExportUrl('excel')" target="_blank"
@@ -1523,74 +1545,183 @@
                             </a>
                         </div>
 
-                        <template x-for="(item, index) in hasilAnalisis" :key="item.detail_faskes.id">
-                            <div @click="fokusKeRute(item, index)"
-                                 :class="activeFaskesId === item.detail_faskes.id ? 'ring-2 ring-blue-500 bg-blue-50/40' : 'bg-white hover:border-slate-300'"
-                                 class="p-3.5 rounded-xl border border-slate-200 shadow-sm cursor-pointer transition flex flex-col gap-2.5">
-
-                                <!-- Card Header -->
-                                <div class="flex items-start justify-between gap-2">
-                                    <div class="min-w-0">
-                                        <div class="flex items-center flex-wrap gap-1.5 mb-1">
-                                            <template x-if="index === 0">
-                                                <span class="inline-flex items-center gap-0.5 text-[10px] uppercase font-black px-1.5 py-0.5 rounded bg-emerald-500 text-white whitespace-nowrap">
-                                                    <svg class="icon-solid w-2.5 h-2.5"><use href="#ic-star"/></svg>
-                                                    Rute Terbaik
-                                                </span>
-                                            </template>
-                                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap"
-                                                  :class="{
-                                                      'bg-red-100 text-red-700': item.detail_faskes.jenis_faskes === 'rumah_sakit',
-                                                      'bg-blue-100 text-blue-700': item.detail_faskes.jenis_faskes === 'puskesmas',
-                                                      'bg-emerald-100 text-emerald-700': item.detail_faskes.jenis_faskes === 'klinik_pratama',
-                                                      'bg-teal-100 text-teal-700': item.detail_faskes.jenis_faskes === 'klinik_utama',
-                                                      'bg-purple-100 text-purple-700': item.detail_faskes.jenis_faskes === 'laboratorium',
-                                                      'bg-amber-100 text-amber-800': item.detail_faskes.jenis_faskes === 'upkdk',
-                                                      'bg-cyan-100 text-cyan-700': item.detail_faskes.jenis_faskes === 'griya_sehat',
-                                                      'bg-sky-100 text-sky-700': item.detail_faskes.jenis_faskes === 'tpmd',
-                                                      'bg-indigo-100 text-indigo-700': item.detail_faskes.jenis_faskes === 'tpmdg',
-                                                      'bg-pink-100 text-pink-700': item.detail_faskes.jenis_faskes === 'tpmb',
-                                                      'bg-lime-100 text-lime-700': item.detail_faskes.jenis_faskes === 'tpmp'
-                                                  }"
-                                                  x-text="formatJenis(item.detail_faskes.jenis_faskes)">
-                                            </span>
+                        <!-- Render Kelompok Tier (Rumah Sakit, Puskesmas, Faskes lainnya) jika prioritasJenis aktif -->
+                        <template x-if="prioritasJenis">
+                            <div class="space-y-4">
+                                <template x-for="tierGroup in getEventTierGroups()" :key="tierGroup.tier">
+                                    <div class="space-y-2.5">
+                                        <!-- Header Kelompok Tier -->
+                                        <div class="flex items-center justify-between pb-1 border-b border-slate-200">
+                                            <div class="flex items-center gap-2">
+                                                <span class="w-2.5 h-2.5 rounded-full"
+                                                      :class="tierGroup.tier === 1 ? 'bg-red-500' : (tierGroup.tier === 2 ? 'bg-blue-500' : 'bg-slate-400')"></span>
+                                                <h4 class="text-xs font-bold text-slate-800" x-text="`${tierGroup.label} (${tierGroup.totalCount})`"></h4>
+                                            </div>
+                                            <span class="text-[10px] text-slate-400 font-medium" x-text="tierGroup.tier === 1 ? 'Prioritas 1' : (tierGroup.tier === 2 ? 'Prioritas 2' : 'Prioritas 3')"></span>
                                         </div>
-                                        <h4 class="font-bold text-slate-800 text-xs leading-tight truncate" x-text="item.detail_faskes.nama"></h4>
-                                        <p class="text-[11px] text-slate-500 mt-0.5 truncate" x-text="item.detail_faskes.alamat || '-'"></p>
-                                    </div>
-                                    <div class="text-right flex-shrink-0">
-                                        <template x-if="item.rute_tersedia">
-                                            <div class="text-sm font-extrabold text-blue-600 leading-none whitespace-nowrap"
-                                                 x-text="`${item.estimasi_waktu.menit.toFixed(1)} mnt`"></div>
-                                        </template>
-                                        <template x-if="!item.rute_tersedia">
-                                            <div class="text-xs font-bold text-red-500 leading-none whitespace-nowrap">Rute N/A</div>
-                                        </template>
-                                        <div class="text-[10px] text-slate-500 mt-0.5 font-medium whitespace-nowrap">Estimasi Waktu</div>
-                                    </div>
-                                </div>
 
-                                <!-- Peringatan kalau OSRM gagal menghitung rute jalan untuk faskes ini -->
-                                <template x-if="!item.rute_tersedia">
-                                    <div class="bg-amber-50 border border-amber-200 text-amber-700 rounded-lg px-2.5 py-1.5 text-[10px] flex items-start gap-1.5">
-                                        <svg class="icon w-4 h-4 flex-shrink-0"><use href="#ic-warning"/></svg>
-                                        <span x-text="item.pesan_rute || 'Rute jalan tidak dapat dihitung untuk faskes ini. Jarak lurus tetap akurat, tapi estimasi jalan/waktu tidak tersedia.'"></span>
+                                        <!-- Kartu Faskes dalam Tier -->
+                                        <div class="space-y-2.5">
+                                            <template x-for="item in tierGroup.items" :key="item.detail_faskes.id">
+                                                <div @click="fokusKeRute(item)"
+                                                     :class="activeFaskesId === item.detail_faskes.id ? 'ring-2 ring-blue-500 bg-blue-50/40' : 'bg-white hover:border-slate-300'"
+                                                     class="p-3.5 rounded-xl border border-slate-200 shadow-sm cursor-pointer transition flex flex-col gap-2.5">
+
+                                                    <!-- Card Header -->
+                                                    <div class="flex items-start justify-between gap-2">
+                                                        <div class="min-w-0">
+                                                            <div class="flex items-center flex-wrap gap-1.5 mb-1">
+                                                                <template x-if="isRekomendasiUtama(item)">
+                                                                    <span class="inline-flex items-center gap-0.5 text-[10px] uppercase font-black px-1.5 py-0.5 rounded bg-emerald-500 text-white whitespace-nowrap shadow-sm">
+                                                                        <svg class="icon-solid w-2.5 h-2.5"><use href="#ic-star"/></svg>
+                                                                        REKOMENDASI UTAMA
+                                                                    </span>
+                                                                </template>
+                                                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap"
+                                                                      :class="{
+                                                                          'bg-red-100 text-red-700': item.detail_faskes.jenis_faskes === 'rumah_sakit',
+                                                                          'bg-blue-100 text-blue-700': item.detail_faskes.jenis_faskes === 'puskesmas',
+                                                                          'bg-emerald-100 text-emerald-700': item.detail_faskes.jenis_faskes === 'klinik_pratama',
+                                                                          'bg-teal-100 text-teal-700': item.detail_faskes.jenis_faskes === 'klinik_utama',
+                                                                          'bg-purple-100 text-purple-700': item.detail_faskes.jenis_faskes === 'laboratorium',
+                                                                          'bg-amber-100 text-amber-800': item.detail_faskes.jenis_faskes === 'upkdk',
+                                                                          'bg-cyan-100 text-cyan-700': item.detail_faskes.jenis_faskes === 'griya_sehat',
+                                                                          'bg-sky-100 text-sky-700': item.detail_faskes.jenis_faskes === 'tpmd',
+                                                                          'bg-indigo-100 text-indigo-700': item.detail_faskes.jenis_faskes === 'tpmdg',
+                                                                          'bg-pink-100 text-pink-700': item.detail_faskes.jenis_faskes === 'tpmb',
+                                                                          'bg-lime-100 text-lime-700': item.detail_faskes.jenis_faskes === 'tpmp'
+                                                                      }"
+                                                                      x-text="formatJenis(item.detail_faskes.jenis_faskes)">
+                                                                </span>
+                                                                <span class="text-[10px] text-slate-400 font-medium" x-text="`#${item.rekomendasi_rank}`"></span>
+                                                            </div>
+                                                            <h4 class="font-bold text-slate-800 text-xs leading-tight truncate" x-text="item.detail_faskes.nama"></h4>
+                                                            <p class="text-[11px] text-slate-500 mt-0.5 truncate" x-text="item.detail_faskes.alamat || '-'"></p>
+                                                        </div>
+                                                        <div class="text-right flex-shrink-0">
+                                                            <template x-if="item.rute_tersedia && item.estimasi_waktu && item.estimasi_waktu.menit !== null">
+                                                                <div class="text-sm font-extrabold text-blue-600 leading-none whitespace-nowrap"
+                                                                     x-text="`${item.estimasi_waktu.menit.toFixed(1)} mnt`"></div>
+                                                            </template>
+                                                            <template x-if="!item.rute_tersedia">
+                                                                <div class="text-xs font-bold text-red-500 leading-none whitespace-nowrap">Rute N/A</div>
+                                                            </template>
+                                                            <div class="text-[10px] text-slate-500 mt-0.5 font-medium whitespace-nowrap">Estimasi Waktu</div>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Peringatan rute jalan gagal -->
+                                                    <template x-if="!item.rute_tersedia">
+                                                        <div class="bg-amber-50 border border-amber-200 text-amber-700 rounded-lg px-2.5 py-1.5 text-[10px] flex items-start gap-1.5">
+                                                            <svg class="icon w-4 h-4 flex-shrink-0"><use href="#ic-warning"/></svg>
+                                                            <span x-text="item.pesan_rute || 'Jarak jalan tidak tersedia. Menggunakan jarak lurus.'"></span>
+                                                        </div>
+                                                    </template>
+
+                                                    <!-- Card Metrics: Jarak Lurus vs Jarak Jalan -->
+                                                    <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-xs">
+                                                        <div class="bg-slate-50 rounded-lg p-2 min-w-0">
+                                                            <span class="text-[10px] text-slate-500 block font-medium">Jarak Lurus</span>
+                                                            <span class="font-bold text-slate-700" x-text="`${item.jarak_lurus.km.toFixed(2)} KM`"></span>
+                                                        </div>
+                                                        <div class="bg-slate-50 rounded-lg p-2 min-w-0">
+                                                            <span class="text-[10px] text-slate-500 block font-medium">Jarak Jalan (OSRM)</span>
+                                                            <span class="font-bold text-slate-900"
+                                                                  x-text="(item.rute_tersedia && item.jarak_jalan && item.jarak_jalan.km !== null) ? `${item.jarak_jalan.km.toFixed(2)} KM` : '-'"></span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </template>
+                                        </div>
                                     </div>
                                 </template>
-
-                                <!-- Card Metrics: Jarak Lurus vs Jarak Jalan -->
-                                <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-xs">
-                                    <div class="bg-slate-50 rounded-lg p-2 min-w-0">
-                                        <span class="text-[10px] text-slate-500 block font-medium">Jarak Lurus (PostGIS)</span>
-                                        <span class="font-bold text-slate-700" x-text="`${item.jarak_lurus.km.toFixed(2)} KM`"></span>
-                                    </div>
-                                    <div class="bg-slate-50 rounded-lg p-2 min-w-0">
-                                        <span class="text-[10px] text-slate-500 block font-medium">Jarak Jalan (OSRM)</span>
-                                        <span class="font-bold text-slate-900"
-                                              x-text="item.rute_tersedia ? `${item.jarak_jalan.km.toFixed(2)} KM` : '-'"></span>
-                                    </div>
-                                </div>
                             </div>
+                        </template>
+
+                        <!-- Render Flat jika prioritasJenis OFF -->
+                        <template x-if="!prioritasJenis">
+                            <div class="space-y-2.5">
+                                <template x-for="item in getVisibleEventItems()" :key="item.detail_faskes.id">
+                                    <div @click="fokusKeRute(item)"
+                                         :class="activeFaskesId === item.detail_faskes.id ? 'ring-2 ring-blue-500 bg-blue-50/40' : 'bg-white hover:border-slate-300'"
+                                         class="p-3.5 rounded-xl border border-slate-200 shadow-sm cursor-pointer transition flex flex-col gap-2.5">
+
+                                        <!-- Card Header -->
+                                        <div class="flex items-start justify-between gap-2">
+                                            <div class="min-w-0">
+                                                <div class="flex items-center flex-wrap gap-1.5 mb-1">
+                                                    <template x-if="isRekomendasiUtama(item)">
+                                                        <span class="inline-flex items-center gap-0.5 text-[10px] uppercase font-black px-1.5 py-0.5 rounded bg-emerald-500 text-white whitespace-nowrap shadow-sm">
+                                                            <svg class="icon-solid w-2.5 h-2.5"><use href="#ic-star"/></svg>
+                                                            REKOMENDASI UTAMA
+                                                        </span>
+                                                    </template>
+                                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap"
+                                                          :class="{
+                                                              'bg-red-100 text-red-700': item.detail_faskes.jenis_faskes === 'rumah_sakit',
+                                                              'bg-blue-100 text-blue-700': item.detail_faskes.jenis_faskes === 'puskesmas',
+                                                              'bg-emerald-100 text-emerald-700': item.detail_faskes.jenis_faskes === 'klinik_pratama',
+                                                              'bg-teal-100 text-teal-700': item.detail_faskes.jenis_faskes === 'klinik_utama',
+                                                              'bg-purple-100 text-purple-700': item.detail_faskes.jenis_faskes === 'laboratorium',
+                                                              'bg-amber-100 text-amber-800': item.detail_faskes.jenis_faskes === 'upkdk',
+                                                              'bg-cyan-100 text-cyan-700': item.detail_faskes.jenis_faskes === 'griya_sehat',
+                                                              'bg-sky-100 text-sky-700': item.detail_faskes.jenis_faskes === 'tpmd',
+                                                              'bg-indigo-100 text-indigo-700': item.detail_faskes.jenis_faskes === 'tpmdg',
+                                                              'bg-pink-100 text-pink-700': item.detail_faskes.jenis_faskes === 'tpmb',
+                                                              'bg-lime-100 text-lime-700': item.detail_faskes.jenis_faskes === 'tpmp'
+                                                          }"
+                                                          x-text="formatJenis(item.detail_faskes.jenis_faskes)">
+                                                    </span>
+                                                    <span class="text-[10px] text-slate-400 font-medium" x-text="`#${item.rekomendasi_rank}`"></span>
+                                                </div>
+                                                <h4 class="font-bold text-slate-800 text-xs leading-tight truncate" x-text="item.detail_faskes.nama"></h4>
+                                                <p class="text-[11px] text-slate-500 mt-0.5 truncate" x-text="item.detail_faskes.alamat || '-'"></p>
+                                            </div>
+                                            <div class="text-right flex-shrink-0">
+                                                <template x-if="item.rute_tersedia && item.estimasi_waktu && item.estimasi_waktu.menit !== null">
+                                                    <div class="text-sm font-extrabold text-blue-600 leading-none whitespace-nowrap"
+                                                         x-text="`${item.estimasi_waktu.menit.toFixed(1)} mnt`"></div>
+                                                </template>
+                                                <template x-if="!item.rute_tersedia">
+                                                    <div class="text-xs font-bold text-red-500 leading-none whitespace-nowrap">Rute N/A</div>
+                                                </template>
+                                                <div class="text-[10px] text-slate-500 mt-0.5 font-medium whitespace-nowrap">Estimasi Waktu</div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Peringatan rute jalan gagal -->
+                                        <template x-if="!item.rute_tersedia">
+                                            <div class="bg-amber-50 border border-amber-200 text-amber-700 rounded-lg px-2.5 py-1.5 text-[10px] flex items-start gap-1.5">
+                                                <svg class="icon w-4 h-4 flex-shrink-0"><use href="#ic-warning"/></svg>
+                                                <span x-text="item.pesan_rute || 'Jarak jalan tidak tersedia. Menggunakan jarak lurus.'"></span>
+                                            </div>
+                                        </template>
+
+                                        <!-- Card Metrics: Jarak Lurus vs Jarak Jalan -->
+                                        <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-xs">
+                                            <div class="bg-slate-50 rounded-lg p-2 min-w-0">
+                                                <span class="text-[10px] text-slate-500 block font-medium">Jarak Lurus</span>
+                                                <span class="font-bold text-slate-700" x-text="`${item.jarak_lurus.km.toFixed(2)} KM`"></span>
+                                            </div>
+                                            <div class="bg-slate-50 rounded-lg p-2 min-w-0">
+                                                <span class="text-[10px] text-slate-500 block font-medium">Jarak Jalan (OSRM)</span>
+                                                <span class="font-bold text-slate-900"
+                                                      x-text="(item.rute_tersedia && item.jarak_jalan && item.jarak_jalan.km !== null) ? `${item.jarak_jalan.km.toFixed(2)} KM` : '-'"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+
+                        <!-- Tombol Tampilkan Lebih Banyak (Pagination Bertahap per 20 Item) -->
+                        <template x-if="eventRenderLimit < hasilAnalisis.length">
+                            <button type="button"
+                                    @click="eventRenderLimit += 20"
+                                    class="w-full py-2.5 px-4 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition flex items-center justify-center gap-1.5 border border-slate-300 shadow-sm focus:outline-none">
+                                <svg class="icon w-3.5 h-3.5"><use href="#ic-chevron-down"/></svg>
+                                <span x-text="`Tampilkan 20 lagi (${hasilAnalisis.length - eventRenderLimit} tersisa)`"></span>
+                            </button>
                         </template>
                     </div>
                 </div>
@@ -1904,6 +2035,11 @@
                 eventLng: null,
                 radiusKm: 5.0,
                 activeFaskesId: null,
+                prioritasJenis: true,
+                eventRenderLimit: 20,
+                eventDibatasi: false,
+                eventTotalDalamRadius: 0,
+                isLoadingSingleRoute: false,
 
                 // Notifikasi "titik terkunci" saat user klik peta padahal titik event sudah ada
                 mapLockedNotice: false,
@@ -3127,22 +3263,99 @@
                     this.hasSearched = false;
                     this.radiusCircle = null;
                     this.eventMarker = null;
+                    this.eventRenderLimit = 20;
+                    this.eventDibatasi = false;
+                    this.eventTotalDalamRadius = 0;
+                    this.activeFaskesId = null;
                 },
 
-                // Jalankan Pencarian Faskes & Rute OSRM (Memakai appliedFilters sesuai Tugas 12C)
+                // Helper kelompok tier faskes untuk Analisis Event (Tugas 15)
+                getEventTierGroups() {
+                    if (!this.hasilAnalisis || this.hasilAnalisis.length === 0) return [];
+                    const groups = [
+                        { tier: 1, label: 'Rumah Sakit', items: [], totalCount: 0 },
+                        { tier: 2, label: 'Puskesmas', items: [], totalCount: 0 },
+                        { tier: 3, label: 'Faskes lainnya', items: [], totalCount: 0 },
+                    ];
+
+                    // Hitung total faskes per tier
+                    this.hasilAnalisis.forEach(item => {
+                        const t = item.prioritas_tier || 3;
+                        if (groups[t - 1]) {
+                            groups[t - 1].totalCount++;
+                        }
+                    });
+
+                    // Potong item yang ditampilkan sesuai pagination bertahap eventRenderLimit
+                    const visibleItems = this.hasilAnalisis.slice(0, this.eventRenderLimit);
+                    visibleItems.forEach(item => {
+                        const t = item.prioritas_tier || 3;
+                        if (groups[t - 1]) {
+                            groups[t - 1].items.push(item);
+                        }
+                    });
+
+                    return groups.filter(g => g.totalCount > 0);
+                },
+
+                // Helper item yang tampil saat prioritas jenis OFF
+                getVisibleEventItems() {
+                    if (!this.hasilAnalisis) return [];
+                    return this.hasilAnalisis.slice(0, this.eventRenderLimit);
+                },
+
+                // Helper mengecek item pertama dengan rute tersedia sebagai REKOMENDASI UTAMA
+                isRekomendasiUtama(item) {
+                    if (!this.hasilAnalisis || !item.rute_tersedia) return false;
+                    const firstAvailable = this.hasilAnalisis.find(x => x.rute_tersedia);
+                    return firstAvailable && firstAvailable.detail_faskes.id === item.detail_faskes.id;
+                },
+
+                // Gambar garis rute untuk satu faskes
+                renderSingleRoute(item, isMain = false) {
+                    this.routeLayerGroup.clearLayers();
+                    if (!item.titik_rute_jalan) return;
+
+                    const color = isMain ? '#10b981' : '#3b82f6';
+                    const routeLayer = L.geoJSON(item.titik_rute_jalan, {
+                        style: {
+                            color: color,
+                            weight: isMain ? 6 : 5,
+                            opacity: 0.95,
+                            dashArray: null
+                        }
+                    }).addTo(this.routeLayerGroup);
+
+                    const durText = (item.estimasi_waktu && item.estimasi_waktu.menit !== null)
+                        ? `${item.estimasi_waktu.menit.toFixed(1)} menit` : '-';
+                    const distText = (item.jarak_jalan && item.jarak_jalan.km !== null)
+                        ? `${item.jarak_jalan.km.toFixed(2)} km` : '-';
+
+                    routeLayer.bindPopup(`
+                        <div class="text-xs p-1">
+                            <b>${item.detail_faskes.nama}</b><br>
+                            ${isMain ? '<span style="color:#059669; font-weight:bold;">REKOMENDASI UTAMA</span><br>' : ''}
+                            Jarak Jalan: <b>${distText}</b><br>
+                            Estimasi Waktu: <b>${durText}</b>
+                        </div>
+                    `);
+                },
+
+                // Jalankan Pencarian Faskes & Rute OSRM (Memakai appliedFilters sesuai Tugas 12C & 15)
                 cariFaskesTerdekat() {
                     if (!this.eventLat || !this.eventLng) return;
 
                     this.isLoading = true;
                     this.routeLayerGroup.clearLayers();
+                    this.eventRenderLimit = 20;
 
                     const af = this.appliedFilters;
                     const params = new URLSearchParams({
                         latitude: this.eventLat,
                         longitude: this.eventLng,
                         radius_km: this.radiusKm,
-                        limit: 6,
-                        sort_by: 'jarak_jalan'
+                        sort_by: 'jarak_jalan',
+                        prioritas_jenis: this.prioritasJenis ? '1' : '0'
                     });
 
                     // Sertakan filter aktif dari appliedFilters
@@ -3175,8 +3388,7 @@
                         }
                     }
 
-                    // Pakai helper url() Laravel (bukan path hardcode) supaya tetap benar
-                    // kalau aplikasi di-deploy di subfolder / base path selain root domain.
+                    // Pakai helper url() Laravel
                     fetch(`{{ url("/api/analisis-event") }}?${params.toString()}`)
                         .then(res => res.json())
                         .then(res => {
@@ -3188,37 +3400,44 @@
                                 return;
                             }
 
-                            this.hasilAnalisis = res.data;
+                            this.hasilAnalisis = res.data || [];
+                            this.eventDibatasi = Boolean(res.dibatasi);
+                            this.eventTotalDalamRadius = res.total_dalam_radius || this.hasilAnalisis.length;
+
                             if (this.hasilAnalisis.length === 0) return;
 
-                            const routeColors = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ec4899', '#64748b'];
-
-                            this.hasilAnalisis.forEach((item, index) => {
-                                if (item.titik_rute_jalan) {
-                                    const color = routeColors[index % routeColors.length];
-                                    const isBest = index === 0;
-
-                                    const routeLayer = L.geoJSON(item.titik_rute_jalan, {
-                                        style: {
-                                            color: color,
-                                            weight: isBest ? 6 : 4,
-                                            opacity: isBest ? 0.95 : 0.65,
-                                            dashArray: isBest ? null : '6, 6'
-                                        }
-                                    }).addTo(this.routeLayerGroup);
-
-                                    routeLayer.bindPopup(`
-                                        <div class="text-xs p-1">
-                                            <b>${item.detail_faskes.nama}</b><br>
-                                            Jarak Jalan: <b>${item.jarak_jalan.km.toFixed(2)} km</b><br>
-                                            Estimasi Waktu: <b>${item.estimasi_waktu.menit.toFixed(1)} menit</b>
-                                        </div>
-                                    `);
+                            // Pastikan SEMUA faskes hasil tampil sebagai marker di peta (pengecualian LOD)
+                            this.hasilAnalisis.forEach(item => {
+                                const faskes = item.detail_faskes;
+                                let marker = this.markerMap[faskes.id];
+                                if (!marker) {
+                                    const lat = parseFloat(faskes.lat !== undefined ? faskes.lat : faskes.latitude);
+                                    const lng = parseFloat(faskes.lng !== undefined ? faskes.lng : faskes.longitude);
+                                    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+                                        const markerIcon = this.iconCache[faskes.jenis_faskes] || this.iconCache['default'];
+                                        marker = L.marker([lat, lng], { icon: markerIcon });
+                                        marker.bindPopup(() => this.getFaskesPopupPlaceholder(faskes), {
+                                            maxWidth: 280,
+                                            minWidth: 220,
+                                            autoPanPadding: [20, 20]
+                                        });
+                                        marker.on('popupopen', () => {
+                                            this.fetchFaskesDetailAndPopulatePopup(marker, faskes.id);
+                                        });
+                                        this.faskesLayerGroup.addLayer(marker);
+                                        this.markerMap[faskes.id] = marker;
+                                        this.mountedCount = Object.keys(this.markerMap).length;
+                                    }
                                 }
                             });
 
-                            if (this.hasilAnalisis.length > 0) {
-                                this.activeFaskesId = this.hasilAnalisis[0].detail_faskes.id;
+                            // Gambar rute hanya untuk item REKOMENDASI UTAMA secara otomatis
+                            const utama = this.hasilAnalisis.find(x => x.rute_tersedia) || this.hasilAnalisis[0];
+                            if (utama) {
+                                this.activeFaskesId = utama.detail_faskes.id;
+                                if (utama.titik_rute_jalan) {
+                                    this.renderSingleRoute(utama, true);
+                                }
                             }
                         })
                         .catch(err => {
@@ -3228,52 +3447,59 @@
                         });
                 },
 
-                // Fokus ke Salah Satu Rute Faskes (Tugas 8B & 9)
-                fokusKeRute(item, index) {
+                // Fokus ke Salah Satu Rute Faskes (Tugas 8B, 9 & 15: Lazy Loading Rute jika belum ada geometri)
+                fokusKeRute(item) {
                     if (!this.map) return;
                     this.map.closePopup();
                     this.activeFaskesId = item.detail_faskes.id;
                     const faskes = item.detail_faskes;
 
-                    if (item.titik_rute_jalan) {
-                        const tempLayer = L.geoJSON(item.titik_rute_jalan);
-                        this.map.fitBounds(tempLayer.getBounds(), { padding: [60, 60], animate: false });
+                    const proceedWithRoute = () => {
+                        if (item.titik_rute_jalan) {
+                            this.renderSingleRoute(item, this.isRekomendasiUtama(item));
+                            const tempLayer = L.geoJSON(item.titik_rute_jalan);
+                            this.map.fitBounds(tempLayer.getBounds(), { padding: [60, 60], animate: false });
+                        } else {
+                            this.routeLayerGroup.clearLayers();
+                            const lat = parseFloat(faskes.lat !== undefined ? faskes.lat : faskes.latitude);
+                            const lng = parseFloat(faskes.lng !== undefined ? faskes.lng : faskes.longitude);
+                            if (Number.isFinite(lat) && Number.isFinite(lng)) {
+                                this.map.setView([lat, lng], 15, { animate: false });
+                            }
+                        }
+
+                        // Buka popup marker faskes
+                        let marker = this.markerMap[faskes.id];
+                        if (marker) {
+                            marker.openPopup();
+                        }
+                    };
+
+                    // Jika item belum punya geometri dan rute_tersedia true/pending, ambil via lazy endpoint
+                    if (!item.titik_rute_jalan && item.rute_tersedia && this.eventLat && this.eventLng) {
+                        this.isLoadingSingleRoute = true;
+                        fetch(`{{ url("/api/analisis-event/rute") }}?latitude=${this.eventLat}&longitude=${this.eventLng}&faskes_id=${faskes.id}`)
+                            .then(res => res.json())
+                            .then(res => {
+                                this.isLoadingSingleRoute = false;
+                                if (res.success && res.titik_rute_jalan) {
+                                    item.titik_rute_jalan = res.titik_rute_jalan;
+                                    item.geometri_tersedia = true;
+                                    if (res.jarak_jalan) item.jarak_jalan = res.jarak_jalan;
+                                    if (res.estimasi_waktu) item.estimasi_waktu = res.estimasi_waktu;
+                                }
+                                proceedWithRoute();
+                            })
+                            .catch(e => {
+                                this.isLoadingSingleRoute = false;
+                                proceedWithRoute();
+                            });
                     } else {
-                        const lat = parseFloat(faskes.lat !== undefined ? faskes.lat : faskes.latitude);
-                        const lng = parseFloat(faskes.lng !== undefined ? faskes.lng : faskes.longitude);
-                        if (Number.isFinite(lat) && Number.isFinite(lng)) {
-                            this.map.setView([lat, lng], 15, { animate: false });
-                        }
-                    }
-
-                    // Pastikan marker faskes ini ter-mount (pengecualian LOD Analisis Event)
-                    let marker = this.markerMap[faskes.id];
-                    if (!marker) {
-                        const lat = parseFloat(faskes.lat !== undefined ? faskes.lat : faskes.latitude);
-                        const lng = parseFloat(faskes.lng !== undefined ? faskes.lng : faskes.longitude);
-                        if (Number.isFinite(lat) && Number.isFinite(lng)) {
-                            const markerIcon = this.iconCache[faskes.jenis_faskes] || this.iconCache['default'];
-                            marker = L.marker([lat, lng], { icon: markerIcon });
-                            marker.bindPopup(() => this.getFaskesPopupPlaceholder(faskes), {
-                                maxWidth: 280,
-                                minWidth: 220,
-                                autoPanPadding: [20, 20]
-                            });
-                            marker.on('popupopen', () => {
-                                this.fetchFaskesDetailAndPopulatePopup(marker, faskes.id);
-                            });
-                            this.faskesLayerGroup.addLayer(marker);
-                            this.markerMap[faskes.id] = marker;
-                            this.mountedCount = Object.keys(this.markerMap).length;
-                        }
-                    }
-
-                    if (marker) {
-                        marker.openPopup();
+                        proceedWithRoute();
                     }
                 },
 
-                // URL Helper untuk Export Hasil Analisis (Excel / PDF) (Memakai appliedFilters)
+                // URL Helper untuk Export Hasil Analisis (Excel / PDF) (Memakai appliedFilters sesuai Tugas 15)
                 getExportUrl(format) {
                     if (!this.eventLat || !this.eventLng) return '#';
                     const base = format === 'excel'
@@ -3284,7 +3510,8 @@
                         latitude: this.eventLat,
                         longitude: this.eventLng,
                         radius_km: this.radiusKm,
-                        limit: 5
+                        sort_by: 'jarak_jalan',
+                        prioritas_jenis: this.prioritasJenis ? '1' : '0'
                     });
                     if (Array.isArray(af.selectedJenis) && af.selectedJenis.length > 0 && af.selectedJenis.length < 11) {
                         af.selectedJenis.forEach(j => params.append('jenis_faskes[]', j));

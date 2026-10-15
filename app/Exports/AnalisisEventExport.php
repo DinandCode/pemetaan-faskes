@@ -35,6 +35,8 @@ class AnalisisEventExport implements FromCollection, WithHeadings, WithMapping, 
     {
         return [
             'No',
+            'Peringkat',
+            'Prioritas / Tier',
             'Nama Faskes',
             'Jenis Faskes',
             'Kecamatan',
@@ -56,8 +58,13 @@ class AnalisisEventExport implements FromCollection, WithHeadings, WithMapping, 
         $detail = is_array($item) ? $item : (array) $item;
         $faskes = $detail['detail_faskes'] ?? [];
 
+        $rank = $detail['rekomendasi_rank'] ?? $this->rowNumber;
+        $tierLabel = $detail['prioritas_label'] ?? (isset($detail['prioritas_tier']) ? "Tier {$detail['prioritas_tier']}" : '-');
+
         $row = [
             $this->rowNumber,
+            $rank,
+            $tierLabel,
             $faskes['nama'] ?? '-',
             ucwords(str_replace('_', ' ', $faskes['jenis_faskes'] ?? '-')),
             $faskes['kecamatan'] ?? '-',
