@@ -381,16 +381,17 @@ class FaskesCrudController extends Controller
             'nomor_telepon'         => 'nullable|string|max:50',
             'status'                => 'required|in:aktif,nonaktif',
             // Puskesmas
+            'puskesmas_kategori'            => 'nullable|string|in:rawat_jalan,rawat_inap,Non Rawat Inap,Rawat Inap,non_rawat_inap,non-rawat-inap',
             'puskesmas_kemampuan_persalinan' => 'nullable|string|in:PONED,NON PONED (Mampu Salin),NON PONED (Tidak Mampu Salin)',
             // Rumah Sakit
             'rs_tipe_rs'            => 'nullable|string|in:A,B,C,D,D Pratama',
             'rs_ambulans_transport' => 'nullable|integer|min:0',
             'rs_ambulans_gadar'     => 'nullable|integer|min:0',
             // Klinik Pratama
-            'kp_kategori_layanan'   => 'nullable|string|in:rawat_jalan,rawat_inap',
+            'kp_kategori_layanan'   => 'nullable|string|in:rawat_jalan,rawat_inap,Non Rawat Inap,Rawat Inap,non_rawat_inap,non-rawat-inap',
             'kp_kepemilikan'        => 'nullable|string|in:Swasta,Pemerintah',
             // Klinik Utama
-            'ku_kategori_layanan'   => 'nullable|string|in:rawat_jalan,rawat_inap',
+            'ku_kategori_layanan'   => 'nullable|string|in:rawat_jalan,rawat_inap,Non Rawat Inap,Rawat Inap,non_rawat_inap,non-rawat-inap',
             'ku_bed_rawat_inap'     => 'nullable|integer|min:0',
             'ku_bpjs'               => 'nullable|string|in:Ya,Tidak,0,1',
             'ku_pj'                 => 'nullable|string|max:255',
@@ -431,7 +432,7 @@ class FaskesCrudController extends Controller
                 }
 
                 $data = [
-                    'kategori'            => $request->input('puskesmas_kategori', 'rawat_jalan'),
+                    'kategori'            => \App\Support\KategoriPelayanan::normalize($request->input('puskesmas_kategori', 'rawat_jalan')),
                     'poned'               => $poned,
                     'mampu_salin'         => $mampuSalin,
                     'jumlah_tempat_tidur' => (int) $request->input('puskesmas_jumlah_tempat_tidur', 0),
@@ -463,7 +464,7 @@ class FaskesCrudController extends Controller
                 $data = [
                     'ambulans_transport' => (int) $request->input('kp_ambulans_transport', 0),
                     'masa_izin'          => $request->input('kp_masa_izin') ?: null,
-                    'kategori_layanan'   => $request->input('kp_kategori_layanan') ?: 'rawat_jalan',
+                    'kategori_layanan'   => \App\Support\KategoriPelayanan::normalize($request->input('kp_kategori_layanan', 'rawat_jalan')),
                     'jenis_layanan'      => $request->input('kp_jenis_layanan'),
                     'jumlah_sdm'         => (int) $request->input('kp_jumlah_sdm', 0),
                     'bed_rawat_inap'     => (int) $request->input('kp_bed_rawat_inap', 0),
@@ -483,7 +484,7 @@ class FaskesCrudController extends Controller
                     'ambulans'          => (int) $request->input('ku_ambulans', 0),
                     'masa_izin'         => $request->input('ku_masa_izin') ?: null,
                     'kemampuan_layanan' => $request->input('ku_kemampuan_layanan'),
-                    'kategori_layanan'  => $request->input('ku_kategori_layanan') ?: 'rawat_jalan',
+                    'kategori_layanan'  => \App\Support\KategoriPelayanan::normalize($request->input('ku_kategori_layanan', 'rawat_jalan')),
                     'bed_rawat_inap'    => (int) $request->input('ku_bed_rawat_inap', 0),
                     'bpjs'              => $isKuBpjs,
                     'kepemilikan'       => $request->input('ku_kepemilikan'),

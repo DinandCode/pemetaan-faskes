@@ -95,7 +95,7 @@ class FaskesPerKecamatanExport implements FromCollection, WithHeadings, WithMapp
 
         if ($faskes->jenis_faskes === 'puskesmas' && $faskes->puskesmasDetail) {
             $isPoned = ($faskes->puskesmasDetail->poned === 'Ya PONED');
-            $layanan = ucfirst(str_replace('_', ' ', $faskes->puskesmasDetail->kategori ?? '')) . ($isPoned ? ' (PONED)' : '');
+            $layanan = \App\Support\KategoriPelayanan::label($faskes->puskesmasDetail->kategori ?? '') . ($isPoned ? ' (PONED)' : '');
             $bed = (string) ($faskes->puskesmasDetail->jumlah_tempat_tidur ?? 0);
             $totalAmb = ($faskes->puskesmasDetail->ambulans_transport ?? 0) + ($faskes->puskesmasDetail->ambulans_roda_dua ?? 0);
             $ambulans = $totalAmb > 0 ? "{$totalAmb} Unit" : 'Tidak';

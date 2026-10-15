@@ -308,7 +308,7 @@
                         <div>
                             <label class="block text-[11px] font-semibold text-slate-700 mb-1.5">Kategori Pelayanan</label>
                             <select name="puskesmas_kategori" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs transition focus:bg-white focus:outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10">
-                                <option value="rawat_jalan" {{ old('puskesmas_kategori', $pkm?->kategori) == 'rawat_jalan' ? 'selected' : '' }}>Rawat Jalan</option>
+                                <option value="rawat_jalan" {{ old('puskesmas_kategori', $pkm?->kategori) == 'rawat_jalan' ? 'selected' : '' }}>Non Rawat Inap</option>
                                 <option value="rawat_inap" {{ old('puskesmas_kategori', $pkm?->kategori ?? 'rawat_inap') == 'rawat_inap' ? 'selected' : '' }}>Rawat Inap</option>
                             </select>
                         </div>
@@ -417,7 +417,7 @@
                         <div>
                             <label class="block text-[11px] font-semibold text-slate-700 mb-1.5">Kemampuan Layanan</label>
                             <select name="kp_kategori_layanan" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs transition focus:bg-white focus:outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10">
-                                <option value="rawat_jalan" {{ old('kp_kategori_layanan', $kp?->kategori_layanan ?? 'rawat_jalan') == 'rawat_jalan' ? 'selected' : '' }}>Rawat Jalan</option>
+                                <option value="rawat_jalan" {{ old('kp_kategori_layanan', $kp?->kategori_layanan ?? 'rawat_jalan') == 'rawat_jalan' ? 'selected' : '' }}>Non Rawat Inap</option>
                                 <option value="rawat_inap" {{ old('kp_kategori_layanan', $kp?->kategori_layanan) == 'rawat_inap' ? 'selected' : '' }}>Rawat Inap</option>
                             </select>
                         </div>
@@ -486,7 +486,7 @@
                         <div>
                             <label class="block text-[11px] font-semibold text-slate-700 mb-1.5">Kemampuan Layanan</label>
                             <select name="ku_kategori_layanan" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs transition focus:bg-white focus:outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10">
-                                <option value="rawat_jalan" {{ old('ku_kategori_layanan', $ku?->kategori_layanan ?? 'rawat_jalan') == 'rawat_jalan' ? 'selected' : '' }}>Rawat Jalan</option>
+                                <option value="rawat_jalan" {{ old('ku_kategori_layanan', $ku?->kategori_layanan ?? 'rawat_jalan') == 'rawat_jalan' ? 'selected' : '' }}>Non Rawat Inap</option>
                                 <option value="rawat_inap" {{ old('ku_kategori_layanan', $ku?->kategori_layanan) == 'rawat_inap' ? 'selected' : '' }}>Rawat Inap</option>
                             </select>
                         </div>

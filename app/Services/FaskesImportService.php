@@ -219,8 +219,8 @@ class FaskesImportService
                     'header'   => 'Kategori Layanan',
                     'required' => false,
                     'type'     => 'list',
-                    'options'  => ['Rawat Jalan', 'Rawat Inap'],
-                    'desc'     => 'Kemampuan layanan klinik (Rawat Jalan / Rawat Inap).',
+                    'options'  => \App\Support\KategoriPelayanan::importOptions(),
+                    'desc'     => 'Kemampuan layanan klinik (Rawat Inap / Non Rawat Inap).',
                 ];
                 $columns['jenis_layanan'] = [
                     'header'   => 'Jenis Layanan',
@@ -285,8 +285,8 @@ class FaskesImportService
                     'header'   => 'Kategori Layanan',
                     'required' => false,
                     'type'     => 'list',
-                    'options'  => ['Rawat Jalan', 'Rawat Inap'],
-                    'desc'     => 'Kemampuan layanan klinik (Rawat Jalan / Rawat Inap).',
+                    'options'  => \App\Support\KategoriPelayanan::importOptions(),
+                    'desc'     => 'Kemampuan layanan klinik (Rawat Inap / Non Rawat Inap).',
                 ];
                 $columns['kemampuan_layanan'] = [
                     'header'   => 'Kemampuan Layanan',
@@ -1232,7 +1232,7 @@ class FaskesImportService
                 $faskes->puskesmasDetail()->updateOrCreate(
                     ['faskes_id' => $faskes->id],
                     [
-                        'kategori'            => ($row['kategori'] ?? '') === 'Rawat Inap' ? 'rawat_inap' : 'rawat_jalan',
+                        'kategori'            => \App\Support\KategoriPelayanan::normalize($row['kategori'] ?? null),
                         'poned'               => $poned,
                         'mampu_salin'         => $mampuSalin,
                         'jumlah_tempat_tidur' => (int) ($row['jumlah_tempat_tidur'] ?? 0),
@@ -1263,7 +1263,7 @@ class FaskesImportService
                 $faskes->klinikPratamaDetail()->updateOrCreate(
                     ['faskes_id' => $faskes->id],
                     [
-                        'kategori_layanan'   => ($row['kategori_layanan'] ?? '') === 'Rawat Inap' ? 'rawat_inap' : 'rawat_jalan',
+                        'kategori_layanan'   => \App\Support\KategoriPelayanan::normalize($row['kategori_layanan'] ?? null),
                         'jenis_layanan'      => $row['jenis_layanan'] ?? null,
                         'kepemilikan'        => $row['kepemilikan'] ?? 'Swasta',
                         'bpjs'               => ($row['bpjs'] ?? '') === 'Ya',
@@ -1281,7 +1281,7 @@ class FaskesImportService
                 $faskes->klinikUtamaDetail()->updateOrCreate(
                     ['faskes_id' => $faskes->id],
                     [
-                        'kategori_layanan'   => ($row['kategori_layanan'] ?? '') === 'Rawat Inap' ? 'rawat_inap' : 'rawat_jalan',
+                        'kategori_layanan'   => \App\Support\KategoriPelayanan::normalize($row['kategori_layanan'] ?? null),
                         'kemampuan_layanan'  => $row['kemampuan_layanan'] ?? null,
                         'kepemilikan'        => $row['kepemilikan'] ?? 'Swasta',
                         'bpjs'               => ($row['bpjs'] ?? '') === 'Ya',

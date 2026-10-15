@@ -1170,7 +1170,7 @@
                                                 class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
                                             <option value="">Semua Kategori</option>
                                             <option value="rawat_inap">Rawat Inap</option>
-                                            <option value="rawat_jalan">Non Rawat Inap (Rawat Jalan)</option>
+                                            <option value="rawat_jalan">Non Rawat Inap</option>
                                         </select>
                                     </div>
 
@@ -1214,7 +1214,7 @@
                                         <select x-model="draftFilters.kategoriLayananKlinik" @keydown.enter.prevent="applyFilters(true)"
                                                 class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
                                             <option value="">Semua Layanan</option>
-                                            <option value="rawat_jalan">Rawat Jalan</option>
+                                            <option value="rawat_jalan">Non Rawat Inap</option>
                                             <option value="rawat_inap">Rawat Inap</option>
                                         </select>
                                     </div>
@@ -3927,8 +3927,9 @@
                     if (detail.tipe_rs) {
                         badgeHtml += `<span class="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold bg-red-100 text-red-800 mr-1">Tipe ${detail.tipe_rs}</span>`;
                     }
-                    if (detail.kategori_layanan) {
-                        const katLabel = detail.kategori_layanan === 'rawat_inap' ? 'Rawat Inap' : 'Rawat Jalan';
+                    const faskesKat = detail.kategori_layanan || (faskes.jenis_faskes === 'puskesmas' ? detail.kategori : null);
+                    if (faskesKat) {
+                        const katLabel = faskesKat === 'rawat_inap' ? 'Rawat Inap' : 'Non Rawat Inap';
                         badgeHtml += `<span class="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-100 text-slate-700 mr-1">${katLabel}</span>`;
                     }
                     if (totalAmbulans > 0) {

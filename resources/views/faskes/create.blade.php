@@ -809,7 +809,7 @@
 
                                 <option value="rawat_jalan"
                                         {{ old('puskesmas_kategori') == 'rawat_jalan' ? 'selected' : '' }}>
-                                    Rawat Jalan
+                                    Non Rawat Inap
                                 </option>
 
                                 <option value="rawat_inap"
@@ -1135,7 +1135,7 @@
                                     class="input-modern w-full bg-slate-50
                                            border border-slate-200 rounded-lg
                                            px-3 py-2.5 text-xs">
-                                <option value="rawat_jalan" {{ old('kp_kategori_layanan', 'rawat_jalan') == 'rawat_jalan' ? 'selected' : '' }}>Rawat Jalan</option>
+                                <option value="rawat_jalan" {{ old('kp_kategori_layanan', 'rawat_jalan') == 'rawat_jalan' ? 'selected' : '' }}>Non Rawat Inap</option>
                                 <option value="rawat_inap" {{ old('kp_kategori_layanan') == 'rawat_inap' ? 'selected' : '' }}>Rawat Inap</option>
                             </select>
                         </div>
@@ -1318,7 +1318,7 @@
                                     class="input-modern w-full bg-slate-50
                                            border border-slate-200 rounded-lg
                                            px-3 py-2.5 text-xs">
-                                <option value="rawat_jalan" {{ old('ku_kategori_layanan', 'rawat_jalan') == 'rawat_jalan' ? 'selected' : '' }}>Rawat Jalan</option>
+                                <option value="rawat_jalan" {{ old('ku_kategori_layanan', 'rawat_jalan') == 'rawat_jalan' ? 'selected' : '' }}>Non Rawat Inap</option>
                                 <option value="rawat_inap" {{ old('ku_kategori_layanan') == 'rawat_inap' ? 'selected' : '' }}>Rawat Inap</option>
                             </select>
                         </div>

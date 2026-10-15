@@ -183,10 +183,7 @@ class FaskesImport implements ToCollection, WithHeadingRow
     {
         switch ($faskes->jenis_faskes) {
             case 'puskesmas':
-                $kategori = strtolower(trim($row['kategori'] ?? 'rawat_jalan'));
-                if (! in_array($kategori, ['rawat_jalan', 'rawat_inap'], true)) {
-                    $kategori = 'rawat_jalan';
-                }
+                $kategori = \App\Support\KategoriPelayanan::normalize($row['kategori'] ?? null, 'rawat_jalan');
 
                 $wilayah = strtolower(trim($row['wilayah'] ?? 'perkotaan'));
                 if (! in_array($wilayah, ['pedesaan', 'perkotaan'], true)) {
@@ -232,7 +229,7 @@ class FaskesImport implements ToCollection, WithHeadingRow
                 $faskes->klinikPratamaDetail()->updateOrCreate(
                     ['faskes_id' => $faskes->id],
                     [
-                        'kategori_layanan'   => $row['kategori_layanan'] ?? null,
+                        'kategori_layanan'   => !empty($row['kategori_layanan']) ? \App\Support\KategoriPelayanan::normalize($row['kategori_layanan']) : null,
                         'kepemilikan'        => $row['kepemilikan'] ?? 'Swasta',
                         'ambulans_transport' => $this->parseInteger($row['ambulans_transport'] ?? $row['ambulans'] ?? null),
                         'masa_izin'          => !empty($row['masa_izin']) ? $row['masa_izin'] : null,
@@ -250,7 +247,7 @@ class FaskesImport implements ToCollection, WithHeadingRow
                 $faskes->klinikUtamaDetail()->updateOrCreate(
                     ['faskes_id' => $faskes->id],
                     [
-                        'kategori_layanan'  => $row['kategori_layanan'] ?? null,
+                        'kategori_layanan'  => !empty($row['kategori_layanan']) ? \App\Support\KategoriPelayanan::normalize($row['kategori_layanan']) : null,
                         'bed_rawat_inap'    => (int) ($row['bed_rawat_inap'] ?? $row['bed'] ?? 0),
                         'bpjs'              => $this->parseBoolean($row['bpjs'] ?? null, false),
                         'pj'                => $row['pj'] ?? $row['penanggung_jawab'] ?? null,

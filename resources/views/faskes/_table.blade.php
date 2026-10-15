@@ -109,7 +109,7 @@
                                 <div class="space-y-1">
                                     <div class="flex items-center gap-1.5 flex-wrap">
                                         <span class="px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded font-medium text-[10px]">
-                                            {{ $pkm->kategori === 'rawat_inap' ? 'Rawat Inap' : 'Non Rawat Inap' }}
+                                            {{ \App\Support\KategoriPelayanan::label($pkm->kategori) }}
                                         </span>
                                         @if($pkm->poned === 'Ya PONED')
                                             <span class="px-1.5 py-0.5 bg-emerald-100 text-emerald-800 rounded text-[10px] font-medium">PONED</span>
@@ -150,7 +150,7 @@
                                 <div class="space-y-1">
                                     <div class="flex flex-wrap gap-1">
                                         @if($kp->kategori_layanan)
-                                            <span class="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 font-medium">{{ ucfirst(str_replace('_', ' ', $kp->kategori_layanan)) }}</span>
+                                            <span class="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 font-medium">{{ \App\Support\KategoriPelayanan::label($kp->kategori_layanan) }}</span>
                                         @endif
                                         @if($kp->kepemilikan)
                                             <span class="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 font-medium">{{ $kp->kepemilikan }}</span>
@@ -175,7 +175,7 @@
                                 <div class="space-y-1">
                                     <div class="flex flex-wrap gap-1 items-center">
                                         @if($ku->kategori_layanan)
-                                            <span class="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 font-medium">{{ ucfirst(str_replace('_', ' ', $ku->kategori_layanan)) }}</span>
+                                            <span class="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 font-medium">{{ \App\Support\KategoriPelayanan::label($ku->kategori_layanan) }}</span>
                                         @endif
                                         <span class="font-medium text-slate-700">{{ $ku->kepemilikan ?: 'Swasta' }}</span>
                                         @if($ku->bpjs)

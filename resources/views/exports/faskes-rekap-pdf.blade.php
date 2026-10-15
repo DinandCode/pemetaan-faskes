@@ -153,14 +153,14 @@
 
                             $layanan = '-';
                             if ($faskes->jenis_faskes === 'puskesmas' && $faskes->puskesmasDetail) {
-                                $layanan = ucfirst(str_replace('_', ' ', $faskes->puskesmasDetail->kategori ?? ''));
+                                $layanan = \App\Support\KategoriPelayanan::label($faskes->puskesmasDetail->kategori ?? '');
                                 if ($faskes->puskesmasDetail->jumlah_tempat_tidur > 0) {
                                     $layanan .= " (TT: {$faskes->puskesmasDetail->jumlah_tempat_tidur})";
                                 }
                             } elseif ($faskes->jenis_faskes === 'rumah_sakit' && $faskes->rumahSakitDetail) {
                                 $layanan = ($faskes->rumahSakitDetail->tipe_rs ? 'Tipe ' . $faskes->rumahSakitDetail->tipe_rs . ' ' : '') . ($faskes->rumahSakitDetail->kemampuan_pelayanan ?: 'RS Umum');
                             } elseif (($faskes->jenis_faskes === 'klinik_pratama' || $faskes->jenis_faskes === 'klinik_utama') && $faskes->detail) {
-                                $layanan = ($faskes->detail->kategori_layanan ? ucfirst(str_replace('_', ' ', $faskes->detail->kategori_layanan)) : 'Klinik');
+                                $layanan = ($faskes->detail->kategori_layanan ? \App\Support\KategoriPelayanan::label($faskes->detail->kategori_layanan) : 'Klinik');
                                 if (!empty($faskes->detail->bed_rawat_inap) && $faskes->detail->bed_rawat_inap > 0) {
                                     $layanan .= " (TT: {$faskes->detail->bed_rawat_inap})";
                                 }
