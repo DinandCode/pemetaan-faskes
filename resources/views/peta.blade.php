@@ -102,6 +102,31 @@
             pointer-events: auto;
         }
 
+        /* Posisi Tombol Pencarian tepat di samping kanan Tombol Basemap Layer (Tugas 16) */
+        #map .leaflet-top.leaflet-left {
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: flex-start !important;
+            gap: 10px !important;
+            padding: 10px 0 0 10px !important;
+        }
+        #map .leaflet-top.leaflet-left .leaflet-control {
+            margin: 0 !important;
+            clear: none !important;
+            float: none !important;
+        }
+        #map .leaflet-control-layers {
+            min-width: 44px;
+            min-height: 44px;
+            border-radius: 0.5rem !important;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1) !important;
+            border: 1px solid rgba(226, 232, 240, 0.9) !important;
+        }
+        #map .leaflet-control-layers-toggle {
+            width: 44px !important;
+            height: 44px !important;
+        }
+
         /* Pulse Animation untuk Marker Event */
         .event-pulse { position: relative; }
         .event-pulse::after {
@@ -386,6 +411,162 @@
 
         <!-- Leaflet Map Container (Fullscreen Clean Canvas) -->
         <div id="map" class="flex-1 h-full w-full z-0 cursor-crosshair relative">
+            <!-- Kontrol Pencarian Peta di samping Basemap Control (Tugas 16) -->
+            <div id="map-search-control-container" class="leaflet-control leaflet-control-search relative">
+                <!-- Tombol Pencarian Peta -->
+                <button type="button"
+                        x-ref="searchButton"
+                        @click="toggleSearchPanel()"
+                        :aria-expanded="searchPanelOpen"
+                        aria-label="Cari wilayah dan nama faskes"
+                        title="Cari wilayah dan nama faskes"
+                        class="w-11 h-11 bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 rounded-lg shadow-md border border-slate-200/90 flex items-center justify-center transition relative focus:outline-none focus:ring-2 focus:ring-blue-400">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                    <!-- Penanda Filter Aktif (dot indicator) -->
+                    <span x-show="appliedFilters.selectedKecamatan || (appliedFilters.filterSearch && appliedFilters.filterSearch.trim())"
+                          class="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-blue-600 rounded-full border-2 border-white ring-1 ring-blue-600 shadow-xs"></span>
+                </button>
+
+                <!-- Floating Panel Pencarian Mengambang -->
+                <div id="map-search-panel"
+                     x-cloak
+                     x-show="searchPanelOpen"
+                     x-transition:enter="transition ease-out duration-150"
+                     x-transition:enter-start="opacity-0 scale-95 -translate-y-2"
+                     x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                     x-transition:leave="transition ease-in duration-100"
+                     x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                     x-transition:leave-end="opacity-0 scale-95 -translate-y-2"
+                     @click.outside="if (searchPanelOpen) { closeSearchPanel(); }"
+                     @keydown.escape.window="if (searchPanelOpen) { closeSearchPanel(); }"
+                     class="fixed top-16 left-3 right-3 sm:static sm:absolute sm:top-14 sm:left-0 sm:right-auto z-[1050] sm:w-80 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-slate-200/90 p-4 text-xs select-none">
+                    
+                    <!-- Header Panel -->
+                    <div class="flex items-center justify-between pb-2.5 mb-3 border-b border-slate-100">
+                        <div class="flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                            </span>
+                            <span class="font-bold text-slate-800 text-sm">Cari Wilayah &amp; Faskes</span>
+                        </div>
+                        <button type="button"
+                                @click="closeSearchPanel()"
+                                aria-label="Tutup panel pencarian"
+                                class="w-6 h-6 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 flex items-center justify-center transition focus:outline-none focus:ring-2 focus:ring-blue-400">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+
+                    <!-- Form Pencarian -->
+                    <div class="space-y-3.5">
+                        <!-- 1. Dropdown Pilih Kecamatan -->
+                        <div>
+                            <div class="flex items-center justify-between mb-1">
+                                <label for="search-kecamatan-select" class="block text-[11px] font-bold text-slate-700">Pilih Kecamatan:</label>
+                                <button type="button"
+                                        x-show="searchDraftKecamatan"
+                                        @click="searchDraftKecamatan = ''"
+                                        class="text-[10px] text-blue-600 hover:text-blue-800 font-semibold focus:outline-none">
+                                    Reset Wilayah
+                                </button>
+                            </div>
+                            <select id="search-kecamatan-select"
+                                    x-model="searchDraftKecamatan"
+                                    @keydown.enter.prevent="applySearchPanel()"
+                                    class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-xs">
+                                <option value="">-- Semua Kecamatan (Kab. Banyumas) --</option>
+                                <template x-for="kec in daftarKecamatan" :key="kec">
+                                    <option :value="kec" x-text="`Kecamatan ${kec}`"></option>
+                                </template>
+                            </select>
+                        </div>
+
+                        <!-- 2. Input Pencarian Teks / Nama -->
+                        <div>
+                            <div class="flex items-center justify-between mb-1">
+                                <label for="search-text-input" class="block text-[11px] font-bold text-slate-700">Pencarian Teks / Nama:</label>
+                                <button type="button"
+                                        x-show="searchDraftQuery"
+                                        @click="searchDraftQuery = ''; if ($refs.searchInput) $refs.searchInput.focus();"
+                                        class="text-[10px] text-blue-600 hover:text-blue-800 font-semibold focus:outline-none">
+                                    Bersihkan
+                                </button>
+                            </div>
+                            <div class="relative">
+                                <input id="search-text-input"
+                                       type="text"
+                                       x-ref="searchInput"
+                                       x-model="searchDraftQuery"
+                                       @keydown.enter.prevent="applySearchPanel()"
+                                       placeholder="Cari nama faskes, alamat, desa..."
+                                       class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs placeholder-slate-400">
+                                <template x-if="searchDraftQuery">
+                                    <button type="button"
+                                            @click="searchDraftQuery = ''; if ($refs.searchInput) $refs.searchInput.focus();"
+                                            aria-label="Hapus teks pencarian"
+                                            class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 font-bold text-sm focus:outline-none">
+                                        &times;
+                                    </button>
+                                </template>
+                            </div>
+                            <p class="text-[10.5px] text-slate-400 mt-1">Tekan <b>Enter</b> atau tombol <b>Cari</b>.</p>
+                        </div>
+
+                        <!-- Notifikasi jika tidak ada faskes cocok -->
+                        <template x-if="searchNoResultsMessage">
+                            <div class="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-[11px] flex items-center gap-2">
+                                <svg class="w-4 h-4 text-amber-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                                <span>Tidak ada faskes yang cocok.</span>
+                            </div>
+                        </template>
+
+                        <!-- Tombol Aksi Panel -->
+                        <div class="flex items-center gap-2 pt-1 border-t border-slate-100">
+                            <button type="button"
+                                    @click="resetSearchPanel()"
+                                    class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-slate-300">
+                                Reset
+                            </button>
+                            <button type="button"
+                                    @click="applySearchPanel()"
+                                    class="flex-1 py-2 px-4 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white transition flex items-center justify-center gap-1.5 shadow-sm shadow-blue-500/20 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                                <span>Cari</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chip Filter Aktif di Bawah Tombol -->
+                <div x-cloak
+                     x-show="appliedFilters.selectedKecamatan || (appliedFilters.filterSearch && appliedFilters.filterSearch.trim())"
+                     class="mt-2.5 flex flex-wrap gap-1.5 max-w-[280px] sm:max-w-xs pointer-events-auto">
+                    <!-- Chip Kecamatan -->
+                    <template x-if="appliedFilters.selectedKecamatan">
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-white/95 backdrop-blur-sm text-blue-800 shadow-md border border-blue-200">
+                            <span>Kec: <b x-text="appliedFilters.selectedKecamatan"></b></span>
+                            <button type="button"
+                                    @click="removeSearchFilter('kecamatan')"
+                                    title="Hapus filter kecamatan"
+                                    class="text-blue-500 hover:text-blue-700 font-bold ml-0.5 focus:outline-none">&times;</button>
+                        </span>
+                    </template>
+                    <!-- Chip Kata Kunci -->
+                    <template x-if="appliedFilters.filterSearch && appliedFilters.filterSearch.trim()">
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-white/95 backdrop-blur-sm text-blue-800 shadow-md border border-blue-200 truncate max-w-[200px]">
+                            <span class="truncate">Cari: &ldquo;<b x-text="appliedFilters.filterSearch.trim()"></b>&rdquo;</span>
+                            <button type="button"
+                                    @click="removeSearchFilter('search')"
+                                    title="Hapus kata kunci"
+                                    class="text-blue-500 hover:text-blue-700 font-bold ml-0.5 flex-shrink-0 focus:outline-none">&times;</button>
+                        </span>
+                    </template>
+                </div>
+            </div>
             <!-- Floating Notice: Zoom in untuk menampilkan jenis berikutnya (Tugas 9) -->
             <div x-cloak x-show="getPendingTypesText() && !showAllTypesAtAllZooms"
                  x-transition:enter="transition ease-out duration-200"
@@ -482,7 +663,7 @@
                         <span class="truncate">Filter Atribut</span>
                         <span class="ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold flex-shrink-0"
                               :class="activeFilterCount() > 0 ? 'bg-blue-600 text-white' : 'bg-slate-300 text-slate-700'"
-                              x-text="faskesList.length"></span>
+                              x-text="activeFilterCount()"></span>
                     </button>
                     <button type="button"
                             @click="activeTab = 'event'"
@@ -1192,75 +1373,7 @@
                         </div>
                     </div>
                     @endif
-                    <!-- 7. Wilayah & Pencarian (Accordion Group 7) -->
-                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                        <button type="button"
-                                @click="toggleAccordion('wilayah')"
-                                :aria-expanded="accordionOpen.wilayah"
-                                aria-controls="accordion-content-wilayah"
-                                class="w-full p-3 text-left font-bold text-xs text-slate-800 flex items-center justify-between hover:bg-slate-50 transition focus:outline-none">
-                            <div class="flex items-center gap-2">
-                                <span class="w-6 h-6 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center flex-shrink-0">
-                                    <svg class="icon w-3.5 h-3.5"><use href="#ic-pin"/></svg>
-                                </span>
-                                <span>Wilayah &amp; Pencarian</span>
-                                <span x-show="(draftFilters.selectedKecamatan ? 1 : 0) + (draftFilters.filterSearch ? 1 : 0) > 0"
-                                      class="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-600 text-white"
-                                      x-text="(draftFilters.selectedKecamatan ? 1 : 0) + (draftFilters.filterSearch ? 1 : 0)"></span>
-                                <span x-show="hasUnappliedChanges('wilayah')"
-                                      class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"
-                                      title="Ada perubahan belum diterapkan"></span>
-                            </div>
-                            <svg class="w-4 h-4 text-slate-400 transform transition-transform"
-                                 :class="accordionOpen.wilayah ? 'rotate-180' : ''"
-                                 fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                            </svg>
-                        </button>
-
-                        <div id="accordion-content-wilayah" class="accordion-grid-wrapper" :class="accordionOpen.wilayah ? 'is-open' : ''">
-                            <div class="accordion-grid-inner">
-                                <div class="p-3 pt-0 border-t border-slate-100 space-y-3 text-xs bg-slate-50/50">
-                                    <!-- Dropdown Pilihan Kecamatan -->
-                                    <div class="pt-2.5">
-                                        <div class="flex items-center justify-between mb-1">
-                                            <label class="block text-[11px] font-semibold text-slate-700">Pilih Kecamatan:</label>
-                                            <template x-if="draftFilters.selectedKecamatan">
-                                                <button type="button" @click="draftFilters.selectedKecamatan = ''"
-                                                        class="text-[10px] text-blue-600 hover:text-blue-800 font-semibold">
-                                                    Reset Wilayah
-                                                </button>
-                                            </template>
-                                        </div>
-                                        <select x-model="draftFilters.selectedKecamatan" @keydown.enter.prevent="applyFilters(true)"
-                                                class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
-                                            <option value="">-- Semua Kecamatan (Kab. Banyumas) --</option>
-                                            <template x-for="kec in daftarKecamatan" :key="kec">
-                                                <option :value="kec" x-text="`Kecamatan ${kec}`"></option>
-                                            </template>
-                                        </select>
-                                    </div>
-
-                                    <!-- Input Pencarian Teks -->
-                                    <div>
-                                        <label class="block text-[11px] font-semibold text-slate-700 mb-1">Pencarian Teks / Nama:</label>
-                                        <div class="relative">
-                                            <input type="text" x-model="draftFilters.filterSearch" @keydown.enter.prevent="applyFilters(true)"
-                                                   placeholder="Cari nama faskes, alamat, desa..."
-                                                   class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 pr-7 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                            <template x-if="draftFilters.filterSearch">
-                                                <button type="button" @click="draftFilters.filterSearch = ''"
-                                                        class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 font-bold text-xs">&times;</button>
-                                            </template>
-                                        </div>
-                                        <p class="text-[10px] text-slate-400 mt-1">Tekan <b>Enter</b> atau tombol <b>Terapkan Filter</b> untuk mencari.</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 8. Tampilan & Layer (Accordion Group 8 - Kontrol Instan) -->
+                    <!-- 7. Tampilan & Layer (Accordion Group 7 - Kontrol Instan) -->
                     <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                         <button type="button"
                                 @click="toggleAccordion('tampilan')"
@@ -1891,6 +2004,9 @@
             'laboratorium', 'upkdk', 'griya_sehat', 'tpmd', 'tpmdg', 'tpmb', 'tpmp'
         ];
 
+        // Otomatis fitBounds jika hasil pencarian 1-200 titik (Tugas 16)
+        const FIT_TO_RESULTS_ON_SEARCH = true;
+
         function petaFaskesApp() {
             return {
                 map: null,
@@ -1902,7 +2018,15 @@
                 totalFaskes: 0,
                 isFullscreen: false,
 
-                // 8 Grup Akordeon Sidebar Filter (Tugas 12B)
+                // Kontrol Pencarian Peta di samping Basemap (Tugas 16)
+                searchMapControl: null,
+                searchPanelOpen: false,
+                searchDraftKecamatan: '',
+                searchDraftQuery: '',
+                searchNoResultsMessage: false,
+                hasPerformedSearch: false,
+
+                // 7 Grup Akordeon Sidebar Filter (Tugas 12B & 16)
                 accordionOpen: {
                     jenis: true,
                     layanan: true,
@@ -1910,7 +2034,6 @@
                     kategori: false,
                     izin: false,
                     custom: false,
-                    wilayah: true,
                     tampilan: false
                 },
 
@@ -2203,9 +2326,6 @@
                             if (dKeys.length !== aKeys.length) return true;
                             return dKeys.some(k => (d.customFilter[k] || '') !== (a.customFilter[k] || ''));
                         }
-                        case 'wilayah':
-                            return d.selectedKecamatan !== a.selectedKecamatan ||
-                                   (d.filterSearch || '').trim() !== (a.filterSearch || '').trim();
                         default:
                             return false;
                     }
@@ -2248,10 +2368,6 @@
                     // Izin Operasional
                     if (d.statusIzin !== a.statusIzin) count++;
 
-                    // Wilayah & Pencarian
-                    if (d.selectedKecamatan !== a.selectedKecamatan) count++;
-                    if ((d.filterSearch || '').trim() !== (a.filterSearch || '').trim()) count++;
-
                     // Custom fields
                     const allCustomKeys = new Set([
                         ...Object.keys(d.customFilter || {}),
@@ -2266,14 +2382,21 @@
                     return count;
                 },
 
-                // Terapkan Filter (Draft -> Applied) (Tugas 12C)
+                // Terapkan Filter Sidebar (Draft -> Applied) (Tugas 12C & 16)
                 applyFilters(fitBounds = false) {
+                    const curKecamatan = this.appliedFilters.selectedKecamatan;
+                    const curSearch = this.appliedFilters.filterSearch;
+
                     this.appliedFilters = this.cloneFilterState(this.draftFilters);
+                    // Pertahankan nilai wilayah & pencarian yang diatur dari kontrol peta
+                    this.appliedFilters.selectedKecamatan = curKecamatan;
+                    this.appliedFilters.filterSearch = curSearch;
+
                     this.typeDataCache.clear();
                     this.loadFilterCountsAndSync(fitBounds);
                 },
 
-                // Reset Semua Filter ke Default (Draft & Applied) (Tugas 12C)
+                // Reset Semua Filter ke Default (Draft & Applied) (Tugas 12C & 16)
                 resetAllFilters() {
                     const defaults = {
                         selectedJenis: [...ALL_FASKES_TYPES],
@@ -2302,8 +2425,83 @@
                     };
                     this.draftFilters = this.cloneFilterState(defaults);
                     this.appliedFilters = this.cloneFilterState(defaults);
+                    this.searchDraftKecamatan = '';
+                    this.searchDraftQuery = '';
+                    this.searchNoResultsMessage = false;
+                    this.hasPerformedSearch = false;
                     this.typeDataCache.clear();
                     this.loadFilterCountsAndSync(true);
+                },
+
+                // Aksi Kontrol Pencarian di Peta (Tugas 16)
+                toggleSearchPanel() {
+                    if (this.searchPanelOpen) {
+                        this.closeSearchPanel();
+                    } else {
+                        this.openSearchPanel();
+                    }
+                },
+
+                openSearchPanel() {
+                    this.searchDraftKecamatan = this.appliedFilters.selectedKecamatan || '';
+                    this.searchDraftQuery = this.appliedFilters.filterSearch || '';
+                    this.searchNoResultsMessage = false;
+                    this.searchPanelOpen = true;
+                    if (this.map && this.map.keyboard) {
+                        this.map.keyboard.disable();
+                    }
+                    this.$nextTick(() => {
+                        if (this.$refs.searchInput) {
+                            this.$refs.searchInput.focus();
+                        }
+                    });
+                },
+
+                closeSearchPanel() {
+                    this.searchPanelOpen = false;
+                    if (this.map && this.map.keyboard) {
+                        this.map.keyboard.enable();
+                    }
+                    this.$nextTick(() => {
+                        if (this.$refs.searchButton) {
+                            this.$refs.searchButton.focus();
+                        }
+                    });
+                },
+
+                applySearchPanel() {
+                    this.searchNoResultsMessage = false;
+                    this.appliedFilters.selectedKecamatan = this.searchDraftKecamatan || '';
+                    this.appliedFilters.filterSearch = (this.searchDraftQuery || '').trim();
+
+                    // Perubahan sidebar yang belum diterapkan (draftFilters) TIDAK ikut diterapkan
+                    this.typeDataCache.clear();
+                    this.hasPerformedSearch = true;
+                    this.loadFilterCountsAndSync(false);
+                },
+
+                resetSearchPanel() {
+                    this.searchDraftKecamatan = '';
+                    this.searchDraftQuery = '';
+                    this.searchNoResultsMessage = false;
+                    this.appliedFilters.selectedKecamatan = '';
+                    this.appliedFilters.filterSearch = '';
+                    this.typeDataCache.clear();
+                    this.hasPerformedSearch = false;
+                    this.loadFilterCountsAndSync(false);
+                },
+
+                removeSearchFilter(key) {
+                    if (key === 'kecamatan') {
+                        this.appliedFilters.selectedKecamatan = '';
+                        this.searchDraftKecamatan = '';
+                    } else if (key === 'search') {
+                        this.appliedFilters.filterSearch = '';
+                        this.searchDraftQuery = '';
+                    }
+                    this.typeDataCache.clear();
+                    this.hasPerformedSearch = false;
+                    this.loadFilterCountsAndSync(false);
                 },
 
                 // Fullscreen API Helper (Tugas 12A)
@@ -2365,6 +2563,22 @@
                             this.updateBoundaryContrast(e.name);
                         }
                     });
+
+                    // Kontrol Pencarian Peta di samping kanan Basemap Control (Tugas 16)
+                    const SearchControl = L.Control.extend({
+                        options: { position: 'topleft' },
+                        onAdd: (map) => {
+                            const container = document.getElementById('map-search-control-container');
+                            if (container) {
+                                L.DomEvent.disableClickPropagation(container);
+                                L.DomEvent.disableScrollPropagation(container);
+                                L.DomEvent.on(container, 'keydown', (e) => e.stopPropagation());
+                                L.DomEvent.on(container, 'dblclick', (e) => e.stopPropagation());
+                            }
+                            return container;
+                        }
+                    });
+                    this.searchMapControl = new SearchControl().addTo(this.map);
 
                     // Layer Groups Leaflet
                     this.kabupatenLayerGroup = L.layerGroup().addTo(this.map);
@@ -2454,9 +2668,13 @@
                     }
                 },
 
-                // Helper LOD: Apakah suatu jenis faskes sudah boleh tampil di zoom saat ini? (Tugas 9)
+                // Helper LOD: Apakah suatu jenis faskes sudah boleh tampil di zoom saat ini? (Tugas 9 & 16)
                 isTypeUnlocked(jenis) {
                     if (this.showAllTypesAtAllZooms) return true;
+                    // Persyaratan Tugas 16: Saat pencarian teks aktif, marker hasil TIDAK tunduk pada aturan LOD zoom
+                    if (this.appliedFilters.filterSearch && this.appliedFilters.filterSearch.trim() !== '') {
+                        return true;
+                    }
                     const sel = this.appliedFilters.selectedJenis;
                     if (SHOW_SINGLE_TYPE_ALWAYS && sel.length === 1 && sel.includes(jenis)) {
                         return true;
@@ -2477,6 +2695,8 @@
                 // Floating Notice Text: Jenis faskes yang dipilih user namun belum tampil karena zoom level
                 getPendingTypesText() {
                     if (this.showAllTypesAtAllZooms) return '';
+                    // Saat pencarian teks aktif, seluruh jenis tampil tanpa batas zoom (Tugas 16)
+                    if (this.appliedFilters.filterSearch && this.appliedFilters.filterSearch.trim() !== '') return '';
                     const sel = this.appliedFilters.selectedJenis;
                     if (SHOW_SINGLE_TYPE_ALWAYS && sel.length === 1) return '';
 
@@ -2558,50 +2778,70 @@
                 activeFilterCount() {
                     let count = 0;
                     const af = this.appliedFilters;
+
+                    // 1. Jenis Faskes: hanya dihitung jika dibatasi (kurang dari 11 jenis default)
+                    if (Array.isArray(af.selectedJenis) && af.selectedJenis.length < ALL_FASKES_TYPES.length) {
+                        count++;
+                    }
+
+                    // 2. Layanan & Fasilitas
                     if (af.filterAmbulans) count++;
                     if (af.filterBpjs) count++;
                     if (af.filterRawatInap) count++;
                     if (af.filterPoned) count++;
+
+                    // 3. Wilayah & Pencarian
                     if (af.selectedKecamatan) count++;
                     if (af.filterSearch && af.filterSearch.trim()) count++;
-                    count += this.countFilterAmbulansKapasitas();
-                    count += this.countFilterKategori();
+
+                    // 4. Ambulans & Kapasitas (dari appliedFilters)
+                    count += this.countFilterAmbulansKapasitas(af);
+
+                    // 5. Kategori & Klasifikasi (dari appliedFilters)
+                    count += this.countFilterKategori(af);
+
+                    // 6. Izin & Status Operasional
                     if (af.statusIzin) count++;
-                    count += this.countFilterCustom();
+                    if (af.statusOperasional && af.statusOperasional !== 'aktif') count++;
+
+                    // 7. Custom Filter Dinamis (dari appliedFilters)
+                    count += this.countFilterCustom(af);
+
                     return count;
                 },
 
-                // Hitung jumlah filter aktif pada sub-akordeon Ambulans & Kapasitas (pakai draftFilters agar badge akordeon langsung reaktif)
-                countFilterAmbulansKapasitas() {
+                // Hitung jumlah filter aktif pada sub-akordeon Ambulans & Kapasitas (default: draftFilters untuk badge akordeon)
+                countFilterAmbulansKapasitas(targetState = null) {
                     let c = 0;
-                    const df = this.draftFilters;
-                    if (df.minTotalAmbulans > 0) c++;
-                    if (df.minAmbulansGadar > 0) c++;
-                    if (df.minAmbulansRodaDua > 0) c++;
-                    if (df.minBed > 0) c++;
-                    if (df.minSdm > 0) c++;
+                    const st = targetState || this.draftFilters;
+                    if (st.minTotalAmbulans > 0) c++;
+                    if (st.minAmbulansGadar > 0) c++;
+                    if (st.minAmbulansRodaDua > 0) c++;
+                    if (st.minBed > 0) c++;
+                    if (st.minSdm > 0) c++;
                     return c;
                 },
 
-                // Hitung jumlah filter aktif pada sub-akordeon Kategori & Klasifikasi
-                countFilterKategori() {
+                // Hitung jumlah filter aktif pada sub-akordeon Kategori & Klasifikasi (default: draftFilters untuk badge akordeon)
+                countFilterKategori(targetState = null) {
                     let c = 0;
-                    const df = this.draftFilters;
-                    if (df.kepemilikan) c++;
-                    if (df.tipeRs) c++;
-                    if (df.kategoriPuskesmas) c++;
-                    if (df.wilayahPuskesmas) c++;
-                    if (df.persalinanPuskesmas) c++;
-                    if (df.ponekRs) c++;
-                    if (df.kategoriLayananKlinik) c++;
-                    if (df.bpjsKlinik) c++;
+                    const st = targetState || this.draftFilters;
+                    if (st.kepemilikan) c++;
+                    if (st.tipeRs) c++;
+                    if (st.kategoriPuskesmas) c++;
+                    if (st.wilayahPuskesmas) c++;
+                    if (st.persalinanPuskesmas) c++;
+                    if (st.ponekRs) c++;
+                    if (st.kategoriLayananKlinik) c++;
+                    if (st.bpjsKlinik) c++;
                     return c;
                 },
 
-                // Hitung jumlah filter aktif pada sub-akordeon Custom Filter Dinamis
-                countFilterCustom() {
-                    if (!this.draftFilters.customFilter) return 0;
-                    return Object.values(this.draftFilters.customFilter).filter(v => v !== null && v !== undefined && v !== '').length;
+                // Hitung jumlah filter aktif pada sub-akordeon Custom Filter Dinamis (default: draftFilters untuk badge akordeon)
+                countFilterCustom(targetState = null) {
+                    const st = targetState || this.draftFilters;
+                    if (!st.customFilter) return 0;
+                    return Object.values(st.customFilter).filter(v => v !== null && v !== undefined && v !== '').length;
                 },
 
                 // Handler saat nilai input angka/slider berubah (Draft model: tidak langsung fetch API)
@@ -2760,8 +3000,23 @@
                             this.totalFilteredCount = res.total || 0;
                             this.totalFaskes = res.total || 0;
 
+                            // Logika Hasil Pencarian (Tugas 16)
+                            let shouldFitSearch = false;
+                            if (this.hasPerformedSearch) {
+                                if (this.totalFilteredCount === 0) {
+                                    this.searchNoResultsMessage = true;
+                                    this.hasPerformedSearch = false; // 0 hasil: jangan ubah tampilan peta
+                                } else {
+                                    this.searchNoResultsMessage = false;
+                                    if (FIT_TO_RESULTS_ON_SEARCH && this.totalFilteredCount >= 1 && this.totalFilteredCount <= 200) {
+                                        shouldFitSearch = true;
+                                    }
+                                    this.hasPerformedSearch = false;
+                                }
+                            }
+
                             // Sinkronkan marker untuk jenis faskes yang aktif di zoom saat ini
-                            this.syncMarkersForCurrentView(fitBounds);
+                            this.syncMarkersForCurrentView(fitBounds || shouldFitSearch);
                         })
                         .catch(err => {
                             if (err.name === 'AbortError') return;
@@ -2988,7 +3243,7 @@
                                     parseFloat(it.lng !== undefined ? it.lng : it.longitude)
                                 ]).filter(([la, lo]) => Number.isFinite(la) && Number.isFinite(lo));
                                 if (b.length > 0) {
-                                    this.map.fitBounds(b, { padding: [40, 40], animate: false });
+                                    this.map.fitBounds(b, { padding: [40, 40], maxZoom: 16, animate: false });
                                 }
                             }
                         }
