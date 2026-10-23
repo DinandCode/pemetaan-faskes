@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Faskes;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -263,5 +264,95 @@ class IzinOperasionalService
                 'to'           => min($offset + $perPage, $total),
             ],
         ];
+    }
+
+    /**
+     * Menerapkan filter status izin operasional secara terpusat ke Query Builder Eloquent.
+     * Digunakan bersama oleh Index Faskes, Filter Atribut Peta, dan API.
+     *
+     * @param Builder $query
+     * @param string|null $statusIzin
+     * @param string|null $statusOperasional
+     * @return Builder
+     */
+    public static function applyStatusIzinFilter(Builder $query, ?string $statusIzin, ?string $statusOperasional = null): Builder
+    {
+        if ($statusIzin === null) {
+            return $query;
+        }
+
+        $statusIzin = strtolower(trim($statusIzin));
+        if ($statusIzin === '' || $statusIzin === 'all' || $statusIzin === 'semua') {
+            return $query;
+        }
+
+        // Jika status faskes belum dibatasi secara eksplisit oleh query sebelumnya dan tidak diminta nonaktif/semua,
+        // batasi ke status 'aktif' sesuai definisi pemantauan izin operasional.
+        if ($statusOperasional === null || $statusOperasional === '') {
+            $query->whereRaw('LOWER(status) = ?', ['aktif']);
+        } elseif ($statusOperasional === 'aktif' || $statusOperasional === 'nonaktif') {
+            $query->where('status', $statusOperasional);
+        }
+
+        $today = Carbon::now(self::TIMEZONE)->startOfDay();
+        $todayStr = $today->toDateString();
+        $h1Limit = $today->copy()->addMonthsNoOverflow(self::THRESHOLD_H1_MONTHS)->toDateString();
+        $h3Limit = $today->copy()->addMonthsNoOverflow(self::THRESHOLD_H3_MONTHS)->toDateString();
+        $h6Limit = $today->copy()->addMonthsNoOverflow(self::THRESHOLD_H6_MONTHS)->toDateString();
+
+        // Normalisasi alias kompatibilitas
+        if ($statusIzin === 'segera_berakhir') {
+            // Segera berakhir: <= 3 bulan ke depan (termasuk H-1 dan H-3)
+            $statusIzin = 'h_3_bulan_cumulative';
+        } elseif ($statusIzin === 'berlaku') {
+            // Berlaku: > 6 bulan (sama dengan aman)
+            $statusIzin = 'aman';
+        }
+
+        $matchLevel = function ($builder, string $relation, string $dateCol) use ($statusIzin, $todayStr, $h1Limit, $h3Limit, $h6Limit) {
+            if ($statusIzin === 'belum_diisi') {
+                $builder->where(function ($q) use ($relation, $dateCol) {
+                    $q->whereDoesntHave($relation)
+                      ->orWhereHas($relation, fn ($s) => $s->whereNull($dateCol));
+                });
+            } elseif ($statusIzin === 'kedaluwarsa') {
+                $builder->whereHas($relation, fn ($s) => $s->whereNotNull($dateCol)->whereDate($dateCol, '<', $todayStr));
+            } elseif ($statusIzin === 'h_1_bulan') {
+                $builder->whereHas($relation, fn ($s) => $s->whereNotNull($dateCol)->whereDate($dateCol, '>=', $todayStr)->whereDate($dateCol, '<=', $h1Limit));
+            } elseif ($statusIzin === 'h_3_bulan') {
+                $builder->whereHas($relation, fn ($s) => $s->whereNotNull($dateCol)->whereDate($dateCol, '>', $h1Limit)->whereDate($dateCol, '<=', $h3Limit));
+            } elseif ($statusIzin === 'h_3_bulan_cumulative') {
+                $builder->whereHas($relation, fn ($s) => $s->whereNotNull($dateCol)->whereDate($dateCol, '>=', $todayStr)->whereDate($dateCol, '<=', $h3Limit));
+            } elseif ($statusIzin === 'h_6_bulan') {
+                $builder->whereHas($relation, fn ($s) => $s->whereNotNull($dateCol)->whereDate($dateCol, '>', $h3Limit)->whereDate($dateCol, '<=', $h6Limit));
+            } elseif ($statusIzin === 'aman') {
+                $builder->whereHas($relation, fn ($s) => $s->whereNotNull($dateCol)->whereDate($dateCol, '>', $h6Limit));
+            }
+        };
+
+        return $query->where(function ($q) use ($matchLevel) {
+            $q->where(function ($sub) use ($matchLevel) {
+                $sub->where('jenis_faskes', 'puskesmas');
+                $matchLevel($sub, 'puskesmasDetail', 'masa_izin');
+            })->orWhere(function ($sub) use ($matchLevel) {
+                $sub->where('jenis_faskes', 'rumah_sakit');
+                $matchLevel($sub, 'rumahSakitDetail', 'masa_izin');
+            })->orWhere(function ($sub) use ($matchLevel) {
+                $sub->where('jenis_faskes', 'klinik_pratama');
+                $matchLevel($sub, 'klinikPratamaDetail', 'masa_izin');
+            })->orWhere(function ($sub) use ($matchLevel) {
+                $sub->where('jenis_faskes', 'klinik_utama');
+                $matchLevel($sub, 'klinikUtamaDetail', 'masa_izin');
+            })->orWhere(function ($sub) use ($matchLevel) {
+                $sub->where('jenis_faskes', 'laboratorium');
+                $matchLevel($sub, 'laboratoriumDetail', 'masa_izin');
+            })->orWhere(function ($sub) use ($matchLevel) {
+                $sub->where('jenis_faskes', 'griya_sehat');
+                $matchLevel($sub, 'griyaSehatDetail', 'masa_izin');
+            })->orWhere(function ($sub) use ($matchLevel) {
+                $sub->whereIn('jenis_faskes', ['tpmd', 'tpmdg', 'tpmb', 'tpmp']);
+                $matchLevel($sub, 'tpmDetail', 'masa_sip');
+            });
+        });
     }
 }

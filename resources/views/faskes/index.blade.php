@@ -373,9 +373,12 @@
                                 @change="onDropdownChange()"
                                 class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
                             <option value="">Semua Status Izin</option>
-                            <option value="berlaku">Berlaku (&gt; 90 hari)</option>
-                            <option value="segera_berakhir">Segera Berakhir (&le; 90 hari)</option>
-                            <option value="kedaluwarsa">Kedaluwarsa</option>
+                            <option value="kedaluwarsa">Kedaluwarsa (Lewat Hari Ini)</option>
+                            <option value="h_1_bulan">H-1 Bulan (&le; 1 Bulan)</option>
+                            <option value="h_3_bulan">H-3 Bulan (1 - 3 Bulan)</option>
+                            <option value="h_6_bulan">H-6 Bulan (3 - 6 Bulan)</option>
+                            <option value="aman">Aman (&gt; 6 Bulan)</option>
+                            <option value="belum_diisi">Belum Diisi (Tanpa Tanggal)</option>
                         </select>
                     </div>
 

@@ -208,56 +208,9 @@ class FaskesAttributeFilter
             });
         }
 
-        // 2i. Status Izin Operasional
-        // Opsi: berlaku / berakhir_6_bulan / berakhir_3_bulan / berakhir_1_bulan / kedaluwarsa / belum_diisi
+        // 2i. Status Izin Operasional (Tunggal & Konsisten via IzinOperasionalService - Tugas 18)
         if ($request->filled('status_izin')) {
-            $val = trim((string) $request->input('status_izin'));
-            $today = Carbon::today()->toDateString();
-            $d30 = Carbon::today()->addDays(30)->toDateString();
-            $d90 = Carbon::today()->addDays(90)->toDateString();
-            $d180 = Carbon::today()->addDays(180)->toDateString();
-
-            $detailTables = [
-                'puskesmasDetail',
-                'rumahSakitDetail',
-                'klinikPratamaDetail',
-                'klinikUtamaDetail',
-                'laboratoriumDetail',
-                'griyaSehatDetail',
-            ];
-
-            $query->where(function ($q) use ($val, $today, $d30, $d90, $d180, $detailTables) {
-                foreach ($detailTables as $rel) {
-                    $q->orWhereHas($rel, function ($sub) use ($val, $today, $d30, $d90, $d180) {
-                        switch ($val) {
-                            case 'berlaku':
-                                $sub->whereNotNull('masa_izin')->where('masa_izin', '>', $d180);
-                                break;
-                            case 'berakhir_6_bulan':
-                                $sub->whereNotNull('masa_izin')
-                                    ->where('masa_izin', '>=', $today)
-                                    ->where('masa_izin', '<=', $d180);
-                                break;
-                            case 'berakhir_3_bulan':
-                                $sub->whereNotNull('masa_izin')
-                                    ->where('masa_izin', '>=', $today)
-                                    ->where('masa_izin', '<=', $d90);
-                                break;
-                            case 'berakhir_1_bulan':
-                                $sub->whereNotNull('masa_izin')
-                                    ->where('masa_izin', '>=', $today)
-                                    ->where('masa_izin', '<=', $d30);
-                                break;
-                            case 'kedaluwarsa':
-                                $sub->whereNotNull('masa_izin')->where('masa_izin', '<', $today);
-                                break;
-                            case 'belum_diisi':
-                                $sub->whereNull('masa_izin');
-                                break;
-                        }
-                    });
-                }
-            });
+            \App\Services\IzinOperasionalService::applyStatusIzinFilter($query, $request->input('status_izin'), $request->input('status_operasional'));
         }
 
         // 2j. Status Operasional Faskes: Aktif / Nonaktif / Semua

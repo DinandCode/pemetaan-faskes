@@ -123,37 +123,9 @@ class FaskesCrudController extends Controller
             $query->whereHas('rumahSakitDetail', fn ($sub) => $sub->where('tipe_rs', $request->tipe_rs));
         }
 
-        // 8. Status Izin Operasional
-        $validStatusIzin = ['berlaku', 'segera_berakhir', 'kedaluwarsa'];
-        if ($request->filled('status_izin') && in_array($request->status_izin, $validStatusIzin, true)) {
-            $today = now()->toDateString();
-            $threshold = now()->addDays(90)->toDateString();
-
-            if ($request->status_izin === 'berlaku') {
-                $query->where(function ($q) use ($threshold) {
-                    $q->whereHas('puskesmasDetail', fn ($sub) => $sub->whereNotNull('masa_izin')->whereDate('masa_izin', '>', $threshold))
-                      ->orWhereHas('klinikPratamaDetail', fn ($sub) => $sub->whereNotNull('masa_izin')->whereDate('masa_izin', '>', $threshold))
-                      ->orWhereHas('klinikUtamaDetail', fn ($sub) => $sub->whereNotNull('masa_izin')->whereDate('masa_izin', '>', $threshold))
-                      ->orWhereHas('laboratoriumDetail', fn ($sub) => $sub->whereNotNull('masa_izin')->whereDate('masa_izin', '>', $threshold))
-                      ->orWhereHas('griyaSehatDetail', fn ($sub) => $sub->whereNotNull('masa_izin')->whereDate('masa_izin', '>', $threshold));
-                });
-            } elseif ($request->status_izin === 'segera_berakhir') {
-                $query->where(function ($q) use ($today, $threshold) {
-                    $q->whereHas('puskesmasDetail', fn ($sub) => $sub->whereNotNull('masa_izin')->whereDate('masa_izin', '>=', $today)->whereDate('masa_izin', '<=', $threshold))
-                      ->orWhereHas('klinikPratamaDetail', fn ($sub) => $sub->whereNotNull('masa_izin')->whereDate('masa_izin', '>=', $today)->whereDate('masa_izin', '<=', $threshold))
-                      ->orWhereHas('klinikUtamaDetail', fn ($sub) => $sub->whereNotNull('masa_izin')->whereDate('masa_izin', '>=', $today)->whereDate('masa_izin', '<=', $threshold))
-                      ->orWhereHas('laboratoriumDetail', fn ($sub) => $sub->whereNotNull('masa_izin')->whereDate('masa_izin', '>=', $today)->whereDate('masa_izin', '<=', $threshold))
-                      ->orWhereHas('griyaSehatDetail', fn ($sub) => $sub->whereNotNull('masa_izin')->whereDate('masa_izin', '>=', $today)->whereDate('masa_izin', '<=', $threshold));
-                });
-            } else {
-                $query->where(function ($q) use ($today) {
-                    $q->whereHas('puskesmasDetail', fn ($sub) => $sub->whereNotNull('masa_izin')->whereDate('masa_izin', '<', $today))
-                      ->orWhereHas('klinikPratamaDetail', fn ($sub) => $sub->whereNotNull('masa_izin')->whereDate('masa_izin', '<', $today))
-                      ->orWhereHas('klinikUtamaDetail', fn ($sub) => $sub->whereNotNull('masa_izin')->whereDate('masa_izin', '<', $today))
-                      ->orWhereHas('laboratoriumDetail', fn ($sub) => $sub->whereNotNull('masa_izin')->whereDate('masa_izin', '<', $today))
-                      ->orWhereHas('griyaSehatDetail', fn ($sub) => $sub->whereNotNull('masa_izin')->whereDate('masa_izin', '<', $today));
-                });
-            }
+        // 8. Status Izin Operasional (Tunggal & Konsisten via IzinOperasionalService - Tugas 18)
+        if ($request->filled('status_izin')) {
+            \App\Services\IzinOperasionalService::applyStatusIzinFilter($query, $request->status_izin, $request->status);
         }
 
         // 9. Kolom Tambahan Dinamis

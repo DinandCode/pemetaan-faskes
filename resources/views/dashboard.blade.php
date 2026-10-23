@@ -215,6 +215,13 @@
                     </svg>
                     <span>Master Faskes</span>
                 </a>
+                <a href="{{ route('data-quality.index') }}"
+                   class="px-3.5 py-2 text-xs font-semibold rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200/80 transition-all flex items-center space-x-2 shadow-2xs">
+                    <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                    </svg>
+                    <span>Kualitas Data</span>
+                </a>
                 <a href="{{ route('faskes.create') }}"
                    class="px-3.5 py-2 text-xs font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 text-white shadow-sm shadow-blue-500/20 hover:shadow-md transition-all flex items-center space-x-2">
                     <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -527,7 +534,7 @@
 
             <!-- Kartu Ringkasan Klik-untuk-Filter -->
             <div class="p-5 border-b border-slate-100 bg-slate-50/40">
-                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2.5">
                     
                     <!-- 1. Kedaluwarsa -->
                     <button type="button"
@@ -589,7 +596,22 @@
                         </div>
                     </button>
 
-                    <!-- 5. Belum Diisi -->
+                    <!-- 5. Aman (> 6 Bulan) -->
+                    <button type="button"
+                            @click="setLevel('aman')"
+                            :class="activeLevel === 'aman' ? 'ring-2 ring-emerald-600 border-emerald-600 bg-emerald-600 text-white' : 'bg-white border-slate-200/90 text-slate-800 hover:border-emerald-400'"
+                            class="p-3 rounded-xl border text-left transition-all shadow-2xs group flex flex-col justify-between cursor-pointer">
+                        <div class="flex items-center justify-between">
+                            <span :class="activeLevel === 'aman' ? 'text-emerald-100' : 'text-emerald-700'" class="text-[10px] font-bold uppercase tracking-wider">Aman (&gt; 6 Bln)</span>
+                            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        </div>
+                        <div class="mt-2 flex items-baseline justify-between">
+                            <span class="text-2xl font-black leading-none" x-text="ringkasan.aman"></span>
+                            <span :class="activeLevel === 'aman' ? 'text-emerald-100' : 'text-slate-400'" class="text-[10px]">&gt; 6 bulan</span>
+                        </div>
+                    </button>
+
+                    <!-- 6. Belum Diisi -->
                     <button type="button"
                             @click="setLevel('belum_diisi')"
                             :class="activeLevel === 'belum_diisi' ? 'ring-2 ring-slate-600 border-slate-600 bg-slate-700 text-white' : 'bg-white border-slate-200/90 text-slate-800 hover:border-slate-400'"
@@ -604,7 +626,7 @@
                         </div>
                     </button>
 
-                    <!-- 6. Semua / Reset -->
+                    <!-- 7. Semua / Reset -->
                     <button type="button"
                             @click="setLevel('all')"
                             :class="activeLevel === 'all' ? 'ring-2 ring-blue-600 border-blue-600 bg-blue-600 text-white' : 'bg-white border-slate-200/90 text-slate-800 hover:border-blue-400'"

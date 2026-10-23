@@ -242,6 +242,66 @@ class FaskesController extends Controller
     }
 
     /**
+     * Endpoint API baca-saja ringan untuk ringkasan data faskes & rekonsiliasi total (Tugas 18).
+     * Memberikan rincian pembagian total master faskes, faskes aktif valid, nonaktif, tanpa koordinat, dan luar Banyumas.
+     */
+    public function ringkasanData(): JsonResponse
+    {
+        $stats = DB::select("
+            SELECT
+                count(*) as total_master,
+                count(*) FILTER (WHERE status = 'aktif') as total_aktif,
+                count(*) FILTER (WHERE status != 'aktif' OR status IS NULL) as total_nonaktif,
+                count(*) FILTER (WHERE latitude IS NULL OR longitude IS NULL OR latitude < -90 OR latitude > 90 OR longitude < -180 OR longitude > 180) as tanpa_koordinat,
+                count(*) FILTER (
+                    WHERE status = 'aktif'
+                      AND latitude IS NOT NULL AND longitude IS NOT NULL
+                      AND latitude BETWEEN -90 AND 90 AND longitude BETWEEN -180 AND 180
+                ) as aktif_valid,
+                count(*) FILTER (
+                    WHERE latitude IS NOT NULL AND longitude IS NOT NULL
+                      AND latitude BETWEEN -90 AND 90 AND longitude BETWEEN -180 AND 180
+                      AND (latitude < -7.75 OR latitude > -7.15 OR longitude < 108.95 OR longitude > 109.50)
+                ) as di_luar_banyumas,
+                count(*) FILTER (
+                    WHERE status = 'aktif'
+                      AND latitude IS NOT NULL AND longitude IS NOT NULL
+                      AND latitude BETWEEN -7.75 AND -7.15 AND longitude BETWEEN 108.95 AND 109.50
+                ) as aktif_dalam_banyumas
+            FROM faskes
+        ")[0];
+
+        $totalMaster = (int) $stats->total_master;
+        $totalAktif = (int) $stats->total_aktif;
+        $totalNonaktif = (int) $stats->total_nonaktif;
+        $tanpaKoordinat = (int) $stats->tanpa_koordinat;
+        $aktifValid = (int) $stats->aktif_valid;
+        $diLuarBms = (int) $stats->di_luar_banyumas;
+        $aktifDalamBms = (int) $stats->aktif_dalam_banyumas;
+        $tidakDitampilkan = $totalNonaktif + $tanpaKoordinat;
+
+        return response()->json([
+            'success'              => true,
+            'total_master'         => $totalMaster,
+            'total_aktif'          => $totalAktif,
+            'total_nonaktif'       => $totalNonaktif,
+            'tanpa_koordinat'      => $tanpaKoordinat,
+            'di_luar_banyumas'     => $diLuarBms,
+            'aktif_valid'          => $aktifValid,
+            'aktif_dalam_banyumas' => $aktifDalamBms,
+            'tidak_ditampilkan'    => $tidakDitampilkan,
+            'penjelasan'           => sprintf(
+                "%d total master · %d tidak ditampilkan di peta: %d nonaktif, %d tanpa koordinat valid (%d titik aktif di luar batas Banyumas)",
+                $totalMaster,
+                $tidakDitampilkan,
+                $totalNonaktif,
+                $tanpaKoordinat,
+                $diLuarBms
+            ),
+        ])->header('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120');
+    }
+
+    /**
      * Membangun Query Eloquent dengan filter relasi whereHas dinamis.
      */
     protected function buildFilterQuery(Request $request): Builder

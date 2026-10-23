@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DataQualityController;
 use App\Http\Controllers\FaskesCrudController;
 use App\Http\Controllers\ImportExportController;
 use Illuminate\Support\Facades\Route;
@@ -14,6 +15,9 @@ Route::get('/peta', function () {
     $activeFieldDefinitions = \App\Models\FaskesFieldDefinition::where('is_active', true)->orderBy('sort_order')->get();
     return view('peta', compact('activeFieldDefinitions'));
 });
+
+// Halaman Kualitas Data (Tugas 18 - Read-Only Data Quality)
+Route::get('/data-quality', [DataQualityController::class, 'index'])->name('data-quality.index');
 
 // Halaman Dashboard Analitik & Statistik (Tugas 10A)
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');

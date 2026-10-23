@@ -686,11 +686,35 @@
                 <div class="bg-blue-50/70 border border-blue-200 rounded-xl p-3 flex flex-col gap-2 text-xs">
                     <div class="flex items-center justify-between gap-2">
                         <div>
-                            <span class="font-bold text-blue-900">Marker Faskes di Layar</span>
-                            <p class="text-blue-700 text-[11px]">
-                                Menampilkan <b x-text="mountedCount"></b> dari <span x-text="totalFilteredCount"></span> faskes
+                            <div class="flex items-center gap-1.5">
+                                <span class="font-bold text-blue-900">Marker Faskes di Layar</span>
+                                <span class="group relative inline-flex items-center cursor-help">
+                                    <svg class="w-3.5 h-3.5 text-blue-500 hover:text-blue-700" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <span class="pointer-events-none absolute left-0 bottom-full mb-1.5 hidden w-72 rounded-lg bg-slate-900 px-2.5 py-1.5 text-[10.5px] leading-relaxed text-white shadow-lg group-hover:block z-50">
+                                        <template x-if="ringkasanData">
+                                            <span>
+                                                <b x-text="ringkasanData.total_master"></b> total master &bull; <b x-text="ringkasanData.tidak_ditampilkan"></b> tidak tampil (<span x-text="ringkasanData.total_nonaktif"></span> nonaktif, <span x-text="ringkasanData.tanpa_koordinat"></span> tanpa koordinat valid, <span x-text="ringkasanData.di_luar_banyumas"></span> di luar batas Banyumas).
+                                            </span>
+                                        </template>
+                                        <template x-if="!ringkasanData">
+                                            <span>913 total master &bull; 9 tidak ditampilkan (9 nonaktif, 0 tanpa koordinat, 1 di luar batas Banyumas).</span>
+                                        </template>
+                                    </span>
+                                </span>
+                            </div>
+                            <p class="text-blue-700 text-[11px] mt-0.5">
+                                Menampilkan <b x-text="mountedCount"></b> dari <span x-text="totalFilteredCount"></span> faskes aktif berkoordinat valid
                                 <span class="text-slate-400 font-normal" x-text="`(Zoom: ${currentZoom})`"></span>
                             </p>
+                            <div class="text-[10px] text-slate-500 mt-0.5 flex flex-wrap items-center gap-1">
+                                <span><span x-text="ringkasanData ? ringkasanData.total_master : 913"></span> total master &bull;</span>
+                                <span><span x-text="ringkasanData ? ringkasanData.tidak_ditampilkan : 9"></span> tidak ditampilkan:</span>
+                                <span><b x-text="ringkasanData ? ringkasanData.total_nonaktif : 9"></b> nonaktif,</span>
+                                <span><b x-text="ringkasanData ? ringkasanData.tanpa_koordinat : 0"></b> tanpa koordinat,</span>
+                                <span><b x-text="ringkasanData ? ringkasanData.di_luar_banyumas : 1"></b> luar Banyumas</span>
+                            </div>
                         </div>
                         <div class="flex items-center gap-2">
                             <template x-if="isFiltering || isFetchingType">
@@ -1874,14 +1898,14 @@
                 </div>
 
                 <div class="text-center text-[10.5px] text-slate-400">
-                    Master Data: <b class="text-slate-600" x-text="totalFaskes"></b> Faskes &bull; Kab. Banyumas
+                    Master Data: <b class="text-slate-600" x-text="ringkasanData ? ringkasanData.total_master : 913"></b> Faskes (<span x-text="totalFaskes"></span> Aktif) &bull; Kab. Banyumas
                 </div>
             </div>
 
             <!-- Footer Stats untuk Tab Analisis Event -->
             <div x-show="activeTab === 'event'"
                  class="p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] bg-slate-50 border-t border-slate-200 text-center text-[11px] text-slate-500 flex-shrink-0">
-                Total Master Data: <span class="font-bold text-slate-700" x-text="totalFaskes"></span> Faskes &bull; Kab. Banyumas
+                Total Master Data: <span class="font-bold text-slate-700" x-text="ringkasanData ? ringkasanData.total_master : 913"></span> Faskes (<span x-text="totalFaskes"></span> Aktif) &bull; Kab. Banyumas
             </div>
         </aside>
 
@@ -2016,6 +2040,7 @@
                 isFiltering: false,
                 hasSearched: false,
                 totalFaskes: 0,
+                ringkasanData: null,
                 isFullscreen: false,
 
                 // Kontrol Pencarian Peta di samping Basemap (Tugas 16)
@@ -2615,8 +2640,9 @@
                         this.setEventPoint(e.latlng.lat, e.latlng.lng);
                     });
 
-                    // Muat Data Awal Faskes
+                    // Muat Data Awal Faskes & Ringkasan Data
                     this.loadInitialFaskes();
+                    this.fetchRingkasanData();
 
                     // Listener Kustom 'Jadikan Titik Event' dari Popup
                     window.addEventListener('set-event-here', (e) => {
@@ -2659,6 +2685,20 @@
                     };
                     window.addEventListener('resize', onWindowResize, { passive: true });
                     window.addEventListener('orientationchange', onWindowResize, { passive: true });
+                },
+
+                // Ambil ringkasan data faskes dari server (total master, aktif, nonaktif, luar banyumas)
+                fetchRingkasanData() {
+                    fetch('{{ url("/api/faskes/ringkasan-data") }}')
+                        .then(res => res.json())
+                        .then(res => {
+                            if (res && res.success && res.data) {
+                                this.ringkasanData = res.data;
+                            }
+                        })
+                        .catch(err => {
+                            console.warn('Gagal memuat ringkasan data faskes:', err);
+                        });
                 },
 
                 // Helper: Tombol Zoom In satu tingkat dari floating notice
