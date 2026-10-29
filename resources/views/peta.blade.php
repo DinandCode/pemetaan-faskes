@@ -25,6 +25,7 @@
     <!-- Leaflet MarkerCluster JS (v1.5.3) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
     <script src="{{ url('/js/faskes-basemaps.js') }}"></script>
+    <script src="{{ url('/js/filter-state.js') }}"></script>
 
     <style>
         html, body {
@@ -476,6 +477,7 @@
                             </div>
                             <select id="search-kecamatan-select"
                                     x-model="searchDraftKecamatan"
+                                    autocomplete="off"
                                     @keydown.enter.prevent="applySearchPanel()"
                                     class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-xs">
                                 <option value="">-- Semua Kecamatan (Kab. Banyumas) --</option>
@@ -501,6 +503,7 @@
                                        type="text"
                                        x-ref="searchInput"
                                        x-model="searchDraftQuery"
+                                       autocomplete="off"
                                        @keydown.enter.prevent="applySearchPanel()"
                                        placeholder="Cari nama faskes, alamat, desa..."
                                        class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs placeholder-slate-400">
@@ -726,6 +729,14 @@
                                     <span x-text="loadingStatusText || 'Menyaring...'"></span>
                                 </div>
                             </template>
+                            <button type="button" @click="copyShareUrl()"
+                                    class="text-[11px] px-2 py-1 rounded bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 font-medium transition focus:outline-none focus:ring-2 focus:ring-blue-300 flex items-center gap-1"
+                                    :title="copyShareSuccess ? 'Tautan berhasil disalin!' : 'Salin tautan dengan filter saat ini'">
+                                <svg class="w-3 h-3 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                                </svg>
+                                <span x-text="copyShareSuccess ? 'Disalin!' : 'Salin Tautan'"></span>
+                            </button>
                             <button type="button" @click="resetDynamicFilters()"
                                     class="text-[11px] px-2 py-1 rounded bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 font-medium transition focus:outline-none focus:ring-2 focus:ring-blue-300">
                                 Reset Filter
@@ -1166,6 +1177,7 @@
                                     <div x-show="hasAnyJenis(['klinik_pratama', 'klinik_utama', 'laboratorium'])" class="mt-2.5">
                                         <label class="block text-[11px] font-semibold text-slate-700 mb-1">Kepemilikan (Klinik &amp; Lab)</label>
                                         <select x-model="draftFilters.kepemilikan" @keydown.enter.prevent="applyFilters(true)"
+                                                autocomplete="off"
                                                 class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
                                             <option value="">Semua Kepemilikan</option>
                                             <option value="Swasta">Swasta</option>
@@ -1177,6 +1189,7 @@
                                     <div x-show="isJenisSelected('rumah_sakit')">
                                         <label class="block text-[11px] font-semibold text-slate-700 mb-1">Tipe Rumah Sakit</label>
                                         <select x-model="draftFilters.tipeRs" @keydown.enter.prevent="applyFilters(true)"
+                                                autocomplete="off"
                                                 class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
                                             <option value="">Semua Tipe RS</option>
                                             <option value="A">Kelas A</option>
@@ -1191,6 +1204,7 @@
                                     <div x-show="isJenisSelected('puskesmas')">
                                         <label class="block text-[11px] font-semibold text-slate-700 mb-1">Kategori Puskesmas</label>
                                         <select x-model="draftFilters.kategoriPuskesmas" @keydown.enter.prevent="applyFilters(true)"
+                                                autocomplete="off"
                                                 class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
                                             <option value="">Semua Kategori</option>
                                             <option value="rawat_inap">Rawat Inap</option>
@@ -1202,6 +1216,7 @@
                                     <div x-show="isJenisSelected('puskesmas')">
                                         <label class="block text-[11px] font-semibold text-slate-700 mb-1">Wilayah Puskesmas</label>
                                         <select x-model="draftFilters.wilayahPuskesmas" @keydown.enter.prevent="applyFilters(true)"
+                                                autocomplete="off"
                                                 class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
                                             <option value="">Semua Wilayah</option>
                                             <option value="perkotaan">Perkotaan</option>
@@ -1213,6 +1228,7 @@
                                     <div x-show="isJenisSelected('puskesmas')">
                                         <label class="block text-[11px] font-semibold text-slate-700 mb-1">Persalinan Puskesmas</label>
                                         <select x-model="draftFilters.persalinanPuskesmas" @keydown.enter.prevent="applyFilters(true)"
+                                                autocomplete="off"
                                                 class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
                                             <option value="">Semua Kemampuan</option>
                                             <option value="poned">PONED</option>
@@ -1225,6 +1241,7 @@
                                     <div x-show="isJenisSelected('rumah_sakit')">
                                         <label class="block text-[11px] font-semibold text-slate-700 mb-1">PONEK Rumah Sakit</label>
                                         <select x-model="draftFilters.ponekRs" @keydown.enter.prevent="applyFilters(true)"
+                                                autocomplete="off"
                                                 class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
                                             <option value="">Semua PONEK</option>
                                             <option value="ponek">PONEK</option>
@@ -1236,6 +1253,7 @@
                                     <div x-show="hasAnyJenis(['klinik_pratama', 'klinik_utama'])">
                                         <label class="block text-[11px] font-semibold text-slate-700 mb-1">Layanan Klinik (Pratama &amp; Utama)</label>
                                         <select x-model="draftFilters.kategoriLayananKlinik" @keydown.enter.prevent="applyFilters(true)"
+                                                autocomplete="off"
                                                 class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
                                             <option value="">Semua Layanan</option>
                                             <option value="rawat_jalan">Non Rawat Inap</option>
@@ -1247,6 +1265,7 @@
                                     <div x-show="hasAnyJenis(['klinik_pratama', 'klinik_utama'])">
                                         <label class="block text-[11px] font-semibold text-slate-700 mb-1">Kerja Sama BPJS (Khusus Klinik)</label>
                                         <select x-model="draftFilters.bpjsKlinik" @keydown.enter.prevent="applyFilters(true)"
+                                                autocomplete="off"
                                                 class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
                                             <option value="">Semua (Mitra &amp; Non Mitra)</option>
                                             <option value="ya">Bekerja sama BPJS</option>
@@ -1258,6 +1277,7 @@
                                     <div>
                                         <label class="block text-[11px] font-semibold text-slate-700 mb-1">Status Operasional Faskes</label>
                                         <select x-model="draftFilters.statusOperasional" @keydown.enter.prevent="applyFilters(true)"
+                                                autocomplete="off"
                                                 class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
                                             <option value="aktif">Aktif Saja (Default)</option>
                                             <option value="nonaktif">Nonaktif Saja</option>
@@ -1300,6 +1320,7 @@
                                     <div class="mt-2.5">
                                         <label class="block text-[11px] font-semibold text-slate-700 mb-1">Masa Berlaku Izin Operasional</label>
                                         <select x-model="draftFilters.statusIzin" @keydown.enter.prevent="applyFilters(true)"
+                                                autocomplete="off"
                                                 class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
                                             <option value="">Semua Status Izin</option>
                                             <option value="berlaku">Berlaku (&gt; 6 bulan)</option>
@@ -1358,6 +1379,7 @@
                                             </label>
                                             @if(in_array($def->type, ['select', 'multiselect']))
                                                 <select x-model="draftFilters.customFilter['{{ $def->field_key }}']" @keydown.enter.prevent="applyFilters(true)"
+                                                        autocomplete="off"
                                                         class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
                                                     <option value="">Semua {{ $def->label }}</option>
                                                     @foreach((array) $def->options as $opt)
@@ -1366,6 +1388,7 @@
                                                 </select>
                                             @elseif($def->type === 'boolean')
                                                 <select x-model="draftFilters.customFilter['{{ $def->field_key }}']" @keydown.enter.prevent="applyFilters(true)"
+                                                        autocomplete="off"
                                                         class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
                                                     <option value="">Semua {{ $def->label }}</option>
                                                     <option value="Ya">Ya</option>
@@ -1374,17 +1397,20 @@
                                             @elseif($def->type === 'number')
                                                 <input type="number" step="any"
                                                        x-model="draftFilters.customFilter['{{ $def->field_key }}']"
+                                                       autocomplete="off"
                                                        @keydown.enter.prevent="applyFilters(true)"
                                                        placeholder="Nilai {{ $def->label }}..."
                                                        class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
                                             @elseif($def->type === 'date')
                                                 <input type="date"
                                                        x-model="draftFilters.customFilter['{{ $def->field_key }}']"
+                                                       autocomplete="off"
                                                        @change="applyFilters(true)"
                                                        class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
                                             @else
                                                 <input type="text"
                                                        x-model="draftFilters.customFilter['{{ $def->field_key }}']"
+                                                       autocomplete="off"
                                                        @keydown.enter.prevent="applyFilters(true)"
                                                        placeholder="Cari {{ $def->label }}..."
                                                        class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -1627,6 +1653,19 @@
                         </template>
                         <span x-text="isLoading ? 'Menghitung Rute PostGIS & OSRM...' : 'Cari Faskes Terdekat'"></span>
                     </button>
+
+                    <!-- Notifikasi Pemulihan Titik Event dari Tautan (Tugas 19) -->
+                    <template x-if="analysisRestoredNotice && !hasSearched && !isLoading">
+                        <div class="mt-2.5 p-3 rounded-xl bg-blue-50 border border-blue-200 text-blue-800 text-xs flex items-start gap-2">
+                            <svg class="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <div class="flex-1">
+                                <span class="font-bold">Titik Kejadian Dipulihkan:</span>
+                                <span>Titik koordinat &amp; radius telah disiapkan di peta. Klik tombol <b>Cari Faskes Terdekat</b> untuk menghitung rute darurat OSRM.</span>
+                            </div>
+                        </div>
+                    </template>
                 </div>
 
                 <!-- Hasil Analisis Event -->
@@ -2004,6 +2043,24 @@
         </div>
     </div>
 
+    <!-- Toast Notifikasi Pemulihan SessionStorage (Tugas 19) -->
+    <div x-show="sessionRestoredNotice" x-cloak
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0 translate-y-2"
+         x-transition:enter-end="opacity-100 translate-y-0"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100 translate-y-0"
+         x-transition:leave-end="opacity-0 translate-y-2"
+         class="fixed bottom-4 left-4 z-50 bg-slate-900/95 text-white text-xs px-3.5 py-2.5 rounded-xl shadow-xl border border-slate-700 flex items-center gap-2.5 backdrop-blur-xs">
+        <span class="w-2 h-2 rounded-full bg-blue-400"></span>
+        <span>Filter terakhir dipulihkan</span>
+        <span class="text-slate-500">&bull;</span>
+        <button type="button" @click="resetAllFilters(); sessionRestoredNotice = false;" class="text-blue-400 hover:text-blue-300 font-semibold underline">
+            Reset
+        </button>
+        <button type="button" @click="sessionRestoredNotice = false" class="text-slate-400 hover:text-white ml-1 font-bold">&times;</button>
+    </div>
+
     <!-- Alpine.js Application Logic -->
     <script>
         // Konfigurasi Level of Detail (LOD) Berbasis Zoom (Tugas 9)
@@ -2031,6 +2088,12 @@
         // Otomatis fitBounds jika hasil pencarian 1-200 titik (Tugas 16)
         const FIT_TO_RESULTS_ON_SEARCH = true;
 
+        // Konstanta Konfigurasi Persistensi Filter & Tampilan (Tugas 19)
+        const AUTO_RUN_ANALYSIS_ON_RESTORE = false; // Hemat panggilan OSRM saat buka tautan/refresh
+        const RESTORE_FROM_SESSION = true;          // Cadangan pemulihan sessionStorage per tab
+        const RESTORE_ACROSS_SESSIONS = false;      // Tidak ada pemulihan lintas-hari dari localStorage
+        const PERSIST_DRAFT = false;                // Draft yang belum diterapkan TIDAK dipertahankan
+
         function petaFaskesApp() {
             return {
                 map: null,
@@ -2042,6 +2105,12 @@
                 totalFaskes: 0,
                 ringkasanData: null,
                 isFullscreen: false,
+
+                // State Persistensi & UI Tahan Refresh (Tugas 19)
+                copyShareSuccess: false,
+                sessionRestoredNotice: false,
+                analysisRestoredNotice: false,
+                _urlDebounceTimer: null,
 
                 // Kontrol Pencarian Peta di samping Basemap (Tugas 16)
                 searchMapControl: null,
@@ -2418,6 +2487,7 @@
                     this.appliedFilters.filterSearch = curSearch;
 
                     this.typeDataCache.clear();
+                    this.syncStateToUrl();
                     this.loadFilterCountsAndSync(fitBounds);
                 },
 
@@ -2455,7 +2525,314 @@
                     this.searchNoResultsMessage = false;
                     this.hasPerformedSearch = false;
                     this.typeDataCache.clear();
+                    this.syncStateToUrl();
                     this.loadFilterCountsAndSync(true);
+                },
+
+                // ============================================================
+                // PERSISTENSI & TAHAN REFRESH (TUGAS 19)
+                // ============================================================
+
+                // Membangun objek parameter URL dari state saat ini (hanya nilai non-default)
+                buildUrlParamsFromState() {
+                    const params = {};
+                    const af = this.appliedFilters;
+
+                    // 1. Jenis Faskes (hanya jika sebagian terpilih)
+                    if (Array.isArray(af.selectedJenis) && af.selectedJenis.length > 0 && af.selectedJenis.length < ALL_FASKES_TYPES.length) {
+                        params.jenis = af.selectedJenis.join(',');
+                    }
+
+                    // 2. Layanan dasar
+                    if (af.filterAmbulans) params.amb = '1';
+                    if (af.filterBpjs) params.bpjs = '1';
+                    if (af.filterRawatInap) params.rinap = '1';
+                    if (af.filterPoned) params.poned = '1';
+
+                    // 3. Wilayah & Pencarian
+                    if (af.selectedKecamatan && this.daftarKecamatan.includes(af.selectedKecamatan)) {
+                        params.kec = af.selectedKecamatan;
+                    }
+                    if (af.filterSearch && af.filterSearch.trim()) {
+                        params.q = FilterStateHelper.sanitizeText(af.filterSearch);
+                    }
+
+                    // 4. Kapasitas & SDM
+                    if (af.minTotalAmbulans > 0) params.min_totamb = af.minTotalAmbulans;
+                    if (af.minAmbulansGadar > 0) params.min_gadar = af.minAmbulansGadar;
+                    if (af.minAmbulansRodaDua > 0) params.min_r2 = af.minAmbulansRodaDua;
+                    if (af.minBed > 0) params.min_bed = af.minBed;
+                    if (af.minSdm > 0) params.min_sdm = af.minSdm;
+
+                    // 5. Kategori & Kepemilikan
+                    if (af.kepemilikan) params.milik = af.kepemilikan;
+                    if (af.tipeRs) params.tipe_rs = af.tipeRs;
+                    if (af.kategoriPuskesmas) params.kat_pkm = af.kategoriPuskesmas;
+                    if (af.wilayahPuskesmas) params.wil_pkm = af.wilayahPuskesmas;
+                    if (af.persalinanPuskesmas) params.salin_pkm = af.persalinanPuskesmas;
+                    if (af.ponekRs) params.ponek = af.ponekRs;
+                    if (af.kategoriLayananKlinik) params.kat_kln = af.kategoriLayananKlinik;
+                    if (af.bpjsKlinik) params.bpjs_kln = af.bpjsKlinik;
+                    if (af.statusIzin) params.status_izin = af.statusIzin;
+                    if (af.statusOperasional && af.statusOperasional !== 'aktif') {
+                        params.status = af.statusOperasional;
+                    }
+
+                    // 6. Custom filter dinamis
+                    if (af.customFilter && typeof af.customFilter === 'object') {
+                        for (const [k, v] of Object.entries(af.customFilter)) {
+                            if (v !== null && v !== undefined && String(v).trim() !== '') {
+                                if (!params.cf) params.cf = {};
+                                params.cf[k] = FilterStateHelper.sanitizeText(String(v));
+                            }
+                        }
+                    }
+
+                    // 7. Pengaturan Tampilan Peta (v = zoom,lat,lng; 5 desimal)
+                    if (this.map) {
+                        const center = this.map.getCenter();
+                        const zoom = this.map.getZoom();
+                        const defaultLat = -7.424364;
+                        const defaultLng = 109.230345;
+                        if (zoom !== BASE_ZOOM || Math.abs(center.lat - defaultLat) > 0.001 || Math.abs(center.lng - defaultLng) > 0.001) {
+                            params.v = `${zoom},${center.lat.toFixed(5)},${center.lng.toFixed(5)}`;
+                        }
+                    }
+
+                    // 8. Pengaturan UI
+                    if (this.activeTab === 'event') params.tab = 'event';
+                    if (!this.sidebarOpen) params.sb = '0';
+                    if (this.showAllTypesAtAllZooms) params.allzoom = '1';
+                    if (this.showOutsideBanyumasMarkers) params.outside = '1';
+
+                    // 9. Titik Analisis Event (jika ada)
+                    if (this.eventLat !== null && this.eventLng !== null) {
+                        params.elat = parseFloat(Number(this.eventLat).toFixed(6));
+                        params.elng = parseFloat(Number(this.eventLng).toFixed(6));
+                        if (this.radiusKm !== 5) params.erad = this.radiusKm;
+                        if (!this.prioritasJenis) params.eprioritas = '0';
+                    }
+
+                    return params;
+                },
+
+                // Sinkronkan state ke URL via replaceState dan simpan cadangan ke sessionStorage
+                syncStateToUrl() {
+                    const params = this.buildUrlParamsFromState();
+                    FilterStateHelper.replaceState(params);
+
+                    if (RESTORE_FROM_SESSION) {
+                        FilterStateHelper.sessionStore.set('peta_saved_filter_state', {
+                            appliedFilters: this.cloneFilterState(this.appliedFilters),
+                            activeTab: this.activeTab,
+                            sidebarOpen: this.sidebarOpen,
+                            showAllTypesAtAllZooms: this.showAllTypesAtAllZooms,
+                            showOutsideBanyumasMarkers: this.showOutsideBanyumasMarkers,
+                            eventLat: this.eventLat,
+                            eventLng: this.eventLng,
+                            radiusKm: this.radiusKm,
+                            prioritasJenis: this.prioritasJenis
+                        });
+                    }
+                },
+
+                // Debounce untuk update URL saat viewport peta bergeser/zoom (400ms)
+                debouncedSyncUrl() {
+                    clearTimeout(this._urlDebounceTimer);
+                    this._urlDebounceTimer = setTimeout(() => {
+                        this.syncStateToUrl();
+                    }, 400);
+                },
+
+                // Salin tautan filter saat ini ke clipboard
+                copyShareUrl() {
+                    this.syncStateToUrl();
+                    const url = window.location.href;
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(url).then(() => {
+                            this.copyShareSuccess = true;
+                            setTimeout(() => { this.copyShareSuccess = false; }, 2000);
+                        }).catch(() => {
+                            this.fallbackCopyText(url);
+                        });
+                    } else {
+                        this.fallbackCopyText(url);
+                    }
+                },
+
+                fallbackCopyText(text) {
+                    const ta = document.createElement('textarea');
+                    ta.value = text;
+                    ta.style.position = 'fixed';
+                    ta.style.opacity = '0';
+                    document.body.appendChild(ta);
+                    ta.focus();
+                    ta.select();
+                    try {
+                        document.execCommand('copy');
+                        this.copyShareSuccess = true;
+                        setTimeout(() => { this.copyShareSuccess = false; }, 2000);
+                    } catch (e) {}
+                    document.body.removeChild(ta);
+                },
+
+                // Pulihkan state dari parameter URL atau cadangan sessionStorage per tab
+                restoreStateFromUrlOrSession() {
+                    const urlParams = FilterStateHelper.getQueryParamMap();
+                    const hasParams = Object.keys(urlParams).length > 0;
+
+                    let sourceParams = urlParams;
+
+                    // Jika URL bersih namun cadangan sessionStorage ada
+                    if (!hasParams && RESTORE_FROM_SESSION) {
+                        const savedSession = FilterStateHelper.sessionStore.get('peta_saved_filter_state');
+                        if (savedSession && typeof savedSession === 'object' && savedSession.appliedFilters) {
+                            this.appliedFilters = this.cloneFilterState(savedSession.appliedFilters);
+                            this.draftFilters = this.cloneFilterState(this.appliedFilters);
+                            if (savedSession.activeTab) this.activeTab = savedSession.activeTab;
+                            if (typeof savedSession.sidebarOpen === 'boolean') this.sidebarOpen = savedSession.sidebarOpen;
+                            if (typeof savedSession.showAllTypesAtAllZooms === 'boolean') this.showAllTypesAtAllZooms = savedSession.showAllTypesAtAllZooms;
+                            if (typeof savedSession.showOutsideBanyumasMarkers === 'boolean') this.showOutsideBanyumasMarkers = savedSession.showOutsideBanyumasMarkers;
+                            if (this.appliedFilters.selectedKecamatan) this.searchDraftKecamatan = this.appliedFilters.selectedKecamatan;
+                            if (this.appliedFilters.filterSearch) this.searchDraftQuery = this.appliedFilters.filterSearch;
+                            if (savedSession.eventLat !== null && savedSession.eventLng !== null && !isNaN(savedSession.eventLat) && !isNaN(savedSession.eventLng)) {
+                                this.eventLat = savedSession.eventLat;
+                                this.eventLng = savedSession.eventLng;
+                                this.radiusKm = savedSession.radiusKm || 5;
+                                this.prioritasJenis = savedSession.prioritasJenis !== false;
+                                this.setEventPoint(this.eventLat, this.eventLng);
+                                this.analysisRestoredNotice = true;
+                            }
+                            this.sessionRestoredNotice = true;
+                            this.syncStateToUrl();
+                            return;
+                        }
+                    }
+
+                    if (!hasParams) return;
+
+                    // 1. Jenis Faskes
+                    if (sourceParams.jenis) {
+                        const types = sourceParams.jenis.split(',').map(s => s.trim()).filter(s => ALL_FASKES_TYPES.includes(s));
+                        if (types.length > 0) {
+                            this.appliedFilters.selectedJenis = types;
+                        }
+                    }
+
+                    // 2. Layanan Dasar
+                    if (sourceParams.amb === '1') this.appliedFilters.filterAmbulans = true;
+                    if (sourceParams.bpjs === '1') this.appliedFilters.filterBpjs = true;
+                    if (sourceParams.rinap === '1') this.appliedFilters.filterRawatInap = true;
+                    if (sourceParams.poned === '1') this.appliedFilters.filterPoned = true;
+
+                    // 3. Wilayah & Pencarian
+                    if (sourceParams.kec && this.daftarKecamatan.includes(sourceParams.kec)) {
+                        this.appliedFilters.selectedKecamatan = sourceParams.kec;
+                        this.searchDraftKecamatan = sourceParams.kec;
+                    }
+                    if (sourceParams.q) {
+                        const cleanQ = FilterStateHelper.sanitizeText(sourceParams.q);
+                        this.appliedFilters.filterSearch = cleanQ;
+                        this.searchDraftQuery = cleanQ;
+                        this.hasPerformedSearch = true;
+                    }
+
+                    // 4. Kapasitas & SDM
+                    if (sourceParams.min_totamb !== undefined) {
+                        const n = parseInt(sourceParams.min_totamb, 10);
+                        if (!isNaN(n) && n >= 0 && n <= 10) this.appliedFilters.minTotalAmbulans = n;
+                    }
+                    if (sourceParams.min_gadar !== undefined) {
+                        const n = parseInt(sourceParams.min_gadar, 10);
+                        if (!isNaN(n) && n >= 0 && n <= 10) this.appliedFilters.minAmbulansGadar = n;
+                    }
+                    if (sourceParams.min_r2 !== undefined) {
+                        const n = parseInt(sourceParams.min_r2, 10);
+                        if (!isNaN(n) && n >= 0 && n <= 10) this.appliedFilters.minAmbulansRodaDua = n;
+                    }
+                    if (sourceParams.min_bed !== undefined) {
+                        const n = parseInt(sourceParams.min_bed, 10);
+                        if (!isNaN(n) && n >= 0 && n <= 100) this.appliedFilters.minBed = n;
+                    }
+                    if (sourceParams.min_sdm !== undefined) {
+                        const n = parseInt(sourceParams.min_sdm, 10);
+                        if (!isNaN(n) && n >= 0 && n <= 150) this.appliedFilters.minSdm = n;
+                    }
+
+                    // 5. Kategori & Kepemilikan
+                    const validMilik = ['Swasta', 'Pemerintah'];
+                    if (sourceParams.milik && validMilik.includes(sourceParams.milik)) this.appliedFilters.kepemilikan = sourceParams.milik;
+                    const validTipeRs = ['A', 'B', 'C', 'D', 'D Pratama'];
+                    if (sourceParams.tipe_rs && validTipeRs.includes(sourceParams.tipe_rs)) this.appliedFilters.tipeRs = sourceParams.tipe_rs;
+                    const validKatPkm = ['rawat_inap', 'rawat_jalan'];
+                    if (sourceParams.kat_pkm && validKatPkm.includes(sourceParams.kat_pkm)) this.appliedFilters.kategoriPuskesmas = sourceParams.kat_pkm;
+                    const validWilPkm = ['perkotaan', 'pedesaan'];
+                    if (sourceParams.wil_pkm && validWilPkm.includes(sourceParams.wil_pkm)) this.appliedFilters.wilayahPuskesmas = sourceParams.wil_pkm;
+                    const validSalinPkm = ['poned', 'mampu_salin', 'tidak_mampu_salin'];
+                    if (sourceParams.salin_pkm && validSalinPkm.includes(sourceParams.salin_pkm)) this.appliedFilters.persalinanPuskesmas = sourceParams.salin_pkm;
+                    const validPonek = ['ponek', 'non_ponek'];
+                    if (sourceParams.ponek && validPonek.includes(sourceParams.ponek)) this.appliedFilters.ponekRs = sourceParams.ponek;
+                    const validKatKln = ['rawat_inap', 'rawat_jalan'];
+                    if (sourceParams.kat_kln && validKatKln.includes(sourceParams.kat_kln)) this.appliedFilters.kategoriLayananKlinik = sourceParams.kat_kln;
+                    const validBpjsKln = ['ya', 'tidak'];
+                    if (sourceParams.bpjs_kln && validBpjsKln.includes(sourceParams.bpjs_kln)) this.appliedFilters.bpjsKlinik = sourceParams.bpjs_kln;
+                    const validIzin = ['kedaluwarsa', 'h_1_bulan', 'h_3_bulan', 'h_6_bulan', 'aman', 'belum_diisi'];
+                    if (sourceParams.status_izin && validIzin.includes(sourceParams.status_izin)) this.appliedFilters.statusIzin = sourceParams.status_izin;
+                    const validStatus = ['aktif', 'nonaktif', 'semua'];
+                    if (sourceParams.status && validStatus.includes(sourceParams.status)) this.appliedFilters.statusOperasional = sourceParams.status;
+
+                    // 6. Custom filter
+                    if (sourceParams.cf && typeof sourceParams.cf === 'object') {
+                        for (const [k, v] of Object.entries(sourceParams.cf)) {
+                            this.appliedFilters.customFilter[k] = FilterStateHelper.sanitizeText(String(v));
+                        }
+                    }
+
+                    // Sinkronkan draftFilters = appliedFilters
+                    this.draftFilters = this.cloneFilterState(this.appliedFilters);
+
+                    // 7. Pengaturan Tampilan Peta (v = zoom,lat,lng)
+                    if (sourceParams.v && this.map) {
+                        const vParts = sourceParams.v.split(',');
+                        if (vParts.length === 3) {
+                            const z = parseInt(vParts[0], 10);
+                            const lat = parseFloat(vParts[1]);
+                            const lng = parseFloat(vParts[2]);
+                            if (!isNaN(z) && z >= 8 && z <= 19 && !isNaN(lat) && lat >= -10 && lat <= -5 && !isNaN(lng) && lng >= 105 && lng <= 115) {
+                                this.map.setView([lat, lng], z, { animate: false });
+                                this.currentZoom = z;
+                            }
+                        }
+                    }
+
+                    // 8. Pengaturan UI
+                    if (sourceParams.tab === 'event') this.activeTab = 'event';
+                    if (sourceParams.sb === '0') this.sidebarOpen = false;
+                    if (sourceParams.allzoom === '1') this.showAllTypesAtAllZooms = true;
+                    if (sourceParams.outside === '1') this.showOutsideBanyumasMarkers = true;
+
+                    // 9. Titik Analisis Event
+                    if (sourceParams.elat !== undefined && sourceParams.elng !== undefined) {
+                        const elat = parseFloat(sourceParams.elat);
+                        const elng = parseFloat(sourceParams.elng);
+                        if (!isNaN(elat) && elat >= -10 && elat <= -5 && !isNaN(elng) && elng >= 105 && elng <= 115) {
+                            this.eventLat = elat;
+                            this.eventLng = elng;
+                            if (sourceParams.erad !== undefined) {
+                                const r = parseFloat(sourceParams.erad);
+                                if (!isNaN(r) && r >= 0.5 && r <= 50) this.radiusKm = r;
+                            }
+                            if (sourceParams.eprioritas === '0') {
+                                this.prioritasJenis = false;
+                            }
+                            this.setEventPoint(elat, elng);
+                            if (AUTO_RUN_ANALYSIS_ON_RESTORE) {
+                                this.cariFaskesTerdekat();
+                            } else {
+                                this.analysisRestoredNotice = true;
+                            }
+                        }
+                    }
                 },
 
                 // Aksi Kontrol Pencarian di Peta (Tugas 16)
@@ -2502,6 +2879,7 @@
                     // Perubahan sidebar yang belum diterapkan (draftFilters) TIDAK ikut diterapkan
                     this.typeDataCache.clear();
                     this.hasPerformedSearch = true;
+                    this.syncStateToUrl();
                     this.loadFilterCountsAndSync(false);
                 },
 
@@ -2513,6 +2891,7 @@
                     this.appliedFilters.filterSearch = '';
                     this.typeDataCache.clear();
                     this.hasPerformedSearch = false;
+                    this.syncStateToUrl();
                     this.loadFilterCountsAndSync(false);
                 },
 
@@ -2526,6 +2905,7 @@
                     }
                     this.typeDataCache.clear();
                     this.hasPerformedSearch = false;
+                    this.syncStateToUrl();
                     this.loadFilterCountsAndSync(false);
                 },
 
@@ -2625,6 +3005,10 @@
                         this.cullDebounceTimer = setTimeout(() => {
                             this.syncMarkersForCurrentView(false);
                         }, 150);
+                        this.debouncedSyncUrl();
+                    });
+                    this.map.on('zoomend', () => {
+                        this.debouncedSyncUrl();
                     });
 
                     // Listener Klik Peta untuk menentukan Titik Event
@@ -2640,9 +3024,15 @@
                         this.setEventPoint(e.latlng.lat, e.latlng.lng);
                     });
 
-                    // Muat Data Awal Faskes & Ringkasan Data
+                    // Pulihkan State Filter, View, & Titik Event dari URL atau sessionStorage (Tugas 19)
+                    this.restoreStateFromUrlOrSession();
+
+                    // Muat Data Awal Faskes & Ringkasan Data (Tepat 1 Rangkaian Muat)
                     this.loadInitialFaskes();
                     this.fetchRingkasanData();
+
+                    // Sinkronkan URL pertama kali (hanya tulis jika non-default)
+                    this.syncStateToUrl();
 
                     // Listener Kustom 'Jadikan Titik Event' dari Popup
                     window.addEventListener('set-event-here', (e) => {
@@ -2651,11 +3041,31 @@
                         this.activeTab = 'event';
                     });
 
+                    // Listener Navigasi Browser: popstate & pageshow (bfcache) (Tugas 19)
+                    window.addEventListener('popstate', () => {
+                        this.restoreStateFromUrlOrSession();
+                        this.typeDataCache.clear();
+                        this.loadFilterCountsAndSync(false);
+                    });
+                    window.addEventListener('pageshow', (e) => {
+                        if (e.persisted) {
+                            this.restoreStateFromUrlOrSession();
+                            this.typeDataCache.clear();
+                            this.loadFilterCountsAndSync(false);
+                        }
+                    });
+
+                    // Watcher Tab & Sidebar untuk URL
+                    this.$watch('activeTab', () => {
+                        this.syncStateToUrl();
+                    });
+
                     // Bersihkan floating overlay/badge liar
                     this.cleanupStrayMapOverlays();
 
                     // Responsif: Invalidate size saat sidebar ditutup/dibuka & transitionend (Tugas 12A)
                     this.$watch('sidebarOpen', () => {
+                        this.syncStateToUrl();
                         setTimeout(() => {
                             if (this.map) {
                                 this.map.invalidateSize({ animate: false });
@@ -2766,6 +3176,7 @@
 
                 // Handler toggle switch "Tampilkan semua jenis di semua zoom"
                 onToggleAllZooms() {
+                    this.syncStateToUrl();
                     this.syncMarkersForCurrentView(false);
                 },
 
@@ -2924,6 +3335,7 @@
 
                 // Toggle tampilkan/sembunyikan titik di luar Banyumas pada peta
                 toggleOutsideBanyumasMarkers() {
+                    this.syncStateToUrl();
                     if (!this.outsideBanyumasLayerGroup || !this.map) return;
 
                     if (!this.showOutsideBanyumasMarkers) {
@@ -3526,6 +3938,7 @@
                     }
 
                     this.updateRadiusCircle();
+                    this.syncStateToUrl();
                 },
 
                 // Update Lingkaran Radius Pencarian
@@ -3562,6 +3975,8 @@
                     this.eventDibatasi = false;
                     this.eventTotalDalamRadius = 0;
                     this.activeFaskesId = null;
+                    this.analysisRestoredNotice = false;
+                    this.syncStateToUrl();
                 },
 
                 // Helper kelompok tier faskes untuk Analisis Event (Tugas 15)

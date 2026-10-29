@@ -13,7 +13,7 @@ class FaskesCrudController extends Controller
     /**
      * Menampilkan daftar data faskes.
      */
-    public function index(Request $request): View
+    public function index(Request $request): View|\Illuminate\Http\RedirectResponse
     {
         $query = Faskes::query()->with([
             'puskesmasDetail',
@@ -141,9 +141,23 @@ class FaskesCrudController extends Controller
 
         $faskesList = $query->orderBy('nama', 'asc')->paginate(10)->withQueryString();
 
+        // Safe pagination: jika halaman melebihi lastPage karena filter diperketat
+        if ($faskesList->total() > 0 && $faskesList->currentPage() > $faskesList->lastPage()) {
+            $lastPage = $faskesList->lastPage();
+            if ($request->ajax()) {
+                $request->merge(['page' => $lastPage]);
+                $faskesList = $query->paginate(10)->withQueryString();
+            } else {
+                return redirect($request->fullUrlWithQuery(['page' => $lastPage]));
+            }
+        }
+
         if ($request->ajax()) {
             return view('faskes._table', compact('faskesList'));
         }
+
+        // Simpan index URL terakhir ke session untuk kembali dari Tambah/Edit/Hapus
+        session(['faskes_last_index_url' => $request->fullUrl()]);
 
         $kecamatanList = Faskes::whereNotNull('kecamatan')
             ->where('kecamatan', '!=', '')
@@ -162,14 +176,16 @@ class FaskesCrudController extends Controller
     /**
      * Menampilkan form tambah faskes baru.
      */
-    public function create(): View
+    public function create(Request $request): View
     {
         $customFieldDefinitions = \App\Models\FaskesFieldDefinition::where('is_active', true)
             ->orderBy('sort_order')
             ->orderBy('label')
             ->get();
 
-        return view('faskes.create', compact('customFieldDefinitions'));
+        $returnUrl = $this->getSafeReturnUrl($request);
+
+        return view('faskes.create', compact('customFieldDefinitions', 'returnUrl'));
     }
 
     /**
@@ -196,7 +212,8 @@ class FaskesCrudController extends Controller
 
             DB::commit();
 
-            return redirect()->route('faskes.index')->with('success', 'Data faskes berhasil ditambahkan.');
+            $returnUrl = $this->getSafeReturnUrl($request);
+            return redirect($returnUrl)->with('success', 'Data faskes berhasil ditambahkan.');
         } catch (\Illuminate\Validation\ValidationException $e) {
             DB::rollBack();
             throw $e;
@@ -210,7 +227,7 @@ class FaskesCrudController extends Controller
     /**
      * Menampilkan form edit faskes.
      */
-    public function edit(int $id): View
+    public function edit(Request $request, int $id): View
     {
         $faskes = Faskes::with([
             'puskesmasDetail',
@@ -229,8 +246,9 @@ class FaskesCrudController extends Controller
             ->get();
 
         $existingCustomValues = $faskes->fieldValues->pluck('value', 'field_definition_id')->toArray();
+        $returnUrl = $this->getSafeReturnUrl($request);
 
-        return view('faskes.edit', compact('faskes', 'customFieldDefinitions', 'existingCustomValues'));
+        return view('faskes.edit', compact('faskes', 'customFieldDefinitions', 'existingCustomValues', 'returnUrl'));
     }
 
     /**
@@ -264,7 +282,8 @@ class FaskesCrudController extends Controller
 
             DB::commit();
 
-            return redirect()->route('faskes.index')->with('success', 'Data faskes berhasil diperbarui.');
+            $returnUrl = $this->getSafeReturnUrl($request);
+            return redirect($returnUrl)->with('success', 'Data faskes berhasil diperbarui.');
         } catch (\Illuminate\Validation\ValidationException $e) {
             DB::rollBack();
             throw $e;
@@ -278,13 +297,14 @@ class FaskesCrudController extends Controller
     /**
      * Menghapus faskes (relasi detail child terhapus cascade).
      */
-    public function destroy(int $id): RedirectResponse
+    public function destroy(Request $request, int $id): RedirectResponse
     {
         try {
             $faskes = Faskes::findOrFail($id);
             $faskes->delete();
 
-            return redirect()->route('faskes.index')->with('success', 'Faskes berhasil dihapus.');
+            $returnUrl = $this->getSafeReturnUrl($request);
+            return redirect($returnUrl)->with('success', 'Faskes berhasil dihapus.');
         } catch (\Exception $e) {
             return back()->with('error', 'Gagal menghapus faskes: ' . $e->getMessage());
         }
@@ -320,8 +340,8 @@ class FaskesCrudController extends Controller
                 ]);
             }
 
-            return redirect()->route('faskes.index', $request->query())
-                ->with('success', $message);
+            $returnUrl = $this->getSafeReturnUrl($request);
+            return redirect($returnUrl)->with('success', $message);
         } catch (\Exception $e) {
             DB::rollBack();
             \Log::error('Gagal hapus massal faskes: ' . $e->getMessage());
@@ -335,6 +355,46 @@ class FaskesCrudController extends Controller
 
             return back()->with('error', 'Gagal menghapus faskes terpilih: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Memvalidasi dan mengembalikan return URL yang aman (hanya internal relatif /faskes atau host yang sama).
+     */
+    protected function getSafeReturnUrl(Request $request): string
+    {
+        $candidate = $request->input('return_url') ?? $request->query('return');
+
+        if ($candidate && is_string($candidate)) {
+            $candidate = trim($candidate);
+            $parsed = parse_url($candidate);
+
+            // Validasi host dan scheme (mencegah open redirect)
+            $hostMatch = empty($parsed['host']) || strtolower($parsed['host']) === strtolower($request->getHost());
+            $schemeSafe = empty($parsed['scheme']) || in_array(strtolower($parsed['scheme']), ['http', 'https'], true);
+
+            $path = $parsed['path'] ?? '';
+            $isRelativeSafe = str_starts_with($candidate, '/') && !str_starts_with($candidate, '//') && !str_starts_with($candidate, '/\\');
+
+            if (($isRelativeSafe || !empty($parsed['host'])) && $hostMatch && $schemeSafe) {
+                // Pastikan target adalah rute faskes index dan bukan form create/edit
+                if (str_ends_with($path, '/faskes') || $path === '/faskes') {
+                    return $candidate;
+                }
+            }
+        }
+
+        // Cek fallback session jika ada
+        $sessionUrl = session('faskes_last_index_url');
+        if ($sessionUrl && is_string($sessionUrl)) {
+            $parsed = parse_url($sessionUrl);
+            $hostMatch = empty($parsed['host']) || strtolower($parsed['host']) === strtolower($request->getHost());
+            $path = $parsed['path'] ?? '';
+            if ($hostMatch && (str_ends_with($path, '/faskes') || $path === '/faskes')) {
+                return $sessionUrl;
+            }
+        }
+
+        return route('faskes.index');
     }
 
     /**

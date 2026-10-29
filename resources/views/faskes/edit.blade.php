@@ -65,7 +65,7 @@
     <header class="bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 sm:px-6 py-4 sticky top-0 z-30 shadow-sm">
         <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
             <div class="flex items-center space-x-3">
-                <a href="{{ route('faskes.index') }}" class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-blue-50 text-slate-600 hover:text-blue-600 transition flex items-center justify-center border border-slate-200">
+                <a href="{{ $returnUrl ?? route('faskes.index') }}" class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-blue-50 text-slate-600 hover:text-blue-600 transition flex items-center justify-center border border-slate-200">
                     <i class="fa-solid fa-arrow-left text-sm"></i>
                 </a>
                 <div>
@@ -73,7 +73,7 @@
                     <p class="text-[11px] sm:text-xs text-slate-500 mt-0.5">ID Faskes: #{{ $faskes->id }} &bull; Perbarui Data & Posisi Spasial PostGIS</p>
                 </div>
             </div>
-            <a href="{{ route('faskes.index') }}" class="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 hover:text-blue-600 px-3 py-2 rounded-lg hover:bg-blue-50 transition">
+            <a href="{{ $returnUrl ?? route('faskes.index') }}" class="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 hover:text-blue-600 px-3 py-2 rounded-lg hover:bg-blue-50 transition">
                 Batal
             </a>
         </div>
@@ -96,6 +96,7 @@
         <form action="{{ route('faskes.update', $faskes->id) }}" method="POST" class="space-y-6">
             @csrf
             @method('PUT')
+            <input type="hidden" name="return_url" value="{{ $returnUrl ?? route('faskes.index') }}">
 
             <!-- SECTION 1: DATA UTAMA & KOORDINAT SPASIAL -->
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -820,7 +821,7 @@
 
             <!-- BUTTON ACTIONS -->
             <div class="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3 pt-2 border-t border-slate-200 mt-2 pt-5">
-                <a href="{{ route('faskes.index') }}"
+                <a href="{{ $returnUrl ?? route('faskes.index') }}"
                    class="px-5 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition text-center">
                     Batal
                 </a>

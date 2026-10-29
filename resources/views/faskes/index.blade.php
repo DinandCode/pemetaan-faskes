@@ -101,7 +101,7 @@
                     <span>Kelola Kolom Tambahan</span>
                 </a>
 
-                <a href="{{ route('faskes.create') }}"
+                <a href="{{ route('faskes.create', ['return' => request()->getRequestUri()]) }}"
                    class="px-4 py-2 text-xs font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 text-white shadow-sm shadow-blue-500/25 transition flex items-center gap-1.5">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -195,6 +195,7 @@
                             <input type="text"
                                    name="search"
                                    x-model="filters.search"
+                                   autocomplete="off"
                                    @input="onSearchInput()"
                                    placeholder="Cari faskes, kecamatan, desa..."
                                    class="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
@@ -206,6 +207,7 @@
                         <label class="block text-xs font-semibold text-slate-600 mb-1.5">Jenis Faskes</label>
                         <select name="jenis_faskes"
                                 x-model="filters.jenis_faskes"
+                                autocomplete="off"
                                 @change="onDropdownChange()"
                                 class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
                             <option value="">Semua Jenis</option>
@@ -228,6 +230,7 @@
                         <label class="block text-xs font-semibold text-slate-600 mb-1.5">Status</label>
                         <select name="status"
                                 x-model="filters.status"
+                                autocomplete="off"
                                 @change="onDropdownChange()"
                                 class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
                             <option value="">Semua Status</option>
@@ -274,6 +277,7 @@
                         <label class="block text-xs font-semibold text-slate-600 mb-1.5">Kecamatan</label>
                         <select name="kecamatan"
                                 x-model="filters.kecamatan"
+                                autocomplete="off"
                                 @change="onDropdownChange()"
                                 class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
                             <option value="">Semua Kecamatan</option>
@@ -288,6 +292,7 @@
                         <label class="block text-xs font-semibold text-slate-600 mb-1.5">Kepemilikan</label>
                         <select name="kepemilikan"
                                 x-model="filters.kepemilikan"
+                                autocomplete="off"
                                 @change="onDropdownChange()"
                                 class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
                             <option value="">Semua Kepemilikan</option>
@@ -301,6 +306,7 @@
                         <label class="block text-xs font-semibold text-slate-600 mb-1.5">Kerja Sama BPJS</label>
                         <select name="bpjs"
                                 x-model="filters.bpjs"
+                                autocomplete="off"
                                 @change="onDropdownChange()"
                                 class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
                             <option value="">Semua</option>
@@ -314,6 +320,7 @@
                         <label class="block text-xs font-semibold text-slate-600 mb-1.5">Memiliki Ambulans</label>
                         <select name="has_ambulans"
                                 x-model="filters.has_ambulans"
+                                autocomplete="off"
                                 @change="onDropdownChange()"
                                 class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
                             <option value="">Semua</option>
@@ -327,6 +334,7 @@
                         <label class="block text-xs font-semibold text-slate-600 mb-1.5">Bed Rawat Inap</label>
                         <select name="has_bed"
                                 x-model="filters.has_bed"
+                                autocomplete="off"
                                 @change="onDropdownChange()"
                                 class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
                             <option value="">Semua</option>
@@ -340,6 +348,7 @@
                         <label class="block text-xs font-semibold text-slate-600 mb-1.5">Persalinan Puskesmas</label>
                         <select name="persalinan"
                                 x-model="filters.persalinan"
+                                autocomplete="off"
                                 @change="onDropdownChange()"
                                 class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
                             <option value="">Semua</option>
@@ -354,6 +363,7 @@
                         <label class="block text-xs font-semibold text-slate-600 mb-1.5">Tipe Rumah Sakit</label>
                         <select name="tipe_rs"
                                 x-model="filters.tipe_rs"
+                                autocomplete="off"
                                 @change="onDropdownChange()"
                                 class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
                             <option value="">Semua Tipe RS</option>
@@ -370,6 +380,7 @@
                         <label class="block text-xs font-semibold text-slate-600 mb-1.5">Status Izin Operasional</label>
                         <select name="status_izin"
                                 x-model="filters.status_izin"
+                                autocomplete="off"
                                 @change="onDropdownChange()"
                                 class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
                             <option value="">Semua Status Izin</option>
@@ -395,6 +406,7 @@
                                     </label>
                                     @if(in_array($def->type, ['select', 'multiselect']))
                                         <select x-model="filters.custom_filter['{{ $def->field_key }}']"
+                                                autocomplete="off"
                                                 @change="onDropdownChange()"
                                                 class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
                                             <option value="">Semua {{ $def->label }}</option>
@@ -404,6 +416,7 @@
                                         </select>
                                     @elseif($def->type === 'boolean')
                                         <select x-model="filters.custom_filter['{{ $def->field_key }}']"
+                                                autocomplete="off"
                                                 @change="onDropdownChange()"
                                                 class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
                                             <option value="">Semua {{ $def->label }}</option>
@@ -412,17 +425,20 @@
                                         </select>
                                     @elseif($def->type === 'number')
                                         <input type="number" step="any"
+                                               autocomplete="off"
                                                x-model.debounce.400ms="filters.custom_filter['{{ $def->field_key }}']"
                                                @input="onSearchInput()"
                                                placeholder="Nilai {{ $def->label }}..."
                                                class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
                                     @elseif($def->type === 'date')
                                         <input type="date"
+                                               autocomplete="off"
                                                x-model="filters.custom_filter['{{ $def->field_key }}']"
                                                @change="onDropdownChange()"
                                                class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
                                     @else
                                         <input type="text"
+                                               autocomplete="off"
                                                x-model.debounce.400ms="filters.custom_filter['{{ $def->field_key }}']"
                                                @input="onSearchInput()"
                                                placeholder="Cari {{ $def->label }}..."
@@ -888,6 +904,36 @@
                     }
                     this.$nextTick(() => {
                         this.attachPaginationListeners();
+                    });
+
+                    // Listener popstate: saat user klik Back/Forward browser, re-fetch tabel sesuai URL baru
+                    window.addEventListener('popstate', () => {
+                        const params = new URLSearchParams(window.location.search);
+                        this.filters.search = params.get('search') || '';
+                        this.filters.jenis_faskes = params.get('jenis_faskes') || '';
+                        this.filters.status = params.get('status') || '';
+                        this.filters.kecamatan = params.get('kecamatan') || '';
+                        this.filters.kepemilikan = params.get('kepemilikan') || '';
+                        this.filters.bpjs = params.get('bpjs') || '';
+                        this.filters.has_ambulans = params.get('has_ambulans') || '';
+                        this.filters.has_bed = params.get('has_bed') || '';
+                        this.filters.persalinan = params.get('persalinan') || '';
+                        this.filters.tipe_rs = params.get('tipe_rs') || '';
+                        this.filters.status_izin = params.get('status_izin') || '';
+                        const cf = {};
+                        for (const [key, val] of params.entries()) {
+                            const m = key.match(/^custom_filter\[(.+)\]$/);
+                            if (m) cf[m[1]] = val;
+                        }
+                        this.filters.custom_filter = Object.keys(cf).length ? cf : (this.filters.custom_filter || {});
+                        this.fetchTable(window.location.href);
+                    });
+
+                    // pageshow: dipulihkan dari bfcache (Back/Forward Cache)
+                    window.addEventListener('pageshow', (e) => {
+                        if (e.persisted) {
+                            this.fetchTable(window.location.href);
+                        }
                     });
                 },
 

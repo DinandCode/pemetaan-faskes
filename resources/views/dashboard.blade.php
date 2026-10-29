@@ -32,6 +32,9 @@
     <!-- Web Audio API Sound Synthesizer (Tugas 10B) -->
     <script defer src="{{ asset('js/dashboard-notif-sound.js') }}"></script>
 
+    <!-- Filter State URL Persistence (Tugas 19) -->
+    <script src="{{ url('/js/filter-state.js') }}"></script>
+
     <!-- Alpine.js CDN -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
     <style>
@@ -1180,7 +1183,50 @@
                 isLoading: false,
 
                 init() {
-                    this.fetchData(1);
+                    // Restore state dari URL params (Tugas 19)
+                    const p = new URLSearchParams(window.location.search);
+                    if (p.has('izin_level')) this.activeLevel = p.get('izin_level');
+                    if (p.has('izin_jenis')) this.selectedJenis = p.get('izin_jenis');
+                    if (p.has('izin_kec')) this.selectedKecamatan = p.get('izin_kec');
+                    if (p.has('izin_page')) {
+                        const pg = parseInt(p.get('izin_page'), 10);
+                        if (pg > 0) this.currentPage = pg;
+                    }
+                    this.fetchData(this.currentPage);
+
+                    // Sinkronkan saat browser navigasi maju/mundur
+                    window.addEventListener('popstate', () => {
+                        const pp = new URLSearchParams(window.location.search);
+                        this.activeLevel = pp.get('izin_level') || 'all';
+                        this.selectedJenis = pp.get('izin_jenis') || '';
+                        this.selectedKecamatan = pp.get('izin_kec') || '';
+                        const pg = parseInt(pp.get('izin_page') || '1', 10);
+                        this.fetchData(pg > 0 ? pg : 1);
+                    });
+
+                    // Pulihkan data jika halaman dikembalikan dari bfcache
+                    window.addEventListener('pageshow', (e) => {
+                        if (e.persisted) this.fetchData(this.currentPage);
+                    });
+                },
+
+                // Tulis state ke URL tanpa menambah riwayat (Tugas 19)
+                syncUrl() {
+                    const params = {};
+                    if (this.activeLevel && this.activeLevel !== 'all') params.izin_level = this.activeLevel;
+                    if (this.selectedJenis) params.izin_jenis = this.selectedJenis;
+                    if (this.selectedKecamatan) params.izin_kec = this.selectedKecamatan;
+                    if (this.currentPage > 1) params.izin_page = this.currentPage;
+
+                    // Gabungkan dengan params URL yang ada (misal hash atau params lain)
+                    const existing = new URLSearchParams(window.location.search);
+                    // Hapus param izin lama
+                    ['izin_level','izin_jenis','izin_kec','izin_page'].forEach(k => existing.delete(k));
+                    // Tambah nilai baru
+                    Object.entries(params).forEach(([k, v]) => existing.set(k, v));
+                    const qs = existing.toString();
+                    const url = window.location.pathname + (qs ? '?' + qs : '') + window.location.hash;
+                    history.replaceState(null, '', url);
                 },
 
                 setLevel(level) {
@@ -1209,6 +1255,9 @@
                     if (this.selectedKecamatan) params.append('kecamatan', this.selectedKecamatan);
                     params.append('page', this.currentPage);
                     params.append('per_page', this.perPage);
+
+                    // Tulis state ke URL sebelum fetch (Tugas 19)
+                    this.syncUrl();
 
                     fetch("{{ route('dashboard.izin-operasional') }}?" + params.toString(), {
                         headers: {
